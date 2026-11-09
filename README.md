@@ -8,12 +8,7 @@ Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten
 
 - Supabase project **Valette App** (`dqnreeflkhrbsfuvkzjx`, us-east-1). Migrations 0001 to 0004 are applied. Universal principles, retailers, Zack's invite, and seed payloads for Val and Zack are loaded.
 - `.env.local` holds the project URL and anon key. No service-role key is needed: the login page checks invites through the `is_invited()` database function.
-- Seeds apply automatically on first sign-in (`apply_seed`, called from the `on_auth_user_created` trigger). Zack's payload is keyed to `zack@gpsteam.com`. Val's is parked under `val@pending.local` until her email is known:
-
-  ```sql
-  update public.seed_payloads set email = 'VAL_EMAIL' where label = 'val';
-  insert into public.invites (email, invited_by, note) values ('VAL_EMAIL', 'zack', 'core women''s profile');
-  ```
+- Seeds apply automatically on first sign-in (`apply_seed`, called from the `on_auth_user_created` trigger). Zack's payload is keyed to `zack@gpsteam.com`, Val's to `valerieraucher@gmail.com`. Both are invited. To invite someone else and seed them, insert an `invites` row and (optionally) a `seed_payloads` row keyed to their email before they sign in.
 
 ## One-time setup still to do
 
