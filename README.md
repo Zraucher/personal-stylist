@@ -2,13 +2,26 @@
 
 Private, invite-only stylist app. Next.js 16 on Vercel, Supabase for data, auth and images, Claude for judgment.
 
-Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten build sessions). This repo is at the end of **session 1**: repo, schema, invite-gated magic-link login, empty closet.
+Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten build sessions). This repo is at the end of **session 3**: repo, schema, invite-gated login, seeded profiles, closet capture with Claude vision tagging, item editor, and the basics checklist.
 
 ## State as of 2026-11-08
 
 - Supabase project **Valette App** (`dqnreeflkhrbsfuvkzjx`, us-east-1). Migrations 0001 to 0004 are applied. Universal principles, retailers, Zack's invite, and seed payloads for Val and Zack are loaded.
 - `.env.local` holds the project URL and anon key. No service-role key is needed: the login page checks invites through the `is_invited()` database function.
 - Seeds apply automatically on first sign-in (`apply_seed`, called from the `on_auth_user_created` trigger). Zack's payload is keyed to `zack@gpsteam.com`, Val's to `valerieraucher@gmail.com`. Both are invited. To invite someone else and seed them, insert an `invites` row and (optionally) a `seed_payloads` row keyed to their email before they sign in.
+
+## Session 3: closet capture
+
+- `/closet` grid grouped by category, signed URLs for private photos (1 hour TTL).
+- `/closet/new` takes a photo (camera or library), resizes it in the browser to 1600px JPEG, uploads to the `closet` bucket under `<user id>/<uuid>.jpg`, then calls `/api/tag`.
+- `/api/tag` downloads the image with the user's own session (RLS), sends it to Claude (`claude-opus-5-5`) with a strict zod schema, and returns name, category, subcategory, colors (hex + name), pattern, material, construction, formality, warmth, seasons, notes. Needs `ANTHROPIC_API_KEY` in the Vercel project env; without it the route returns 503 and the form falls back to manual entry.
+- `/closet/[id]` is the same form in edit mode, plus "Re-run auto tags" and Remove (deletes the photo too).
+- `/closet/basics` is a tick list of staples for women's and men's wardrobes (`src/lib/closet/basics.ts`). A tick inserts a `closet_items` row with `generic_id`; unticking deletes it unless a photo was attached, in which case it is marked `gone`.
+- Vocabulary (categories, subcategories, construction tags, seasons, statuses) lives in `src/lib/closet/taxonomy.ts`. The tagger, the form and the future scorecard all use it.
+
+## Deploying without the CLI
+
+Vercel's GitHub app is only installed for the `gps-ezgift` org, so `Zraucher/personal-stylist` does not auto-deploy yet. Until that is installed, deploys go through the Vercel connector: compute SHA1 + size for every file under `src/` plus `package.json`, `next.config.ts`, `tsconfig.json`, call `upload_file` for each changed file, then `create_deployment` with `{file, sha, size}` references. Unchanged files are already in Vercel's store and need no upload.
 
 ## One-time setup still to do
 
