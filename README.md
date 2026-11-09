@@ -17,19 +17,17 @@ Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten
 
 ## One-time setup still to do
 
-1. **Supabase auth URLs.** Dashboard → Authentication → URL Configuration: Site URL = the production URL; Redirect URLs include `http://localhost:3000/auth/callback` and `https://<prod-domain>/auth/callback`. Email provider stays on; no password needed. The `enforce_invite` trigger blocks uninvited sign-ups at the database, so the "allow sign-ups" toggle can stay on.
+1. **Supabase auth URLs.** Dashboard → Authentication → URL Configuration: Site URL = `https://personal-stylist-valette.vercel.app`; Redirect URLs include `http://localhost:3000/auth/callback`, `https://personal-stylist-valette.vercel.app/auth/callback` and `https://personal-stylist-*-valette.vercel.app/auth/callback` (preview deploys). Email provider stays on; no password needed. The `enforce_invite` trigger blocks uninvited sign-ups at the database, so the "allow sign-ups" toggle can stay on.
 
-2. **Vercel.** In the repo folder:
+2. **Vercel.** Done 2026-11-08. Project `personal-stylist` (`prj_VEGr6clooeo28BUSYJ0TYCwekf2n`) on team `valette` (`team_qjPh7HC46TP4L3YnzhiDcXXM`). Production: https://personal-stylist-valette.vercel.app. Vercel Authentication is turned off so invitees reach the app without a Vercel account; the app's own invite gate does the gatekeeping. Env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `NEXT_PUBLIC_SITE_URL` are set. The first deploy was uploaded straight from this folder (no git remote yet). To link the CLI later:
 
    ```bash
    vercel login
    ```
 
    ```bash
-   vercel link
+   vercel link --project personal-stylist --scope valette --yes
    ```
-
-   Then set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `NEXT_PUBLIC_SITE_URL` (the production URL) in the Vercel project's environment variables.
 
 3. **Run locally.**
 
@@ -45,7 +43,7 @@ Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten
 vercel --prod
 ```
 
-Or push to the linked GitHub repo once one exists; Vercel deploys on push.
+Or push to a linked GitHub repo once one exists; Vercel deploys on push. Until then, deploys are uploaded directly (`vercel --prod` after `vercel link`, or via the Vercel connector).
 
 ## Layout
 
