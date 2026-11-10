@@ -5,6 +5,7 @@ import { signedImageUrls } from "@/lib/closet/images";
 import { CATEGORIES, type Category, type ClosetItem } from "@/lib/closet/taxonomy";
 import ItemForm, { type ItemFormValues } from "../ItemForm";
 import DeleteItemButton from "./DeleteItemButton";
+import ScorecardPanel, { type ScorecardRow } from "../ScorecardPanel";
 
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -13,6 +14,27 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   if (!data) notFound();
   const item = data as ClosetItem;
   const urls = await signedImageUrls(supabase, [item.image_path]);
+
+  const { data: latest } = await supabase
+    .from("scorecards")
+    .select("*")
+    .eq("item_id", id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const scorecard = (latest as ScorecardRow | null) ?? null;
+  let answer: "agree" | "disagree" | null = null;
+  if (scorecard) {
+    const { data: fb } = await supabase
+      .from("feedback")
+      .select("type")
+      .eq("scorecard_id", scorecard.id)
+      .in("type", ["agree", "disagree"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    answer = (fb?.type as "agree" | "disagree" | undefined) ?? null;
+  }
 
   const initial: ItemFormValues = {
     name: item.name ?? "",
@@ -39,6 +61,8 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           Back to closet
         </Link>
       </div>
+
+      <ScorecardPanel itemId={item.id} hasImage={!!item.image_path} initial={scorecard} initialAnswer={answer} />
 
       <ItemForm initial={initial} itemId={item.id} imagePath={item.image_path} imageUrl={item.image_path ? urls[item.image_path] ?? null : null} />
 

@@ -16,6 +16,11 @@ export default async function ClosetPage() {
     items.map((i) => i.image_path)
   );
 
+  // Newest scorecard per item, for the verdict badge.
+  const { data: cards } = await supabase.from("scorecards").select("item_id, verdict").order("created_at", { ascending: false });
+  const verdicts = new Map<string, string>();
+  for (const c of cards ?? []) if (!verdicts.has(c.item_id as string)) verdicts.set(c.item_id as string, c.verdict as string);
+
   const groups = new Map<string, ClosetItem[]>();
   for (const c of CATEGORIES) groups.set(c, []);
   for (const item of items) {
@@ -37,6 +42,9 @@ export default async function ClosetPage() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link href="/closet/review" className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium hover:border-stone-500">
+            Review
+          </Link>
           <Link href="/closet/basics" className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium hover:border-stone-500">
             Basics
           </Link>
@@ -65,7 +73,7 @@ export default async function ClosetPage() {
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                 {list.map((item) => (
-                  <ItemCard key={item.id} item={item} url={item.image_path ? urls[item.image_path] : undefined} />
+                  <ItemCard key={item.id} item={item} url={item.image_path ? urls[item.image_path] : undefined} verdict={verdicts.get(item.id)} />
                 ))}
               </div>
             </section>
@@ -75,7 +83,13 @@ export default async function ClosetPage() {
   );
 }
 
-function ItemCard({ item, url }: { item: ClosetItem; url?: string }) {
+const VERDICT_BADGE: Record<string, string> = {
+  keep: "bg-emerald-700 text-white",
+  cut: "bg-red-700 text-white",
+  provisional: "bg-stone-300 text-stone-800",
+};
+
+function ItemCard({ item, url, verdict }: { item: ClosetItem; url?: string; verdict?: string }) {
   return (
     <Link href={`/closet/${item.id}`} className="group overflow-hidden rounded-xl border border-stone-200 bg-white">
       <div className="relative aspect-square bg-stone-100">
@@ -90,6 +104,11 @@ function ItemCard({ item, url }: { item: ClosetItem; url?: string }) {
         {item.status !== "available" && (
           <span className="absolute left-2 top-2 rounded-full bg-stone-900/80 px-2 py-0.5 text-[11px] text-white">
             {STATUS_LABELS[item.status]}
+          </span>
+        )}
+        {verdict && (
+          <span className={"absolute right-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-medium " + (VERDICT_BADGE[verdict] ?? "")}>
+            {verdict === "provisional" ? "Provisional" : verdict === "keep" ? "Keep" : "Cut"}
           </span>
         )}
       </div>

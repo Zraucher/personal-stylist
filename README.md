@@ -19,6 +19,14 @@ Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten
 - `/closet/basics` is a tick list of staples for women's and men's wardrobes (`src/lib/closet/basics.ts`). A tick inserts a `closet_items` row with `generic_id`; unticking deletes it unless a photo was attached, in which case it is marked `gone`.
 - Vocabulary (categories, subcategories, construction tags, seasons, statuses) lives in `src/lib/closet/taxonomy.ts`. The tagger, the form and the future scorecard all use it.
 
+## Session 4: item scorecard
+
+- Four criteria per piece: palette, fabric, silhouette (rules, computed in `src/lib/scorecard/rules.ts`) and vibe (Claude, with the photo). The vibe check outranks the rules. Verdicts: keep, cut, provisional. No photo or an unclear photo is always provisional; nothing is finalized from text alone.
+- Palette is a Lab color-distance check against the best and avoid lists, with lightness and saturation tests for entries like "true black", "stark white" and "bright or saturated tones". Fabric uses a matcher table for phrases like "itchy wool" and "stretch denim". Silhouette fires the dislikes list from construction tags. Dislikes the code cannot test (for example "overly preppy looks") are handed to the vibe prompt.
+- `/api/scorecard` loads profile, principles (universal plus personal) and benchmarks, runs the rules, asks Claude only for the vibe rating, photo clarity and tailoring, then stores a row in `scorecards` (migration 0005). History is kept; the newest row is current.
+- Item page shows the scorecard with Agree / Disagree (stored in `feedback` with `scorecard_id`) and "Proven look" / "Known failure", which copies the photo into `benchmarks` so it keeps working as a vibe example.
+- `/closet/review` walks through unreviewed pieces with photos, auto-runs the scorecard, and tracks the plan goal: agree with 8 of 10.
+- Tests: `node --test scripts/test-rules.mjs` (Node 22.18+). Rules are erasable TypeScript so Node runs them directly.
 ## Deploying without the CLI
 
 Vercel's GitHub app is only installed for the `gps-ezgift` org, so `Zraucher/personal-stylist` does not auto-deploy yet. Until that is installed, deploys go through the Vercel connector: compute SHA1 + size for every file under `src/` plus `package.json`, `next.config.ts`, `tsconfig.json`, call `upload_file` for each changed file, then `create_deployment` with `{file, sha, size}` references. Unchanged files are already in Vercel's store and need no upload.
