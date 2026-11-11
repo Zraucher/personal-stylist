@@ -1,6 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginState = {
@@ -52,6 +53,25 @@ export async function requestMagicLink(
   }
 
   return { status: "sent", email };
+}
+
+// Six-digit code sign-in. Unlike the link, a code can't be burned by an email
+// link scanner, and it doesn't need to be opened in the same browser.
+export async function verifyCode(
+  _prev: LoginState,
+  formData: FormData
+): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const token = String(formData.get("code") ?? "").replace(/\D/g, "");
+  if (!EMAIL_RE.test(email) || token.length < 6) {
+    return { status: "sent", email, message: "Enter the 6-digit code from the email." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: "email" });
+  if (error) {
+    return { status: "sent", email, message: "That code is wrong or expired. Request a new one." };
+  }
+  redirect("/closet");
 }
 
 // The host that served the login page is where the magic link should land.
