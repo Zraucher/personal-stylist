@@ -27,6 +27,12 @@ Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten
 - Item page shows the scorecard with Agree / Disagree (stored in `feedback` with `scorecard_id`) and "Proven look" / "Known failure", which copies the photo into `benchmarks` so it keeps working as a vibe example.
 - `/closet/review` walks through unreviewed pieces with photos, auto-runs the scorecard, and tracks the plan goal: agree with 8 of 10.
 - Tests: `node --test scripts/test-rules.mjs` (Node 22.18+). Rules are erasable TypeScript so Node runs them directly.
+## Session 5: outfit builder
+
+- Pick pieces on `/outfits/new`; the composition check re-runs as you tap (`src/lib/outfit/composition.ts`, pure functions, tests: `node --test scripts/test-composition.mjs`).
+- Checks: complete, counterbalance (buttoned-up needs something loose or undone), contrast (fitted with relaxed, patterned with solid), palette harmony, your own fabric and shape rules, formality and warmth, scorecard cuts.
+- Saved outfits live on `/outfits` with the check that was true when saved. **Migration 0006 must be applied before deploying** (adds `outfits.name` and `outfits.composition`).
+
 ## Deploying without the CLI
 
 Vercel's GitHub app is only installed for the `gps-ezgift` org, so `Zraucher/personal-stylist` does not auto-deploy yet. Until that is installed, deploys go through the Vercel connector: compute SHA1 + size for every file under `src/` plus `package.json`, `next.config.ts`, `tsconfig.json`, call `upload_file` for each changed file, then `create_deployment` with `{file, sha, size}` references. Unchanged files are already in Vercel's store and need no upload.
