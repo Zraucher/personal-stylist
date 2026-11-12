@@ -1,8 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { saveItem, type ItemInput } from "./actions";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { saveItem, setItemPhoto, type ItemInput } from "./actions";
+import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/closet/compress";
+import { CLOSET_BUCKET } from "@/lib/closet/images";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -113,8 +116,14 @@ type Props = {
   tagNote?: string | null;
 };
 
-export default function ItemForm({ initial, itemId, imagePath, imageUrl, tagNote }: Props) {
+export default function ItemForm({ initial, itemId, imagePath: initialPath, imageUrl: initialUrl, tagNote }: Props) {
   const router = useRouter();
+  const [imagePath, setImagePath] = useState<string | null>(initialPath);
+  const [imageUrl, setImageUrl] = useState<string | null>(initialUrl);
+  const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const dragDepth = useRef(0);
   const [v, setV] = useState<ItemFormValues>(initial);
   const [note, setNote] = useState<string | null>(tagNote ?? null);
   const [error, setError] = useState<string | null>(null);
@@ -167,19 +176,129 @@ export default function ItemForm({ initial, itemId, imagePath, imageUrl, tagNote
     setRetagging(false);
   };
 
+  // Add or replace the photo from a file picker, a drop, or a paste.
+  const attachPhoto = async (file: File | undefined | null) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Signed out. Reload and sign in again.");
+      const { blob, type } = await compressImage(file);
+      const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from(CLOSET_BUCKET).upload(path, blob, { contentType: type, upsert: false });
+      if (upErr) throw new Error(upErr.message);
+      if (itemId) {
+        // Saved item: attach right away so the photo is not lost if the page is closed.
+        const r = await setItemPhoto(itemId, path);
+        if ("error" in r) {
+          await supabase.storage.from(CLOSET_BUCKET).remove([path]);
+          throw new Error(r.error);
+        }
+      }
+      setImagePath(path);
+      setImageUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(blob);
+      });
+      setNote("Photo added. Re-run auto tags if you want the fields read from it.");
+      if (itemId) router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Paste an image anywhere on the page. Text pastes into fields are left alone.
+  const attachRef = useRef(attachPhoto);
+  useEffect(() => {
+    attachRef.current = attachPhoto;
+  });
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const file = Array.from(e.clipboardData?.files ?? []).find((f) => f.type.startsWith("image/"));
+      if (!file) return;
+      e.preventDefault();
+      void attachRef.current(file);
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, []);
+
+  const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
+  const dropProps = {
+    onDragEnter: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepth.current += 1;
+      setDragging(true);
+    },
+    onDragOver: (e: React.DragEvent) => {
+      if (hasFiles(e)) e.preventDefault();
+    },
+    onDragLeave: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setDragging(false);
+    },
+    onDrop: (e: React.DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepth.current = 0;
+      setDragging(false);
+      void attachPhoto(e.dataTransfer.files[0]);
+    },
+  };
+
   const subs = SUBCATEGORIES[v.category] ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className={"relative space-y-6 " + (dragging ? "rounded-xl ring-2 ring-stone-900 ring-offset-8" : "")} {...dropProps}>
+      {dragging && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center rounded-xl bg-stone-900/10 pt-10">
+          <span className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white">
+            Drop to {imagePath ? "replace the" : "add a"} photo
+          </span>
+        </div>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          void attachPhoto(e.target.files?.[0]);
+          e.target.value = "";
+        }}
+      />
       <div className="flex gap-4">
-        <div className="h-36 w-36 shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-white">
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          title="Click, drop an image, or paste one"
+          className="relative block h-36 w-36 shrink-0 overflow-hidden rounded-xl border border-dashed border-stone-300 bg-white"
+        >
           {imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt="" className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full items-center justify-center text-xs text-stone-400">No photo</div>
+            <span className="flex h-full flex-col items-center justify-center gap-1 px-2 text-center text-xs text-stone-400">
+              <span>No photo</span>
+              <span className="text-stone-500">Drop, paste or click to add</span>
+            </span>
           )}
-        </div>
+          {(uploading || imageUrl) && (
+            <span className="absolute inset-x-0 bottom-0 bg-stone-900/70 py-1 text-center text-[11px] text-white">
+              {uploading ? "Uploading…" : "Replace"}
+            </span>
+          )}
+        </button>
         <div className="flex-1 space-y-2">
           <label className="block text-sm">
             <span className="text-stone-500">Name</span>

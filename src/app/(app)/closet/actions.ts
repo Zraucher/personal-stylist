@@ -89,6 +89,34 @@ export async function saveItem(raw: ItemInput, id?: string): Promise<SaveResult>
   return { id: data.id as string };
 }
 
+/** Attach a newly uploaded photo to a saved item, replacing (and deleting) any previous one. */
+export async function setItemPhoto(id: string, path: string): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Signed out" };
+  if (!path.startsWith(`${user.id}/`)) return { error: "Image does not belong to you" };
+
+  const { data: item } = await supabase.from("closet_items").select("image_path").eq("id", id).eq("user_id", user.id).maybeSingle();
+  if (!item) return { error: "Item not found" };
+
+  const { error } = await supabase
+    .from("closet_items")
+    .update({ image_path: path, source_image_url: null, source_page_url: null, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", user.id);
+  if (error) return { error: error.message };
+
+  if (item.image_path && item.image_path !== path) {
+    await supabase.storage.from(CLOSET_BUCKET).remove([item.image_path as string]);
+  }
+  revalidatePath("/closet");
+  revalidatePath(`/closet/${id}`);
+  revalidatePath("/closet/sourced");
+  return { ok: true };
+}
+
 export async function deleteItem(id: string): Promise<void> {
   const supabase = await createClient();
   const {
