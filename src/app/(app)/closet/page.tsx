@@ -30,6 +30,7 @@ export default async function ClosetPage() {
   }
 
   const withPhoto = items.filter((i) => i.image_path).length;
+  const sourced = items.filter((i) => !i.image_path && i.source_image_url).length;
 
   return (
     <div className="space-y-6">
@@ -53,6 +54,18 @@ export default async function ClosetPage() {
           </Link>
         </div>
       </div>
+
+      {sourced > 0 && (
+        <Link
+          href="/closet/sourced"
+          className="block rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:border-amber-500"
+        >
+          <span className="font-medium">
+            {sourced} product {sourced === 1 ? "photo" : "photos"} found online.
+          </span>{" "}
+          Review and add them →
+        </Link>
+      )}
 
       {items.length === 0 ? (
         <div className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center">

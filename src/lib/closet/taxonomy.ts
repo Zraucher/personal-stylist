@@ -175,6 +175,8 @@ export type ClosetItem = {
   id: string;
   user_id: string;
   image_path: string | null;
+  source_image_url?: string | null;
+  source_page_url?: string | null;
   generic_id: string | null;
   name: string | null;
   category: string | null;
