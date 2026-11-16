@@ -1,26 +1,113 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Valette, Second Look brand. The whole app is styled with Tailwind's stone, emerald,
+ * amber and red scales, so the brand is applied here by redefining those scales:
+ *   stone   -> Linen to Night, a warm neutral with a violet lean
+ *   emerald -> Go Green, which means "works on you"
+ *   amber   -> Marigold, for "almost", notes and deals
+ *   red     -> Clay, for "not for you" and errors
+ * Dark mode inverts the neutral scale (Night ground, Linen type) and lightens the accents,
+ * so every pairing used in light mode keeps its contrast in dark mode.
+ */
+@theme {
+  --color-white: #ffffff;
+  --color-stone-50: #fbf7f2;
+  --color-stone-100: #f5eee6;
+  --color-stone-200: #ece4d9;
+  --color-stone-300: #dcd2c6;
+  --color-stone-400: #a9a0ae;
+  --color-stone-500: #6b6577;
+  --color-stone-600: #55505f;
+  --color-stone-700: #3e3a4a;
+  --color-stone-800: #2a2738;
+  --color-stone-900: #1d1b2b;
+
+  --color-emerald-100: #dff0e6;
+  --color-emerald-400: #6fcf9f;
+  --color-emerald-600: #3a8f69;
+  --color-emerald-700: #2f7d5b;
+  --color-emerald-800: #24654a;
+  --color-emerald-900: #1a4a36;
+
+  --color-amber-50: #fdf3da;
+  --color-amber-100: #fbe8b8;
+  --color-amber-300: #f2d27e;
+  --color-amber-500: #f2c14e;
+  --color-amber-600: #d9a52c;
+  --color-amber-700: #8a6418;
+  --color-amber-800: #735312;
+  --color-amber-900: #5a400c;
+
+  --color-red-100: #f6ddd5;
+  --color-red-600: #b04e36;
+  --color-red-700: #9e432d;
+  --color-red-900: #6e2c1c;
+
+  --color-blush: #f3d4cf;
+  --color-sky-brand: #cfe0f0;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-figtree), ui-sans-serif, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --color-white: #26243a;
+    --color-stone-50: #1d1b2b;
+    --color-stone-100: #26243a;
+    --color-stone-200: #34314a;
+    --color-stone-300: #474360;
+    --color-stone-400: #7d7890;
+    --color-stone-500: #a9a3b8;
+    --color-stone-600: #c4bfd0;
+    --color-stone-700: #ddd8e4;
+    --color-stone-800: #eeeaf0;
+    --color-stone-900: #fbf7f2;
+
+    --color-emerald-100: #1e3a2e;
+    --color-emerald-400: #4fae80;
+    --color-emerald-600: #5fc290;
+    --color-emerald-700: #6fcf9f;
+    --color-emerald-800: #8ad9b1;
+    --color-emerald-900: #bfebd3;
+
+    --color-amber-50: #3a3220;
+    --color-amber-100: #4a3e22;
+    --color-amber-300: #8a7136;
+    --color-amber-500: #f2c14e;
+    --color-amber-600: #f2c14e;
+    --color-amber-700: #f2d58a;
+    --color-amber-800: #f2c14e;
+    --color-amber-900: #f6dfa0;
+
+    --color-red-100: #4a2a22;
+    --color-red-600: #e58a70;
+    --color-red-700: #e58a70;
+    --color-red-900: #f2b8a6;
+
+    --color-blush: #4a3540;
+    --color-sky-brand: #2c3a4e;
+    color-scheme: dark;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  body {
+    background: var(--color-stone-50);
+    color: var(--color-stone-900);
+    font-family: var(--font-sans);
+  }
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }

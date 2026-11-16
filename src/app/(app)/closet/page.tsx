@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
 import ItemPlaceholder from "@/lib/closet/placeholder";
 import { CATEGORIES, CATEGORY_LABELS, STATUS_LABELS, type ClosetItem } from "@/lib/closet/taxonomy";
+import { verdictClass, verdictLabel } from "@/lib/verdict";
 
 const LAYER = /hoodie|sweatshirt|jacket|cardigan|vest|coat|blazer|quarter-zip|overshirt/i;
 
@@ -119,12 +120,6 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
   );
 }
 
-const VERDICT_BADGE: Record<string, string> = {
-  keep: "bg-emerald-700 text-white",
-  cut: "bg-red-700 text-white",
-  provisional: "bg-stone-300 text-stone-800",
-};
-
 function ItemCard({ item, url, verdict }: { item: ClosetItem; url?: string; verdict?: string }) {
   return (
     <Link href={`/closet/${item.id}`} className="group overflow-hidden rounded-xl border border-stone-200 bg-white">
@@ -141,8 +136,8 @@ function ItemCard({ item, url, verdict }: { item: ClosetItem; url?: string; verd
           </span>
         )}
         {verdict && (
-          <span className={"absolute right-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-medium " + (VERDICT_BADGE[verdict] ?? "")}>
-            {verdict === "provisional" ? "Provisional" : verdict === "keep" ? "Keep" : "Cut"}
+          <span className={"absolute right-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-semibold " + verdictClass(verdict)}>
+            {verdictLabel(verdict, true)}
           </span>
         )}
       </div>

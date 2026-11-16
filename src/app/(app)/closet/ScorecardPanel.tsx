@@ -44,9 +44,9 @@ const DOT: Record<Status, string> = {
 };
 
 const VERDICT: Record<ScorecardRow["verdict"], { label: string; cls: string }> = {
-  keep: { label: "Keep", cls: "bg-emerald-700 text-white" },
-  cut: { label: "Cut", cls: "bg-red-700 text-white" },
-  provisional: { label: "Provisional", cls: "bg-stone-300 text-stone-800" },
+  keep: { label: "✓ works on you", cls: "bg-emerald-700 text-white" },
+  cut: { label: "✕ not for you", cls: "bg-red-700 text-white" },
+  provisional: { label: "◐ almost", cls: "bg-amber-500 text-stone-900" },
 };
 
 const ERRORS: Record<string, string> = {
