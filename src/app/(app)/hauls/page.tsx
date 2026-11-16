@@ -61,7 +61,7 @@ export default async function HaulsPage() {
                     {h.notes && <p className="truncate text-sm text-stone-500">{h.notes as string}</p>}
                   </div>
                   <p className="shrink-0 text-sm text-stone-500 tabular-nums">
-                    {c.n} {c.n === 1 ? "item" : "items"} · {c.keep} keep · {c.cut} cut
+                    {c.n} {c.n === 1 ? "item" : "items"} · {c.keep} work on you · {c.cut} not for you
                   </p>
                 </Link>
               </li>

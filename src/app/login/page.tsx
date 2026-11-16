@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { requestMagicLink, verifyCode, type LoginState } from "./actions";
+import Wordmark from "@/components/Wordmark";
 
 const initial: LoginState = { status: "idle" };
 
@@ -12,9 +13,11 @@ export default function LoginPage() {
   return (
     <main className="min-h-dvh flex items-center justify-center px-4 py-12 bg-stone-50 text-stone-900">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold tracking-tight">Personal Stylist</h1>
-        <p className="mt-1 text-sm text-stone-600">
-          Invite only. Enter your email and we&apos;ll send a sign-in code.
+        <h1 className="sr-only">valette</h1>
+        <Wordmark size={40} />
+        <p className="mt-3 font-display text-xl font-bold text-stone-900">Check it on you before you wear it.</p>
+        <p className="mt-2 text-sm text-stone-600">
+          Invite only for now. Enter your email and we&apos;ll send a sign-in code.
         </p>
 
         {state.status === "sent" ? (

@@ -72,7 +72,7 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
             <input type="checkbox" checked={tomorrow} onChange={(e) => setTomorrow(e.target.checked)} /> Plan for tomorrow
           </label>
         </div>
-        <button type="button" onClick={run} disabled={loading} className="w-full rounded-lg bg-stone-900 px-4 py-2.5 font-medium text-white disabled:opacity-60 sm:w-auto">
+        <button type="button" onClick={run} disabled={loading} className="w-full rounded-full bg-emerald-700 px-5 py-2.5 font-bold text-white disabled:opacity-60 sm:w-auto">
           {loading ? "Picking outfits…" : rec ? "Pick again" : "Pick three outfits"}
         </button>
         {error && <p className="text-sm text-red-700">{error}</p>}

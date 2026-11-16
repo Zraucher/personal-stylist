@@ -58,7 +58,7 @@ export default function AskClient({ initial }: { initial: RecommendationView | n
             </button>
           ))}
         </div>
-        <button type="submit" disabled={loading || text.trim().length < 3} className="rounded-lg bg-stone-900 px-4 py-2 font-medium text-white disabled:opacity-60">
+        <button type="submit" disabled={loading || text.trim().length < 3} className="rounded-full bg-emerald-700 px-5 py-2 font-bold text-white disabled:opacity-60">
           {loading ? "Thinking…" : "Ask"}
         </button>
         {error && <p className="text-sm text-red-700">{error}</p>}

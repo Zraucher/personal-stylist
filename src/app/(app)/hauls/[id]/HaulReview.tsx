@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/closet/compress";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
 import { deleteHaul, deleteHaulItem, setHaulItemStatus } from "../actions";
+import { verdictClass, verdictLabel } from "@/lib/verdict";
 
 export type HaulItemView = {
   id: string;
@@ -27,7 +28,6 @@ export type HaulItemView = {
 
 type Job = { key: string; label: string; state: "waiting" | "working" | "error"; error?: string };
 
-const BADGE: Record<string, string> = { keep: "bg-emerald-700 text-white", cut: "bg-red-700 text-white", provisional: "bg-stone-300 text-stone-800" };
 const DOT: Record<string, string> = { good: "bg-emerald-600", ok: "bg-emerald-400", caution: "bg-amber-500", fail: "bg-red-600", unknown: "bg-stone-300" };
 
 export default function HaulReview({ haulId, initial }: { haulId: string; initial: HaulItemView[] }) {
@@ -200,7 +200,7 @@ export default function HaulReview({ haulId, initial }: { haulId: string; initia
               ) : (
                 <div className="flex h-full items-center justify-center text-sm text-stone-400">No photo</div>
               )}
-              {it.verdict && <span className={"absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-medium " + (BADGE[it.verdict] ?? "")}>{it.verdict}</span>}
+              {it.verdict && <span className={"absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold " + verdictClass(it.verdict)}>{verdictLabel(it.verdict)}</span>}
             </div>
             <div className="space-y-2 p-3">
               <div>

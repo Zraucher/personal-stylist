@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { BottomTabs, TopNav } from "./NavTabs";
+import Wordmark from "@/components/Wordmark";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -21,8 +22,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh bg-stone-50 text-stone-900">
       <header className="sticky top-0 z-10 border-b border-stone-200 bg-stone-50/90 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <nav className="flex min-w-0 items-center gap-4 overflow-x-auto whitespace-nowrap text-sm">
-            <span className="font-semibold tracking-tight">Valette</span>
+          <nav className="flex min-w-0 items-center gap-4 overflow-x-auto overflow-y-hidden whitespace-nowrap py-1 text-sm">
+            <a href="/today" aria-label="valette home" className="shrink-0"><Wordmark size={22} /></a>
             <TopNav />
           </nav>
           <form action="/auth/signout" method="post" className="flex items-center gap-3 text-sm">

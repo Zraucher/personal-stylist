@@ -7,7 +7,7 @@ import type { RecommendationView } from "@/lib/today/recommend";
 import { respondToOutfit } from "./actions";
 
 type Fb = "wore" | "skipped" | "disliked" | "benchmark" | "failure";
-const FB_LABEL: Record<Fb, string> = { wore: "Wore it", skipped: "Skip", disliked: "Not me", benchmark: "This is so me", failure: "Felt like a costume" };
+const FB_LABEL: Record<Fb, string> = { wore: "wore it", skipped: "skip", disliked: "not me", benchmark: "this is so me", failure: "felt like a costume" };
 const PRIMARY: Fb[] = ["wore", "disliked"];
 const MORE: Fb[] = ["benchmark", "failure", "skipped"];
 
@@ -94,7 +94,7 @@ export default function RecommendationCards({ rec }: { rec: RecommendationView }
 
   const click = (outfitId: string, t: Fb) => (t === "disliked" || t === "failure" ? setNoteFor({ id: outfitId, type: t }) : send(outfitId, t));
   const chip = (on: boolean) =>
-    "rounded-full border px-3 py-1 disabled:opacity-60 " + (on ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white hover:border-stone-500");
+    "rounded-full border px-3 py-1 disabled:opacity-60 " + (on ? "border-emerald-700 bg-emerald-700 text-white" : "border-stone-300 bg-white hover:border-stone-500");
 
   return (
     <div className="space-y-4">
@@ -109,14 +109,16 @@ export default function RecommendationCards({ rec }: { rec: RecommendationView }
       {rec.picks.map((p, idx) => (
         <article key={p.outfitId} className={"rounded-xl border bg-white p-4 " + (chosen === p.outfitId ? "border-emerald-700" : "border-stone-200")}>
           <div className="flex items-baseline justify-between gap-3">
-            <h3 className="font-medium">
+            <h3 className="font-display text-lg font-bold">
               {idx + 1}. {p.name}
             </h3>
             {chosen === p.outfitId ? (
-              <span className="shrink-0 rounded-full bg-emerald-700 px-2 py-0.5 text-xs text-white">Wearing</span>
+              <span className="shrink-0 rounded-full bg-emerald-700 px-2.5 py-0.5 text-xs font-semibold text-white">✓ wearing it</span>
             ) : rec.relaxed ? (
-              <span className="shrink-0 rounded-full bg-stone-200 px-2 py-0.5 text-xs text-stone-700">Closest match</span>
-            ) : null}
+              <span className="shrink-0 rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-semibold text-stone-900">◐ closest match</span>
+            ) : (
+              <span className="shrink-0 rounded-full bg-emerald-700 px-2.5 py-0.5 text-xs font-semibold text-white">✓ works on you</span>
+            )}
           </div>
           {p.why && p.why !== p.headline && <p className="mt-1 text-sm text-stone-700">{p.why}</p>}
           <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">

@@ -114,7 +114,7 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
                         {i.subcategory ?? i.category}
                       </div>
                     )}
-                    {i.verdict === "cut" && <span className="absolute right-1 top-1 rounded-full bg-red-700 px-1.5 text-[10px] text-white">Cut</span>}
+                    {i.verdict === "cut" && <span className="absolute right-1 top-1 rounded-full bg-red-700 px-1.5 text-[10px] text-white">✕ not for you</span>}
                   </div>
                   <p className="truncate p-1.5 text-xs">{i.name}</p>
                 </button>
