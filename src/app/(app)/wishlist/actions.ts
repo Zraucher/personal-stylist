@@ -91,3 +91,19 @@ export async function upcomingStatus(id: string, status: "open" | "styled" | "do
   revalidatePath("/wishlist");
   return { ok: true };
 }
+
+/** Start or stop watching a find's price. Starting records today's price as the baseline. */
+export async function setWatch(id: string, watch: boolean): Promise<R> {
+  const { supabase, user } = await me();
+  if (!user) return { ok: false, error: "Signed out" };
+  const { data: row } = await supabase.from("wishlist_candidates").select("price, first_price").eq("id", id).eq("user_id", user.id).maybeSingle();
+  if (!row) return { ok: false, error: "Not found" };
+  const patch: Record<string, unknown> = { watch };
+  if (watch) {
+    patch.state = "saved";
+    if (row.first_price == null && row.price != null) patch.first_price = row.price;
+  }
+  const { error } = await supabase.from("wishlist_candidates").update(patch).eq("id", id).eq("user_id", user.id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}

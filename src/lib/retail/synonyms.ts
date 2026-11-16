@@ -27,13 +27,33 @@ export function synonymsFor(color: string): string[] {
   return [...new Set([clean, ...(fam ? fam[1] : [])])];
 }
 
-/** A few distinct search color words drawn from a palette (or an explicit color list). */
+/** The color family, judged by the last word first: "midnight black" is black, not navy. */
+function familyOf(color: string): number {
+  const clean = color.toLowerCase().replace(/\(.*?\)/g, "").trim();
+  const last = clean.split(/\s+/).pop() ?? "";
+  const byLast = FAMILIES.findIndex(([re]) => re.test(last));
+  return byLast >= 0 ? byLast : FAMILIES.findIndex(([re]) => re.test(clean));
+}
+
+/**
+ * A few distinct search color words drawn from a palette (or an explicit color list): one per
+ * color family first ("black" and "onyx" are one search), then synonyms if there is room.
+ */
 export function searchColors(colors: string[], max = 3): string[] {
   const out: string[] = [];
+  const families = new Set<number>();
+  for (const c of colors) {
+    const fam = familyOf(c);
+    if (fam >= 0 && families.has(fam)) continue;
+    if (fam >= 0) families.add(fam);
+    const word = synonymsFor(c)[0];
+    if (word && !out.includes(word)) out.push(word);
+    if (out.length >= max) return out;
+  }
   for (const c of colors) {
     for (const s of synonymsFor(c)) {
-      if (!out.includes(s)) out.push(s);
       if (out.length >= max) return out;
+      if (!out.includes(s)) out.push(s);
     }
   }
   return out;

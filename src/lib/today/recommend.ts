@@ -4,7 +4,7 @@ import { z } from "zod";
 import { AiError, MODELS, aiAvailable, structured } from "@/lib/ai/claude";
 import { describeStyle, loadStyleContext } from "@/lib/profile/context";
 import { signedImageUrls } from "@/lib/closet/images";
-import { buildCandidates, OCCASIONS, seasonFor, type Candidate, type ClosetPiece, type Occasion } from "./candidates";
+import { buildCandidates, OCCASIONS, outfitName, seasonFor, type Candidate, type ClosetPiece, type Occasion } from "./candidates";
 import { forecast, geocode, localDate, statedWeather, summarize, type HourWindow, type WeatherSummary } from "./weather";
 
 const list = (xs: unknown): string[] => (Array.isArray(xs) ? xs.filter((x): x is string => typeof x === "string") : []);
@@ -49,7 +49,7 @@ export type RecommendationView = {
 
 const PickSchema = z.object({
   picks: z
-    .array(z.object({ index: z.number().int().describe("Candidate number from the list."), why: z.string().describe("One short sentence: why this works today, naming a piece.") }))
+    .array(z.object({ index: z.number().int().describe("Candidate number from the list."), name: z.string().describe("Two to four words naming the look, e.g. 'Polished steakhouse night' or 'Easy golf morning'. No piece names."), why: z.string().describe("One short sentence: why this works today, naming a piece.") }))
     .describe("Up to three different candidates, best first."),
   note: z.string().nullable().describe("One short sentence if something about the day or the closet is worth flagging, else null."),
 });
@@ -149,7 +149,7 @@ export async function recommend(supabase: SupabaseClient, userId: string, input:
     ctx.scoreStyle
   );
 
-  let picks: Array<{ c: Candidate; why: string }> = [];
+  let picks: Array<{ c: Candidate; why: string; name?: string }> = [];
   let note: string | null = null;
   if (result.candidates.length) {
     if (aiAvailable()) {
@@ -174,7 +174,7 @@ export async function recommend(supabase: SupabaseClient, userId: string, input:
         for (const p of answer.picks) {
           if (p.index < 0 || p.index >= result.candidates.length || seen.has(p.index)) continue;
           seen.add(p.index);
-          picks.push({ c: result.candidates[p.index], why: p.why });
+          picks.push({ c: result.candidates[p.index], why: p.why, name: p.name.trim().slice(0, 60) || undefined });
           if (picks.length === 3) break;
         }
         note = answer.note;
@@ -187,7 +187,7 @@ export async function recommend(supabase: SupabaseClient, userId: string, input:
 
   const outfitIds: string[] = [];
   for (const p of picks) {
-    const name = p.c.items.map((i) => i.name ?? i.subcategory ?? "piece").slice(0, 3).join(" + ");
+    const name = p.name ?? outfitName(p.c.items);
     const { data: o } = await supabase
       .from("outfits")
       .insert({

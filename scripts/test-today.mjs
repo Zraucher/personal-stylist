@@ -114,3 +114,10 @@ test("picks differ by at least two pieces when the closet allows it", () => {
   const shared = a.items.filter((x) => b.items.includes(x)).length;
   assert.ok(a.items.length - shared >= 2, "first two picks should differ by two or more pieces");
 });
+
+import { outfitName } from "../src/lib/today/candidates.ts";
+
+test("outfit names are short and readable", () => {
+  assert.equal(outfitName([polo, trousers, sneakers]), "Polo, trousers and sneakers");
+  assert.equal(outfitName([tee]), "Tee");
+});

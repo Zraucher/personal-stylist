@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
   // A handful of queries: color synonyms, then loved brands. Capped so a run stays cheap.
   const queries = [
-    ...colors.map((c) => `${gender} ${c} ${what} ${kw} buy`.replace(/\s+/g, " ").trim()),
+    ...colors.map((c) => `${gender} ${c} ${what} ${kw}`.replace(/\s+/g, " ").trim()),
     ...brands.map((b) => `${b} ${gender} ${what}`.replace(/\s+/g, " ").trim()),
   ].slice(0, 5);
 
