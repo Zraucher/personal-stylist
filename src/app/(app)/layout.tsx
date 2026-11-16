@@ -1,15 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-
-const NAV = [
-  { href: "/today", label: "Today" },
-  { href: "/closet", label: "Closet" },
-  { href: "/outfits", label: "Outfits" },
-  { href: "/ask", label: "Ask" },
-  { href: "/hauls", label: "Shop" },
-  { href: "/profile", label: "Profile" },
-];
+import { BottomTabs, TopNav } from "./NavTabs";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -31,12 +22,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-10 border-b border-stone-200 bg-stone-50/90 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <nav className="flex min-w-0 items-center gap-4 overflow-x-auto whitespace-nowrap text-sm">
-            <span className="font-semibold tracking-tight">Stylist</span>
-            {NAV.map((n) => (
-              <Link key={n.href} href={n.href} className="text-stone-600 hover:text-stone-900">
-                {n.label}
-              </Link>
-            ))}
+            <span className="font-semibold tracking-tight">Valette</span>
+            <TopNav />
           </nav>
           <form action="/auth/signout" method="post" className="flex items-center gap-3 text-sm">
             <span className="hidden text-stone-500 sm:inline">{who}</span>
@@ -46,7 +33,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </form>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 py-6">{children}</main>
+      <main className="mx-auto max-w-3xl px-4 pb-24 pt-6 sm:pb-6">{children}</main>
+      <BottomTabs />
     </div>
   );
 }

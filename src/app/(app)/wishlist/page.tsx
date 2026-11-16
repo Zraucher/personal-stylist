@@ -17,7 +17,8 @@ export default async function WishlistPage({ searchParams }: { searchParams: Pro
 
   const wishViews: WishView[] = (wishes ?? []).map((w) => ({
     id: w.id as string,
-    title: ((w.title as string | null) ?? (w.category as string)) || "Wish",
+    // Seeded entries carry planning labels like "Tier 1 shoes"; show just the piece.
+    title: (((w.title as string | null) ?? (w.category as string)) || "Wish").replace(/^tiers*d+s*/i, "") || "Wish",
     preferences: (w.preferences as string | null) ?? null,
     budget: (w.budget as string | null) ?? null,
     colors: Array.isArray(w.colors) ? (w.colors as string[]) : [],

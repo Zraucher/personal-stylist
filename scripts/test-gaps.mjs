@@ -38,3 +38,9 @@ test("gaps are sorted by outfits added", () => {
   const { gaps } = findGaps(closet, "mens", palette, style);
   for (let i = 1; i < gaps.length; i++) assert.ok(gaps[i - 1].added >= gaps[i].added);
 });
+
+import { gapLabel } from "../src/lib/gaps/unlock.ts";
+
+test("gap labels read cleanly and one suggestion per piece type", () => {
+  assert.equal(gapLabel({ piece: { name: "khaki chinos" }, added: 3, scenarios: [] }), "Khaki chinos");
+});

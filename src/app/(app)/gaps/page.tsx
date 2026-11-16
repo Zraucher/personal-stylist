@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { loadStyleContext } from "@/lib/profile/context";
 import { loadCloset } from "@/lib/today/recommend";
-import { findGaps, SCENARIOS } from "@/lib/gaps/unlock";
+import { findGaps, gapLabel, SCENARIOS } from "@/lib/gaps/unlock";
 import ItemPlaceholder from "@/lib/closet/placeholder";
 
 // A suggestion appears only when it is quantified and worth it.
@@ -20,8 +20,8 @@ export default async function GapsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/hauls" className="text-sm text-stone-500 hover:text-stone-900">
-          ← Shop
+        <Link href="/closet" className="text-sm text-stone-500 hover:text-stone-900">
+          ← Closet
         </Link>
         <h1 className="mt-1 text-xl font-semibold tracking-tight">Closet gaps</h1>
         <p className="text-sm text-stone-500">
@@ -42,7 +42,7 @@ export default async function GapsPage() {
               </div>
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="font-medium">
-                  {i + 1}. A {g.piece.name?.toLowerCase()} unlocks {g.added} new {g.added === 1 ? "outfit" : "outfits"}
+                  {i + 1}. {gapLabel(g)}: {g.added} new {g.added === 1 ? "outfit" : "outfits"}
                 </p>
                 <p className="text-sm text-stone-600">Mostly for {g.scenarios.join(", ")}.</p>
                 <Link

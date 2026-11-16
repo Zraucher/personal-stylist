@@ -87,3 +87,30 @@ test("excluding a dress keeps dress shirts", () => {
   const office = buildCandidates(closet, mild, { occasion: "office", exclude: ["dress"], today: "2026-11-16" }, palette, style);
   assert.ok(office.candidates.some((c) => c.items.includes(shirt)), "the dress shirt should survive a 'no dress' request");
 });
+
+test("a light polo works on a cool evening when a layer goes over it", () => {
+  const cool = { feelsMin: 48, feelsMax: 51, season: "fall" };
+  const warmBottom = piece({ name: "Golf pants", category: "bottom", subcategory: "golf pants", formality: 2, warmth: 3 });
+  const r = buildCandidates([polo, warmBottom, sneakers, hoodie], cool, { occasion: "casual", today: "2026-11-16" }, palette, style);
+  assert.ok(r.candidates.some((c) => c.items.includes(polo) && c.items.includes(hoodie)));
+});
+
+test("when nothing passes the strict rules, the closest outfits come back marked relaxed", () => {
+  // Office wants dress level 3-4; only casual pieces exist.
+  const r = buildCandidates([tee, shorts, sneakers], hot, { occasion: "dinner", today: "2026-11-16" }, palette, style);
+  assert.ok(r.relaxed, "should fall back to relaxed picks");
+  assert.ok(r.candidates.length > 0);
+  assert.ok(r.missing.length > 0, "the strict missing list is kept");
+  const strict = buildCandidates(closet, hot, { occasion: "casual", today: "2026-11-16" }, palette, style);
+  assert.ok(!strict.relaxed);
+});
+
+test("picks differ by at least two pieces when the closet allows it", () => {
+  const tee2 = piece({ name: "Navy tee", category: "top", subcategory: "tee", colors: [{ name: "navy" }], warmth: 1 });
+  const shorts2 = piece({ name: "Black shorts", category: "bottom", subcategory: "shorts", warmth: 1 });
+  const sneakers2 = piece({ name: "Black sneakers", category: "shoes", subcategory: "sneakers", warmth: null });
+  const r = buildCandidates([tee, tee2, shorts, shorts2, sneakers, sneakers2], hot, { occasion: "casual", today: "2026-11-16" }, palette, style);
+  const [a, b] = r.candidates;
+  const shared = a.items.filter((x) => b.items.includes(x)).length;
+  assert.ok(a.items.length - shared >= 2, "first two picks should differ by two or more pieces");
+});

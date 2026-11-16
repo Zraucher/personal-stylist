@@ -32,13 +32,10 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
   const byId = new Map(groups.flatMap((g) => g.items).map((i) => [i.id, i]));
 
   useEffect(() => {
-    if (picked.length === 0) {
-      setComposition(null);
-      return;
-    }
+    if (picked.length === 0) return;
     const mine = ++seq.current;
-    setChecking(true);
     const t = setTimeout(async () => {
+      setChecking(true);
       const res = await checkOutfitAction(picked);
       if (mine !== seq.current) return;
       setChecking(false);
@@ -89,7 +86,7 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
             );
           })}
         </div>
-        {composition && <div className={checking ? "opacity-60 transition-opacity" : "transition-opacity"}><CompositionPanel composition={composition} /></div>}
+        {picked.length > 0 && composition && <div className={checking ? "opacity-60 transition-opacity" : "transition-opacity"}><CompositionPanel composition={composition} /></div>}
       </div>
 
       {groups.map((g) => (

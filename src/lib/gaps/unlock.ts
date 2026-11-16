@@ -69,6 +69,12 @@ export function hypotheticals(closet: ClosetPiece[], presentation: Presentation 
   return out;
 }
 
+/** "khaki chinos" -> "Khaki chinos". */
+export function gapLabel(g: Gap): string {
+  const n = (g.piece.name ?? g.piece.subcategory ?? "piece").trim();
+  return n.charAt(0).toUpperCase() + n.slice(1);
+}
+
 export function findGaps(
   closet: ClosetPiece[],
   presentation: Presentation | "both",
@@ -96,5 +102,13 @@ export function findGaps(
     if (added > 0) gaps.push({ piece, added, scenarios: where });
   }
   gaps.sort((a, b) => b.added - a.added);
-  return { base, gaps: gaps.slice(0, opts.top ?? 5) };
+  // One suggestion per piece type: "black joggers" and "onyx joggers" are the same idea.
+  const seenType = new Set<string>();
+  const unique = gaps.filter((g) => {
+    const k = (g.piece.subcategory ?? g.piece.name ?? "").toLowerCase();
+    if (seenType.has(k)) return false;
+    seenType.add(k);
+    return true;
+  });
+  return { base, gaps: unique.slice(0, opts.top ?? 5) };
 }
