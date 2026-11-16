@@ -4,14 +4,21 @@ import { signedImageUrls } from "@/lib/closet/images";
 import ItemPlaceholder from "@/lib/closet/placeholder";
 import { CATEGORIES, CATEGORY_LABELS, STATUS_LABELS, type ClosetItem } from "@/lib/closet/taxonomy";
 
-export default async function ClosetPage() {
+const LAYER = /hoodie|sweatshirt|jacket|cardigan|vest|coat|blazer|quarter-zip|overshirt/i;
+
+export default async function ClosetPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const { q } = await searchParams;
+  const query = (q ?? "").trim().toLowerCase();
   const supabase = await createClient();
   const { data } = await supabase
     .from("closet_items")
     .select("*")
     .neq("status", "gone")
     .order("created_at", { ascending: false });
-  const items = (data ?? []) as ClosetItem[];
+  const all = (data ?? []) as ClosetItem[];
+  const items = query
+    ? all.filter((i) => [i.name, i.brand, i.subcategory, i.category, ...(i.colors ?? []).map((c) => c.name)].some((v) => (v ?? "").toLowerCase().includes(query)))
+    : all;
   const urls = await signedImageUrls(
     supabase,
     items.map((i) => i.image_path)
@@ -25,7 +32,8 @@ export default async function ClosetPage() {
   const groups = new Map<string, ClosetItem[]>();
   for (const c of CATEGORIES) groups.set(c, []);
   for (const item of items) {
-    const key = item.category && groups.has(item.category) ? item.category : "other";
+    // Hoodies and jackets saved under another category still belong with outerwear.
+    const key = item.category !== "outerwear" && item.category !== "top" && LAYER.test(item.subcategory ?? "") ? "outerwear" : item.category && groups.has(item.category) ? item.category : "other";
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(item);
   }
@@ -39,8 +47,8 @@ export default async function ClosetPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Closet</h1>
           <p className="text-sm text-stone-500">
-            {items.length} {items.length === 1 ? "item" : "items"}
-            {items.length > 0 && `, ${withPhoto} with photos`}
+            {all.length} {all.length === 1 ? "item" : "items"}
+            {all.length > 0 && `, ${withPhoto} with photos`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -56,6 +64,20 @@ export default async function ClosetPage() {
         </div>
       </div>
 
+      {all.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <form action="/closet" className="min-w-0 flex-1">
+            <input name="q" defaultValue={q ?? ""} placeholder="Search by name, brand or color" className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base" />
+          </form>
+          <Link href="/gaps" className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm hover:border-stone-500">What to buy next</Link>
+        </div>
+      )}
+      {query && (
+        <p className="text-sm text-stone-500">
+          {items.length} {items.length === 1 ? "match" : "matches"} for “{q}”. <Link href="/closet" className="underline">Clear</Link>
+        </p>
+      )}
+
       {sourced > 0 && (
         <Link
           href="/closet/sourced"
@@ -68,7 +90,7 @@ export default async function ClosetPage() {
         </Link>
       )}
 
-      {items.length === 0 ? (
+      {all.length === 0 ? (
         <div className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center">
           <p className="font-medium">Nothing here yet</p>
           <p className="mt-1 text-sm text-stone-600">
@@ -82,7 +104,7 @@ export default async function ClosetPage() {
           .map(([key, list]) => (
             <section key={key}>
               <h2 className="mb-2 text-sm font-medium text-stone-500">
-                {key in CATEGORY_LABELS ? CATEGORY_LABELS[key as keyof typeof CATEGORY_LABELS] : "Other"}{" "}
+                {key === "outerwear" ? "Outerwear & layers" : key in CATEGORY_LABELS ? CATEGORY_LABELS[key as keyof typeof CATEGORY_LABELS] : "Other"}{" "}
                 <span className="text-stone-400">{list.length}</span>
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -127,7 +149,7 @@ function ItemCard({ item, url, verdict }: { item: ClosetItem; url?: string; verd
       <div className="p-2.5">
         <p className="truncate text-sm font-medium">{item.name ?? "Untitled"}</p>
         <div className="mt-1 flex items-center justify-between">
-          <p className="truncate text-xs text-stone-500">{item.brand ?? item.subcategory ?? ""}</p>
+          <p className="truncate text-xs text-stone-500">{[item.brand ?? item.subcategory, item.colors[0]?.name].filter(Boolean).join(" · ")}</p>
           <div className="flex gap-1">
             {item.colors.slice(0, 4).map((c, i) => (
               <span

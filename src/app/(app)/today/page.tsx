@@ -21,6 +21,7 @@ export default async function TodayPage() {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  const { count: closetSize } = await supabase.from("closet_items").select("id", { count: "exact", head: true }).eq("user_id", uid).neq("status", "gone");
   const initial = latest ? await loadRecommendation(supabase, uid, latest.id as string) : null;
   const fresh = initial && initial.weather?.date === today ? initial : null;
 
@@ -30,7 +31,7 @@ export default async function TodayPage() {
         <h1 className="text-xl font-semibold tracking-tight">Today</h1>
         <p className="text-sm text-stone-500">Three outfits from your closet for the weather and where you are going.</p>
       </div>
-      <TodayClient initial={fresh} />
+      <TodayClient initial={fresh} closetSize={closetSize ?? 0} />
     </div>
   );
 }

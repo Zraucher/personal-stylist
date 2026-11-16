@@ -40,6 +40,8 @@ export type RecommendationView = {
   createdAt: string;
   weather: WeatherSummary | null;
   missing: string[];
+  relaxed: boolean;
+  closetSize: number;
   note: string | null;
   chosenOutfitId: string | null;
   picks: PickView[];
@@ -161,6 +163,7 @@ export async function recommend(supabase: SupabaseClient, userId: string, input:
             input.prompt ? `Their request: "${input.prompt}"` : `Occasion: ${occ.label}.`,
             `Weather for the hours outside (${weather.hours.join(", ")}): feels like ${weather.feelsMin} to ${weather.feelsMax}°F, rain chance ${weather.rainMax}%, UV ${weather.uvMax}${input.indoorCold ? ", and indoor air will be cold" : ""}.${weather.source === "default" ? " (No forecast; assume a mild day.)" : ""}`,
             input.extraContext ?? "",
+            result.relaxed ? "Nothing in the closet fully fits the day, so these are the closest options. Say plainly what is off (too casual, too light) in the line." : "",
             "Candidates:",
             ...result.candidates.map(describeCandidate),
           ]
@@ -209,7 +212,7 @@ export async function recommend(supabase: SupabaseClient, userId: string, input:
       kind: input.kind,
       occasion: occ.id,
       prompt: input.prompt ?? null,
-      constraints: { hours: input.hours, indoorCold: input.indoorCold, band: input.band ?? occ.band, exclude: input.exclude ?? [], missing: result.missing, note, weather },
+      constraints: { hours: input.hours, indoorCold: input.indoorCold, band: input.band ?? occ.band, exclude: input.exclude ?? [], missing: result.missing, relaxed: !!result.relaxed, closetSize: closet.length, note, weather },
       candidates: picks.map((p, i) => ({
         outfit_id: outfitIds[i],
         item_ids: p.c.items.map((x) => x.id),
@@ -236,7 +239,7 @@ export async function loadRecommendation(supabase: SupabaseClient, userId: strin
     : { data: [] as Array<Record<string, unknown>> };
   const byId = new Map((rows ?? []).map((r) => [r.id as string, r]));
   const urls = await signedImageUrls(supabase, (rows ?? []).map((r) => r.image_path as string | null));
-  const cons = (rec.constraints ?? {}) as { missing?: string[]; note?: string | null; weather?: WeatherSummary };
+  const cons = (rec.constraints ?? {}) as { missing?: string[]; relaxed?: boolean; closetSize?: number; note?: string | null; weather?: WeatherSummary };
   const { data: outfits } = cands.length ? await supabase.from("outfits").select("id, name").in("id", cands.map((c) => c.outfit_id)) : { data: [] as Array<Record<string, unknown>> };
   const names = new Map((outfits ?? []).map((o) => [o.id as string, (o.name as string) ?? "Outfit"]));
   return {
@@ -247,6 +250,8 @@ export async function loadRecommendation(supabase: SupabaseClient, userId: strin
     createdAt: rec.created_at as string,
     weather: cons.weather ?? null,
     missing: cons.missing ?? [],
+    relaxed: !!cons.relaxed,
+    closetSize: cons.closetSize ?? 99,
     note: cons.note ?? null,
     chosenOutfitId: (rec.chosen_outfit_id as string | null) ?? null,
     picks: cands.map((c) => ({

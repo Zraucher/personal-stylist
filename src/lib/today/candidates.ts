@@ -49,7 +49,8 @@ export type Candidate = {
   layered: boolean;
 };
 
-export type CandidateResult = { candidates: Candidate[]; missing: string[]; considered: number };
+/** `relaxed` means nothing passed the strict rules and these are the closest outfits. */
+export type CandidateResult = { candidates: Candidate[]; missing: string[]; considered: number; relaxed?: boolean };
 
 /** Target warmth (1 hot weather ... 5 cold) for a feels-like temperature. */
 export function targetWarmth(feelsF: number): number {
@@ -90,18 +91,35 @@ function daysSince(date: string | null | undefined, today: string): number {
   return Number.isFinite(ms) ? Math.max(0, Math.round(ms / 86400000)) : 60;
 }
 
-/** Can this piece be worn today? Unknown warmth or formality is allowed through. */
-export function wearable(p: ClosetPiece, day: DayConditions, band: [number, number], role: "core" | "layer"): boolean {
+/**
+ * Can this piece be worn today? Unknown warmth or formality is allowed through.
+ * `layered`: a layer will go over it, so a lighter core piece is fine (a polo under a jacket).
+ * `loose`: the relaxed pass, which ignores warmth and season and widens the dress level by one.
+ */
+export function wearable(
+  p: ClosetPiece,
+  day: DayConditions,
+  band: [number, number],
+  role: "core" | "layer",
+  opts: { layered?: boolean; loose?: boolean } = {}
+): boolean {
   if (p.status && p.status !== "available") return false;
   if (p.verdict === "cut") return false;
-  if (p.seasons && p.seasons.length && !p.seasons.includes("all") && !p.seasons.includes(day.season)) return false;
-  if (p.formality != null && (p.formality < band[0] - (role === "layer" ? 1 : 0) || p.formality > band[1] + (isShoe(p) ? 1 : 0))) return false;
-  if (p.warmth != null && role === "core") {
+  const slack = opts.loose ? 1 : 0;
+  if (!opts.loose && p.seasons && p.seasons.length && !p.seasons.includes("all") && !p.seasons.includes(day.season)) return false;
+  if (p.formality != null && (p.formality < band[0] - slack - (role === "layer" ? 1 : 0) || p.formality > band[1] + slack + (isShoe(p) ? 1 : 0))) return false;
+  if (!opts.loose && p.warmth != null && role === "core") {
     // Core pieces suit the warmest hours; a layer covers the cool ones.
     const t = targetWarmth(day.feelsMax);
-    if (Math.abs(p.warmth - t) > 1) return false;
+    if (p.warmth > t + 1) return false;
+    if (p.warmth < t - 1 && !opts.layered) return false;
   }
   return true;
+}
+
+/** How many pieces two outfits share. */
+function overlap(a: Candidate, b: Candidate): number {
+  return a.items.filter((x) => b.items.some((y) => y.id === x.id)).length;
 }
 
 function needsLayer(day: DayConditions): boolean {
@@ -135,7 +153,22 @@ export function buildCandidates(
   cons: Constraints,
   palette: ScoreColorProfile,
   style: ScoreStyle,
-  opts: { limit?: number; perRole?: number; countOnly?: boolean } = {}
+  opts: { limit?: number; perRole?: number; countOnly?: boolean; loose?: boolean } = {}
+): CandidateResult {
+  const strict = buildStrict(closet, day, cons, palette, style, opts);
+  if (strict.candidates.length || opts.countOnly || opts.loose) return strict;
+  // Nothing passed: offer the closest outfits instead of nothing, and keep the strict "missing" list.
+  const loose = buildStrict(closet, day, cons, palette, style, { ...opts, loose: true });
+  return loose.candidates.length ? { ...loose, missing: strict.missing, relaxed: true } : strict;
+}
+
+function buildStrict(
+  closet: ClosetPiece[],
+  day: DayConditions,
+  cons: Constraints,
+  palette: ScoreColorProfile,
+  style: ScoreStyle,
+  opts: { limit?: number; perRole?: number; countOnly?: boolean; loose?: boolean }
 ): CandidateResult {
   const today = cons.today ?? new Date().toISOString().slice(0, 10);
   const band = cons.band ?? OCCASIONS.find((o) => o.id === cons.occasion)?.band ?? [1, 5];
@@ -145,8 +178,11 @@ export function buildCandidates(
   const must = new Set(cons.mustInclude ?? []);
   const per = opts.perRole ?? 8;
 
+  const layerNeeded = needsLayer(day);
+  const haveLayer = allowed.some((p) => isLayer(p) && wearable(p, day, band, "layer", { loose: opts.loose }));
+  const layered = layerNeeded && haveLayer;
   const pick = (pred: (p: ClosetPiece) => boolean, role: "core" | "layer") => {
-    const all = allowed.filter((p) => pred(p) && wearable(p, day, band, role));
+    const all = allowed.filter((p) => pred(p) && wearable(p, day, band, role, { layered, loose: opts.loose }));
     const forced = all.filter((p) => must.has(p.id));
     return [...forced, ...shortlist(all.filter((p) => !must.has(p.id)), per - forced.length, today)];
   };
@@ -162,7 +198,7 @@ export function buildCandidates(
     if (!bottoms.length) missing.push(`bottoms for ${Math.round(day.feelsMax)}°F at this dress level`);
   }
   if (!shoes.length) missing.push("shoes that suit this occasion");
-  const layer = needsLayer(day);
+  const layer = layerNeeded;
   if (layer && !layers.length) missing.push(day.indoorCold ? "a light layer for cold indoor air" : "a layer for the cooler hours");
 
   const bases: ClosetPiece[][] = [];
@@ -181,24 +217,24 @@ export function buildCandidates(
         considered++;
         if (considered > 4000) break;
         const comp = checkOutfit(items, palette, style);
-        if (comp.overall === "rework" || (comp.overall === "incomplete" && shoes.length)) continue;
+        if ((comp.overall === "rework" && !opts.loose) || (comp.overall === "incomplete" && shoes.length)) continue;
         out.push({ items, composition: comp, score: rankOne(items, comp, band, today), layered: !!ly });
       }
     }
   }
   if (opts.countOnly) return { candidates: out, missing, considered };
 
-  // Diversify: best first, then at most two candidates per top or dress.
+  // Diversify: best first; each new pick must differ from every earlier one by at least two
+  // pieces. If that leaves too few, top up allowing a one-piece difference.
   out.sort((a, b) => b.score - a.score);
   const limit = opts.limit ?? 12;
-  const used = new Map<string, number>();
   const picked: Candidate[] = [];
-  for (const c of out) {
-    const key = c.items[0].id;
-    if ((used.get(key) ?? 0) >= 2) continue;
-    used.set(key, (used.get(key) ?? 0) + 1);
-    picked.push(c);
-    if (picked.length >= limit) break;
+  for (const minDiff of [2, 1]) {
+    for (const c of out) {
+      if (picked.length >= limit) break;
+      if (picked.includes(c)) continue;
+      if (picked.every((p) => Math.max(c.items.length, p.items.length) - overlap(c, p) >= minDiff)) picked.push(c);
+    }
   }
   return { candidates: picked, missing, considered };
 }

@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { OCCASIONS, type Occasion } from "@/lib/today/candidates";
 import type { RecommendationView } from "@/lib/today/recommend";
+import Link from "next/link";
 import RecommendationCards from "./RecommendationCards";
 
 type Hour = "morning" | "midday" | "evening";
 
-export default function TodayClient({ initial }: { initial: RecommendationView | null }) {
+export default function TodayClient({ initial, closetSize }: { initial: RecommendationView | null; closetSize: number }) {
   const [occasion, setOccasion] = useState<Occasion>((initial?.occasion as Occasion) ?? "casual");
   const [hours, setHours] = useState<Hour[]>(["morning", "midday", "evening"]);
   const [indoorCold, setIndoorCold] = useState(false);
@@ -79,6 +80,15 @@ export default function TodayClient({ initial }: { initial: RecommendationView |
 
       {rec ? (
         <RecommendationCards key={rec.id} rec={rec} />
+      ) : closetSize < 8 ? (
+        <div className="space-y-2 rounded-xl border border-dashed border-stone-300 bg-white p-4 text-sm">
+          <p className="font-medium">Your closet has {closetSize} {closetSize === 1 ? "piece" : "pieces"} so far.</p>
+          <p className="text-stone-600">Outfits need a top, a bottom and shoes at least. Tick the basics you own; it takes a minute.</p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Link href="/closet/basics" className="rounded-lg bg-stone-900 px-3 py-1.5 text-white">Tick your basics</Link>
+            <Link href="/closet/new" className="rounded-lg border border-stone-300 px-3 py-1.5">Add a piece</Link>
+          </div>
+        </div>
       ) : (
         <p className="text-sm text-stone-500">Choose where you are going and get three outfits from your own closet, matched to the weather.</p>
       )}
