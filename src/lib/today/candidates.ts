@@ -66,6 +66,16 @@ export function seasonFor(date: Date): DayConditions["season"] {
 }
 
 const word = (s: string | null | undefined) => (s ?? "").toLowerCase();
+/** "dresses" -> "dress", "jeans" stays "jeans", "shorts" stays "shorts", "shirts" -> "shirt". */
+export function singular(s: string): string {
+  const w = s.toLowerCase().trim();
+  if (/^(jeans|shorts|pants|trousers|leggings|joggers|chinos|sweatpants|trunks|sunglasses|glasses|briefs|boxers)$/.test(w)) return w;
+  if (/(ss|sh|ch|x)es$/.test(w)) return w.slice(0, -2);
+  if (/ss$/.test(w)) return w;
+  if (/s$/.test(w)) return w.slice(0, -1);
+  return w;
+}
+const head = (s: string | null | undefined) => singular((s ?? "").trim().split(/\s+/).pop() ?? "");
 const isLayer = (p: ClosetPiece) =>
   ["outerwear", "layer"].includes(word(p.category)) ||
   /hoodie|sweatshirt|quarter-zip|cardigan|overshirt|jacket|blazer|coat|vest/.test(word(p.subcategory)) && word(p.category) !== "bottom";
@@ -129,8 +139,9 @@ export function buildCandidates(
 ): CandidateResult {
   const today = cons.today ?? new Date().toISOString().slice(0, 10);
   const band = cons.band ?? OCCASIONS.find((o) => o.id === cons.occasion)?.band ?? [1, 5];
-  const banned = (cons.exclude ?? []).map((w) => w.toLowerCase()).filter(Boolean);
-  const allowed = closet.filter((p) => !banned.some((w) => word(p.category).includes(w) || word(p.subcategory).includes(w) || word(p.name).includes(w)));
+  const banned = (cons.exclude ?? []).map(singular).filter(Boolean);
+  // Match the garment's head noun, so excluding "dress" drops a midi dress but keeps a dress shirt.
+  const allowed = closet.filter((p) => !banned.some((w) => singular(p.category ?? "") === w || head(p.subcategory) === w || head(p.name) === w));
   const must = new Set(cons.mustInclude ?? []);
   const per = opts.perRole ?? 8;
 

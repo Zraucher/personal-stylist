@@ -73,3 +73,17 @@ test("recently worn pieces rank lower", () => {
   const r = buildCandidates([fresh, worn, shorts, sneakers], hot, { occasion: "casual", today: "2026-11-16" }, palette, style);
   assert.equal(r.candidates[0].items[0], fresh);
 });
+
+import { singular } from "../src/lib/today/candidates.ts";
+
+test("excluding a dress keeps dress shirts", () => {
+  assert.equal(singular("dresses"), "dress");
+  assert.equal(singular("dress"), "dress");
+  assert.equal(singular("jeans"), "jeans");
+  assert.equal(singular("shirts"), "shirt");
+  const dressItem = piece({ name: "Black midi dress", category: "dress", subcategory: "midi dress", warmth: 1 });
+  const r = buildCandidates([...closet, dressItem], hot, { occasion: "casual", exclude: ["dress"], today: "2026-11-16" }, palette, style);
+  assert.ok(r.candidates.every((c) => !c.items.includes(dressItem)));
+  const office = buildCandidates(closet, mild, { occasion: "office", exclude: ["dress"], today: "2026-11-16" }, palette, style);
+  assert.ok(office.candidates.some((c) => c.items.includes(shirt)), "the dress shirt should survive a 'no dress' request");
+});

@@ -28,7 +28,7 @@ function heuristic(text: string) {
   const t = text.toLowerCase();
   const temp = t.match(/(\d{2,3})\s*(?:°|degrees|f\b)/);
   const occasion: Occasion = /office|work|meeting/.test(t) ? "office" : /dinner|date|rooftop|restaurant/.test(t) ? "dinner" : /wedding|gala|event|party/.test(t) ? "event" : /golf|gym|hike/.test(t) ? "active" : /flight|travel|airport/.test(t) ? "travel" : "casual";
-  const exclude = [...t.matchAll(/no (\w+)/g)].map((m) => m[1].replace(/s$/, ""));
+  const exclude = [...t.matchAll(/no (\w+)/g)].map((m) => m[1]);
   const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   const named = days.findIndex((d) => t.includes(d));
   const dayOffset = /tomorrow/.test(t) ? 1 : named >= 0 ? (named - new Date().getDay() + 7) % 7 : 0;

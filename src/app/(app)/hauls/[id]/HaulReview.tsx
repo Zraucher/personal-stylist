@@ -206,7 +206,7 @@ export default function HaulReview({ haulId, initial }: { haulId: string; initia
               <div>
                 <p className="font-medium leading-tight">{it.name}</p>
                 <p className="text-xs text-stone-500">
-                  {[it.brand, it.price != null ? `${it.currency ?? "$"} ${it.price.toFixed(2)}`.replace("USD ", "$") : null, it.stated ? `listed as ${it.stated}` : null].filter(Boolean).join(" · ")}
+                  {[it.brand, it.price != null ? (it.currency && it.currency !== "USD" ? `${it.currency} ${it.price.toFixed(2)}` : `$${it.price.toFixed(2)}`) : null, it.stated ? `listed as ${it.stated}` : null].filter(Boolean).join(" · ")}
                 </p>
               </div>
               {it.headline && <p className="text-sm">{it.headline}</p>}
