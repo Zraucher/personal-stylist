@@ -20,6 +20,14 @@ export type WeatherSummary = {
   place: string | null;
 };
 
+const US_STATES: Record<string, string> = Object.fromEntries(
+  (
+    "al alabama,ak alaska,az arizona,ar arkansas,ca california,co colorado,ct connecticut,de delaware,fl florida,ga georgia,hi hawaii,id idaho,il illinois,in indiana,ia iowa,ks kansas,ky kentucky,la louisiana,me maine,md maryland,ma massachusetts,mi michigan,mn minnesota,ms mississippi,mo missouri,mt montana,ne nebraska,nv nevada,nh new hampshire,nj new jersey,nm new mexico,ny new york,nc north carolina,nd north dakota,oh ohio,ok oklahoma,or oregon,pa pennsylvania,ri rhode island,sc south carolina,sd south dakota,tn tennessee,tx texas,ut utah,vt vermont,va virginia,wa washington,wv west virginia,wi wisconsin,wy wyoming,dc district of columbia"
+  )
+    .split(",")
+    .map((s) => [s.slice(0, 2), s.slice(3)])
+);
+
 export async function geocode(location: string): Promise<{ latitude: number; longitude: number; timezone: string } | null> {
   const name = location.split(",")[0].trim();
   if (!name) return null;
@@ -30,9 +38,18 @@ export async function geocode(location: string): Promise<{ latitude: number; lon
     if (!r.ok) return null;
     const body = (await r.json()) as { results?: Array<{ latitude: number; longitude: number; timezone: string; admin1?: string; country_code?: string }> };
     const results = body.results ?? [];
-    // Prefer a match whose state or country appears in the rest of the location string.
-    const rest = location.slice(name.length).toLowerCase();
-    const hit = results.find((x) => (x.admin1 && rest.includes(x.admin1.toLowerCase())) || (x.country_code && rest.includes(x.country_code.toLowerCase()))) ?? results[0];
+    // Prefer a match whose state or country appears in the rest of the location ("Portland, ME").
+    const tokens = location
+      .slice(name.length)
+      .toLowerCase()
+      .split(/[\s,]+/)
+      .filter(Boolean);
+    const restText = tokens.join(" ");
+    const states = tokens.map((t) => US_STATES[t]).filter(Boolean);
+    const hit =
+      results.find((x) => x.admin1 && (states.includes(x.admin1.toLowerCase()) || (restText.length > 2 && restText.includes(x.admin1.toLowerCase())))) ??
+      results.find((x) => x.country_code && tokens.includes(x.country_code.toLowerCase())) ??
+      results[0];
     return hit ? { latitude: hit.latitude, longitude: hit.longitude, timezone: hit.timezone } : null;
   } catch {
     return null;

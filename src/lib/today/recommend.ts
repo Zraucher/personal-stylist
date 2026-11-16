@@ -116,7 +116,8 @@ export async function recommend(supabase: SupabaseClient, userId: string, input:
   const closet = await loadCloset(supabase, userId);
   const occ = OCCASIONS.find((o) => o.id === input.occasion) ?? OCCASIONS[1];
 
-  const { data: day } = await supabase
+  // A stated or assumed temperature is not a forecast: don't let it overwrite the saved day.
+  const { data: day } = weather.source !== "forecast" ? { data: null } : await supabase
     .from("day_profiles")
     .upsert(
       {

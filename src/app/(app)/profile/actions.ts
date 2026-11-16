@@ -43,7 +43,13 @@ export async function saveAccount(raw: z.input<typeof Account>): Promise<Result>
   if (!p.success) return fail(p.error);
   const { supabase, user } = await currentUser();
   if (!user) return { ok: false, error: "Signed out" };
-  const { error } = await supabase.from("profiles").update(p.data).eq("id", user.id);
+  // A new location must be geocoded again, so clear the saved coordinates and timezone.
+  const { data: current } = await supabase.from("profiles").select("location").eq("id", user.id).maybeSingle();
+  const moved = (current?.location ?? null) !== p.data.location;
+  const { error } = await supabase
+    .from("profiles")
+    .update(moved ? { ...p.data, latitude: null, longitude: null, timezone: null } : p.data)
+    .eq("id", user.id);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/profile");
   return { ok: true };

@@ -1,4 +1,5 @@
 import "server-only";
+import { lookup } from "node:dns/promises";
 import { strategyFor } from "./strategies";
 
 // Product page scraping. Providers are tried in order until one returns a usable page:
@@ -43,6 +44,42 @@ export function safeUrl(raw: string): URL | null {
   if (!h.includes(".") || /^[\d.]+$/.test(h) || h.includes(":")) return null;
   if (h === "localhost" || /\.(local|internal|localhost|lan|home)$/.test(h)) return null;
   return u;
+}
+
+function privateIp(ip: string): boolean {
+  const v = ip.toLowerCase().replace(/^::ffff:/, "");
+  const m = v.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (m) {
+    const [a, b] = [Number(m[1]), Number(m[2])];
+    return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || a >= 224;
+  }
+  return v === "::" || v === "::1" || /^f[cd]/.test(v) || /^fe[89ab]/.test(v);
+}
+
+async function hostIsPublic(host: string): Promise<boolean> {
+  try {
+    const addrs = await lookup(host, { all: true });
+    return addrs.length > 0 && addrs.every((a) => !privateIp(a.address));
+  } catch {
+    return false;
+  }
+}
+
+/** fetch that refuses private addresses and re-checks every redirect hop. Null when refused. */
+export async function safeFetch(raw: string | URL, init: RequestInit = {}, hops = 4): Promise<Response | null> {
+  let u = safeUrl(String(raw));
+  for (let i = 0; i <= hops; i++) {
+    if (!u || !(await hostIsPublic(u.hostname))) return null;
+    const r = await fetch(u, { ...init, redirect: "manual" });
+    if (r.status >= 300 && r.status < 400) {
+      const loc = r.headers.get("location");
+      if (!loc) return null;
+      u = safeUrl(new URL(loc, u).toString());
+      continue;
+    }
+    return r;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,8 +172,8 @@ async function viaShopify(u: URL): Promise<ScrapedProduct | null> {
   const m = u.pathname.match(/\/products\/([^/?#]+)/);
   if (!m) return null;
   try {
-    const r = await fetch(`${u.origin}/products/${m[1]}.js`, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(10000) });
-    if (!r.ok || !(r.headers.get("content-type") ?? "").includes("json")) return null;
+    const r = await safeFetch(`${u.origin}/products/${m[1]}.js`, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(10000) });
+    if (!r || !r.ok || !(r.headers.get("content-type") ?? "").includes("json")) return null;
     const p = (await r.json()) as { title?: string; vendor?: string; featured_image?: string; images?: string[]; price?: number; variants?: Array<{ id: number; option1?: string; title?: string; featured_image?: { src?: string } | null; price?: number }>; options?: Array<{ name: string } | string>; description?: string };
     const variantId = u.searchParams.get("variant");
     const v = p.variants?.find((x) => String(x.id) === variantId) ?? p.variants?.[0];
@@ -202,8 +239,8 @@ async function viaFirecrawl(u: URL): Promise<string | null> {
 
 async function viaFetch(u: URL): Promise<string | null> {
   try {
-    const r = await fetch(u, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml", "Accept-Language": "en-US,en;q=0.9" }, signal: AbortSignal.timeout(12000) });
-    if (!r.ok) return null;
+    const r = await safeFetch(u, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml", "Accept-Language": "en-US,en;q=0.9" }, signal: AbortSignal.timeout(12000) });
+    if (!r || !r.ok) return null;
     return await r.text();
   } catch {
     return null;
@@ -244,8 +281,8 @@ export async function fetchImage(url: string): Promise<{ bytes: ArrayBuffer; typ
   const u = safeUrl(url);
   if (!u) return null;
   try {
-    const r = await fetch(u, { headers: { "User-Agent": UA, Accept: "image/jpeg,image/png,image/webp,image/*" }, signal: AbortSignal.timeout(15000) });
-    if (!r.ok) return null;
+    const r = await safeFetch(u, { headers: { "User-Agent": UA, Accept: "image/jpeg,image/png,image/webp,image/*" }, signal: AbortSignal.timeout(15000) });
+    if (!r || !r.ok) return null;
     let type = (r.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
     if (type === "image/jpg" || type === "image/pjpeg") type = "image/jpeg";
     if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(type)) return null;

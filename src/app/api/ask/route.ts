@@ -24,14 +24,14 @@ const ParseSchema = z.object({
 const Body = z.object({ text: z.string().trim().min(3).max(500) });
 
 /** Without Claude: a rough reading of the request so Ask still works. */
-function heuristic(text: string) {
+function heuristic(text: string, todayIdx: number) {
   const t = text.toLowerCase();
   const temp = t.match(/(\d{2,3})\s*(?:°|degrees|f\b)/);
   const occasion: Occasion = /office|work|meeting/.test(t) ? "office" : /dinner|date|rooftop|restaurant/.test(t) ? "dinner" : /wedding|gala|event|party/.test(t) ? "event" : /golf|gym|hike/.test(t) ? "active" : /flight|travel|airport/.test(t) ? "travel" : "casual";
   const exclude = [...t.matchAll(/no (\w+)/g)].map((m) => m[1]);
   const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
   const named = days.findIndex((d) => t.includes(d));
-  const dayOffset = /tomorrow/.test(t) ? 1 : named >= 0 ? (named - new Date().getDay() + 7) % 7 : 0;
+  const dayOffset = /tomorrow/.test(t) ? 1 : named >= 0 ? (named - todayIdx + 7) % 7 : 0;
   const hours = /sunset|evening|night|dinner/.test(t) ? (["evening"] as const) : /morning/.test(t) ? (["morning"] as const) : (["morning", "midday", "evening"] as const);
   return { dayOffset, hours: [...hours], tempF: temp ? Number(temp[1]) : null, occasion, formalityMin: null as number | null, formalityMax: null as number | null, indoorCold: /casino|a\/c|air condition|cold office/.test(t), exclude, mustInclude: [] as string[] };
 }
@@ -47,10 +47,13 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "bad_request", detail: "Describe the day in a few words." }, { status: 400 });
   const text = parsed.data.text;
 
-  let read: z.infer<typeof ParseSchema> = heuristic(text);
+  const { data: prof } = await supabase.from("profiles").select("timezone").eq("id", user.id).maybeSingle();
+  const tz = (prof?.timezone as string | null) ?? "America/Los_Angeles";
+  const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: tz }).format(new Date());
+  const todayIdx = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].indexOf(weekday);
+  let read: z.infer<typeof ParseSchema> = heuristic(text, todayIdx);
   if (aiAvailable()) {
     try {
-      const weekday = new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "America/Los_Angeles" }).format(new Date());
       read = await structured({
         schema: ParseSchema,
         model: MODELS.fast,
