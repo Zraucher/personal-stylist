@@ -201,7 +201,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
                     </a>
                     <div className="space-y-1 p-2 text-xs">
                       <p className="line-clamp-2 font-medium">{c.name ?? c.url}</p>
-                      <p className="text-stone-500">{[c.brand, c.price != null ? `${c.price.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
+                      <p className="text-stone-500">{[c.brand, c.price != null ? `$${c.price.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
                       {(() => {
                         const drop = c.watch ? priceDrop(c.firstPrice, c.price) : null;
                         return drop ? (
