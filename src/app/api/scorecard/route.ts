@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
 import {
   decideVerdict,
+  resolveColor,
   scoreRules,
   untestableDislikes,
   type Criterion,
@@ -30,6 +31,14 @@ const VibeSchema = z.object({
   reason: z.string().describe("One sentence. Concrete: name the color, texture or shape you are reacting to."),
   tailoring_needed: z.boolean(),
   tailoring_note: z.string().nullable().describe("What the tailor should do, or null."),
+  observed_colors: z
+    .array(
+      z.object({
+        name: z.string().describe("Plain color name, e.g. navy, smoke grey, olive."),
+        hex: z.string().describe("Six-digit hex like #1f2a44, the color of the piece itself, not the background or a model's skin."),
+      })
+    )
+    .describe("One to three dominant colors of the piece as it appears in the photo, most dominant first."),
 });
 
 type Row = Record<string, unknown>;
@@ -124,7 +133,7 @@ export async function POST(request: NextRequest) {
       }
     : null;
 
-  const rules = scoreRules(scoreItem, scoreColor, scoreStyle);
+  let rules = scoreRules(scoreItem, scoreColor, scoreStyle);
   const hasImage = typeof item.image_path === "string" && item.image_path.length > 0;
 
   let vibe: Vibe = null;
@@ -179,6 +188,21 @@ export async function POST(request: NextRequest) {
       const out = response.parsed_output;
       photoUnclear = !out.photo_clear;
       vibe = { rating: out.rating, reason: out.reason };
+
+      // A piece with no usable color (none recorded, or a name like "collab colorway")
+      // used to stay provisional forever. The photo is the record, so read the color
+      // from it, save it on the item, and score the palette for real.
+      if (out.photo_clear && !scoreItem.colors.some((c) => resolveColor(c))) {
+        const observed = out.observed_colors
+          .filter((c) => /^#[0-9a-fA-F]{6}$/.test(c.hex) && c.name.trim())
+          .slice(0, 3)
+          .map((c) => ({ name: c.name.trim().slice(0, 40), hex: c.hex.toLowerCase() }));
+        if (observed.length > 0) {
+          scoreItem.colors = observed;
+          rules = scoreRules(scoreItem, scoreColor, scoreStyle);
+          await supabase.from("closet_items").update({ colors: observed, updated_at: new Date().toISOString() }).eq("id", itemId).eq("user_id", user.id);
+        }
+      }
       if (out.tailoring_needed) {
         tailoringNeeded = true;
         tailoringNote = out.tailoring_note ?? tailoringNote;

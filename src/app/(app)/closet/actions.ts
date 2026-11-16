@@ -117,6 +117,42 @@ export async function setItemPhoto(id: string, path: string): Promise<{ ok: true
   return { ok: true };
 }
 
+const BasicDetails = z.object({
+  brand: z.string().trim().max(80),
+  colorName: z.string().trim().max(40),
+  colorHex: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
+});
+
+/** Brand and color the user gives for a ticked basic. Empty fields leave the old value alone. */
+export async function updateBasicDetails(
+  genericId: string,
+  raw: { brand: string; colorName: string; colorHex?: string }
+): Promise<{ error?: string }> {
+  const parsed = BasicDetails.safeParse(raw);
+  if (!parsed.success) return { error: "Check the brand and color." };
+  if (!findBasic(genericId)) return { error: "Unknown basic" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Signed out" };
+
+  const { brand, colorName, colorHex } = parsed.data;
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (brand) patch.brand = brand;
+  if (colorName) patch.colors = [{ name: colorName, ...(colorHex ? { hex: colorHex } : {}) }];
+
+  const { error } = await supabase.from("closet_items").update(patch).eq("user_id", user.id).eq("generic_id", genericId);
+  if (error) return { error: error.message };
+  revalidatePath("/closet");
+  revalidatePath("/closet/basics");
+  return {};
+}
+
 export async function deleteItem(id: string): Promise<void> {
   const supabase = await createClient();
   const {
