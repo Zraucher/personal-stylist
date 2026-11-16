@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { addWish, deleteWish, setCandidateState, setWishStatus, sourcingHaul, upcomingStatus } from "./actions";
+import { addWish, deleteWish, setCandidateState, setWatch, setWishStatus, sourcingHaul, upcomingStatus } from "./actions";
+import { priceDrop } from "@/lib/retail/price";
 
 export type WishView = { id: string; title: string; preferences: string | null; budget: string | null; colors: string[]; status: "open" | "found" | "dropped"; lastSearched: string | null };
 export type CandidateView = {
@@ -17,6 +18,8 @@ export type CandidateView = {
   paletteReason: string | null;
   state: string;
   colors: Array<{ name: string; hex?: string }>;
+  watch: boolean;
+  firstPrice: number | null;
 };
 type Need = { id: string; label: string; season: string | null; status: string };
 
@@ -33,6 +36,31 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [showAll, setShowAll] = useState<Record<string, boolean>>({});
   const [error, setError] = useState<string | null>(null);
+
+  // Watched prices refresh quietly when the page opens (the server skips any checked in the last 12 hours).
+  useEffect(() => {
+    if (!candidates.some((c) => c.watch)) return;
+    let live = true;
+    fetch("/api/wishlist/prices", { method: "POST" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b: { updated?: Array<{ id: string; price: number | null }> } | null) => {
+        if (!live || !b?.updated?.length) return;
+        setCands((xs) => xs.map((x) => {
+          const u = b.updated!.find((y) => y.id === x.id);
+          return u ? { ...x, price: u.price ?? x.price } : x;
+        }));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [candidates]);
+
+  const toggleWatch = async (c: CandidateView) => {
+    const r = await setWatch(c.id, !c.watch);
+    if (!r.ok) return setError(r.error);
+    setCands((xs) => xs.map((x) => (x.id === c.id ? { ...x, watch: !c.watch, state: !c.watch ? "saved" : x.state, firstPrice: x.firstPrice ?? x.price } : x)));
+  };
 
   const add = async () => {
     setError(null);
@@ -65,6 +93,8 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
         paletteReason: (c.palette_reason as string | null) ?? null,
         state: (c.state as string) ?? "new",
         colors: Array.isArray(c.colors) ? (c.colors as CandidateView["colors"]) : [],
+        watch: !!c.watch,
+        firstPrice: c.first_price != null ? Number(c.first_price) : null,
       }));
       setCands((xs) => [...fresh, ...xs.filter((x) => !fresh.some((f) => f.id === x.id))]);
       const inPal = fresh.filter((f) => IN_PALETTE.has(f.paletteStatus ?? "")).length;
@@ -171,7 +201,17 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
                     </a>
                     <div className="space-y-1 p-2 text-xs">
                       <p className="line-clamp-2 font-medium">{c.name ?? c.url}</p>
-                      <p className="text-stone-500">{[c.brand, c.price != null ? `$${c.price.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
+                      <p className="text-stone-500">{[c.brand, c.price != null ? `${c.price.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
+                      {(() => {
+                        const drop = c.watch ? priceDrop(c.firstPrice, c.price) : null;
+                        return drop ? (
+                          <p className="font-medium text-emerald-800">
+                            Down ${drop.amount.toFixed(2)} ({drop.percent}%) since you started watching
+                          </p>
+                        ) : c.watch ? (
+                          <p className="text-stone-500">Watching the price</p>
+                        ) : null;
+                      })()}
                       <p className={IN_PALETTE.has(c.paletteStatus ?? "") ? "text-emerald-800" : "text-amber-800"}>{c.paletteReason}</p>
                       <div className="flex flex-wrap gap-1 pt-1">
                         <button type="button" onClick={() => review(c)} disabled={busy === c.id} className="rounded-full bg-stone-900 px-2 py-0.5 text-white disabled:opacity-60">
@@ -180,6 +220,11 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
                         {c.state !== "saved" && (
                           <button type="button" onClick={() => candState(c, "saved")} className="rounded-full border border-stone-300 px-2 py-0.5">
                             Save
+                          </button>
+                        )}
+                        {c.price != null && (
+                          <button type="button" onClick={() => toggleWatch(c)} className={"rounded-full border px-2 py-0.5 " + (c.watch ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300")}>
+                            {c.watch ? "Watching" : "Watch price"}
                           </button>
                         )}
                         <button type="button" onClick={() => candState(c, "dismissed")} className="rounded-full border border-stone-300 px-2 py-0.5">

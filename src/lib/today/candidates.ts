@@ -238,3 +238,11 @@ function buildStrict(
   }
   return { candidates: picked, missing, considered };
 }
+
+/** A short, readable outfit name from piece types: "Polo, golf pants and retro sneakers". */
+export function outfitName(items: ClosetPiece[]): string {
+  const words = items.map((p) => (p.subcategory || p.category || "piece").toLowerCase().trim());
+  const uniq = [...new Set(words)];
+  const text = uniq.length > 1 ? `${uniq.slice(0, -1).join(", ")} and ${uniq[uniq.length - 1]}` : uniq[0] ?? "Outfit";
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}

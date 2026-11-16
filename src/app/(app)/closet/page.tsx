@@ -104,7 +104,7 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
           .map(([key, list]) => (
             <section key={key}>
               <h2 className="mb-2 text-sm font-medium text-stone-500">
-                {key === "outerwear" ? "Outerwear & layers" : key in CATEGORY_LABELS ? CATEGORY_LABELS[key as keyof typeof CATEGORY_LABELS] : "Other"}{" "}
+                {key === "outerwear" ? "Outerwear & layers" : key in CATEGORY_LABELS ? CATEGORY_LABELS[key as keyof typeof CATEGORY_LABELS] : "Socks, underlayers & extras"}{" "}
                 <span className="text-stone-400">{list.length}</span>
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">

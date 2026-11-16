@@ -37,6 +37,8 @@ export default async function WishlistPage({ searchParams }: { searchParams: Pro
     paletteReason: (c.palette_reason as string | null) ?? null,
     state: (c.state as string) ?? "new",
     colors: Array.isArray(c.colors) ? (c.colors as Array<{ name: string; hex?: string }>) : [],
+    watch: !!c.watch,
+    firstPrice: c.first_price != null ? Number(c.first_price) : null,
   }));
 
   return (
