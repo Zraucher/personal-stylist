@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
 import {
@@ -47,7 +48,12 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold tracking-tight">Profile</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold tracking-tight">Profile</h1>
+        <Link href="/profile/palette" className="text-sm text-stone-600 underline-offset-2 hover:underline">
+          Palette card
+        </Link>
+      </div>
 
       <AccountCard
         data={{
