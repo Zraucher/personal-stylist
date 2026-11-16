@@ -4,7 +4,8 @@ import { signedImageUrls } from "@/lib/closet/images";
 import { CATEGORIES, CATEGORY_LABELS, type ClosetItem } from "@/lib/closet/taxonomy";
 import Builder, { type PickItem } from "./Builder";
 
-export default async function NewOutfitPage() {
+export default async function NewOutfitPage({ searchParams }: { searchParams: Promise<{ items?: string }> }) {
+  const { items: preset } = await searchParams;
   const supabase = await createClient();
   const { data } = await supabase.from("closet_items").select("*").eq("status", "available").order("created_at", { ascending: false });
   const items = (data ?? []) as ClosetItem[];
@@ -52,7 +53,7 @@ export default async function NewOutfitPage() {
           </p>
         </div>
       ) : (
-        <Builder groups={groups} />
+        <Builder groups={groups} initialPicked={(preset ?? "").split(",").filter((id) => groups.some((g) => g.items.some((i) => i.id === id)))} />
       )}
     </div>
   );

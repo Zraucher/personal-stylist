@@ -18,9 +18,9 @@ export type PickItem = {
 
 type Group = { key: string; label: string; items: PickItem[] };
 
-export default function Builder({ groups }: { groups: Group[] }) {
+export default function Builder({ groups, initialPicked = [] }: { groups: Group[]; initialPicked?: string[] }) {
   const router = useRouter();
-  const [picked, setPicked] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string[]>(initialPicked);
   const [composition, setComposition] = useState<Composition | null>(null);
   const [checking, setChecking] = useState(false);
   const [name, setName] = useState("");
