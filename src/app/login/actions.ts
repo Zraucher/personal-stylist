@@ -71,7 +71,7 @@ export async function verifyCode(
   if (error) {
     return { status: "sent", email, message: "That code is wrong or expired. Request a new one." };
   }
-  redirect("/closet");
+  redirect("/today");
 }
 
 // The host that served the login page is where the magic link should land.

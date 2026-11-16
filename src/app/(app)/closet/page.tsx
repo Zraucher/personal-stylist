@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
+import ItemPlaceholder from "@/lib/closet/placeholder";
 import { CATEGORIES, CATEGORY_LABELS, STATUS_LABELS, type ClosetItem } from "@/lib/closet/taxonomy";
 
 export default async function ClosetPage() {
@@ -110,9 +111,7 @@ function ItemCard({ item, url, verdict }: { item: ClosetItem; url?: string; verd
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt={item.name ?? ""} className="h-full w-full object-cover" loading="lazy" />
         ) : (
-          <div className="flex h-full items-center justify-center text-xs uppercase tracking-wide text-stone-400">
-            {item.subcategory ?? item.category ?? "item"}
-          </div>
+          <ItemPlaceholder category={item.category} subcategory={item.subcategory} colors={item.colors} />
         )}
         {item.status !== "available" && (
           <span className="absolute left-2 top-2 rounded-full bg-stone-900/80 px-2 py-0.5 text-[11px] text-white">

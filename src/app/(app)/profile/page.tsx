@@ -1,72 +1,111 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { signedImageUrls } from "@/lib/closet/images";
+import {
+  AccountCard,
+  BrandsCard,
+  ColorCard,
+  MeasurementsCard,
+  StyleCard,
+  type BrandRow,
+} from "./ProfileEditor";
+import ProfilePhotos from "./ProfilePhotos";
+
+const strs = (xs: unknown): string[] => (Array.isArray(xs) ? xs.filter((x): x is string => typeof x === "string") : []);
+const fabrics = (xs: unknown): Array<{ name: string; strength: "soft" | "hard" }> =>
+  Array.isArray(xs)
+    ? xs
+        .filter((x): x is { name: string; strength?: string } => !!x && typeof (x as { name?: unknown }).name === "string")
+        .map((x) => ({ name: x.name, strength: x.strength === "hard" ? ("hard" as const) : ("soft" as const) }))
+    : [];
+const n = (v: unknown): number | null => (typeof v === "number" ? v : v != null && v !== "" && !Number.isNaN(Number(v)) ? Number(v) : null);
 
 export default async function ProfilePage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const uid = user!.id;
 
-  const [{ data: profile }, { data: color }, { data: measurements }] = await Promise.all([
-    supabase.from("profiles").select("*").eq("id", user!.id).maybeSingle(),
-    supabase.from("color_profiles").select("*").eq("user_id", user!.id).maybeSingle(),
-    supabase.from("measurements").select("*").eq("user_id", user!.id).maybeSingle(),
+  const [{ data: profile }, { data: color }, { data: m }, { data: style }, { data: brands }, { data: photos }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
+    supabase.from("color_profiles").select("*").eq("user_id", uid).maybeSingle(),
+    supabase.from("measurements").select("*").eq("user_id", uid).maybeSingle(),
+    supabase.from("style_prefs").select("*").eq("user_id", uid).maybeSingle(),
+    supabase.from("brands").select("id, name, status, note").eq("user_id", uid).order("created_at", { ascending: true }),
+    supabase.from("profile_photos").select("slot, image_path").eq("user_id", uid),
   ]);
+
+  const signed = await signedImageUrls(
+    supabase,
+    (photos ?? []).map((p) => p.image_path as string)
+  );
+  const photoUrls: Record<string, string> = {};
+  for (const p of photos ?? []) {
+    const u = signed[p.image_path as string];
+    if (u) photoUrls[p.slot as string] = u;
+  }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold tracking-tight">Profile</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-semibold tracking-tight">Profile</h1>
+        <Link href="/profile/palette" className="text-sm text-stone-600 underline-offset-2 hover:underline">
+          Palette card
+        </Link>
+      </div>
 
-      <section className="rounded-xl border border-stone-200 bg-white p-5">
-        <h2 className="text-sm font-medium text-stone-500">Account</h2>
-        <dl className="mt-2 grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
-          <dt className="text-stone-500">Name</dt>
-          <dd>{profile?.name ?? <Empty />}</dd>
-          <dt className="text-stone-500">Email</dt>
-          <dd>{profile?.email}</dd>
-          <dt className="text-stone-500">Location</dt>
-          <dd>{profile?.location ?? <Empty />}</dd>
-          <dt className="text-stone-500">Outfits for</dt>
-          <dd>{profile?.presentation}</dd>
-        </dl>
-      </section>
+      <AccountCard
+        data={{
+          name: (profile?.name as string | null) ?? "",
+          email: (profile?.email as string) ?? "",
+          location: (profile?.location as string | null) ?? "",
+          presentation: (profile?.presentation as "womens" | "mens" | "both") ?? "both",
+        }}
+      />
 
-      <section className="rounded-xl border border-stone-200 bg-white p-5">
-        <h2 className="text-sm font-medium text-stone-500">Color</h2>
-        {color ? (
-          <dl className="mt-2 grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
-            <dt className="text-stone-500">Season</dt>
-            <dd>{color.season_label}</dd>
-            <dt className="text-stone-500">Best colors</dt>
-            <dd>{(color.best_colors as string[]).join(", ")}</dd>
-            <dt className="text-stone-500">Avoid</dt>
-            <dd>{(color.avoid_colors as string[]).join(", ")}</dd>
-          </dl>
-        ) : (
-          <p className="mt-2 text-sm text-stone-600">
-            Not set. The seed loader in session 2 fills this in.
-          </p>
-        )}
-      </section>
+      <ColorCard
+        data={{
+          season_label: (color?.season_label as string | null) ?? "",
+          undertone: (color?.undertone as string | null) ?? "",
+          depth: (color?.depth as string | null) ?? "",
+          contrast: (color?.contrast as string | null) ?? "",
+          best_colors: strs(color?.best_colors),
+          avoid_colors: strs(color?.avoid_colors),
+          notes: (color?.notes as string | null) ?? "",
+        }}
+      />
 
-      <section className="rounded-xl border border-stone-200 bg-white p-5">
-        <h2 className="text-sm font-medium text-stone-500">Measurements</h2>
-        {measurements ? (
-          <dl className="mt-2 grid grid-cols-[8rem_1fr] gap-y-1 text-sm">
-            <dt className="text-stone-500">Height</dt>
-            <dd>{measurements.height_in} in</dd>
-            <dt className="text-stone-500">Inseam</dt>
-            <dd>{measurements.inseam_in} in</dd>
-            <dt className="text-stone-500">Sizing notes</dt>
-            <dd>{measurements.sizing_notes ?? <Empty />}</dd>
-          </dl>
-        ) : (
-          <p className="mt-2 text-sm text-stone-600">Not set.</p>
-        )}
-      </section>
+      <StyleCard
+        data={{
+          aesthetic_statement: (style?.aesthetic_statement as string | null) ?? "",
+          loves: strs(style?.loves),
+          dislikes: strs(style?.dislikes),
+          silhouettes_preferred: strs(style?.silhouettes_preferred),
+          silhouettes_avoid: strs(style?.silhouettes_avoid),
+          fabrics_preferred: fabrics(style?.fabrics_preferred),
+          fabrics_avoid: fabrics(style?.fabrics_avoid),
+        }}
+      />
+
+      <MeasurementsCard
+        data={{
+          height_in: n(m?.height_in),
+          inseam_in: n(m?.inseam_in),
+          shoulders_in: n(m?.shoulders_in),
+          chest_bust_in: n(m?.chest_bust_in),
+          waist_in: n(m?.waist_in),
+          hips_in: n(m?.hips_in),
+          neck_in: n(m?.neck_in),
+          sleeve_in: n(m?.sleeve_in),
+          rise_target_in: (m?.rise_target_in as string | null) ?? "",
+          sizing_notes: (m?.sizing_notes as string | null) ?? "",
+        }}
+      />
+
+      <BrandsCard brands={(brands ?? []) as BrandRow[]} />
+
+      <ProfilePhotos urls={photoUrls} />
     </div>
   );
-}
-
-function Empty() {
-  return <span className="text-stone-400">—</span>;
 }

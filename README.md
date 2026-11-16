@@ -2,12 +2,12 @@
 
 Private, invite-only stylist app. Next.js 16 on Vercel, Supabase for data, auth and images, Claude for judgment.
 
-Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten build sessions). Sessions 1 to 5 are built and live. Sessions 6 to 10 are not started.
+Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten build sessions). Sessions 1 to 10 are built.
 
 ## State as of 2026-11-11
 
 - **Production:** https://www.myvallette.com (domain is `myvallette`, two l's). The apex redirects to www; `app.` and `dev.` aliases also point at production.
-- **Supabase:** project **Valette App** (`dqnreeflkhrbsfuvkzjx`, us-east-1). Migrations 0001 to 0006 are applied (0006 adds `outfits.name` and `outfits.composition`). Migrations are applied through the Supabase connector, not a CLI.
+- **Supabase:** project **Valette App** (`dqnreeflkhrbsfuvkzjx`, us-east-1). Migrations 0001 to 0011 are applied. Migrations are applied through the Supabase connector, not a CLI.
 - **Vercel:** team `valette` (`team_qjPh7HC46TP4L3YnzhiDcXXM`), project `prj_VEGr6clooeo28BUSYJ0TYCwekf2n`. Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (fallback only; the login page uses the request host) and `ANTHROPIC_API_KEY`. Vercel Authentication is off; the app's invite gate does the gatekeeping.
 - **Seeds** apply on first sign-in (`apply_seed`, called from the `on_auth_user_created` trigger). Zack's payload is keyed to `zack@gpsteam.com` (signed in, 23 seeded closet items, no photos yet). Val's is keyed to `valerieraucher@gmail.com` (not yet signed in).
 - `.env.local` holds the Supabase URL and anon key. No service-role key is needed: the login page checks invites through the `is_invited()` database function.
@@ -45,13 +45,50 @@ Sign-in is a code, not a link. Corporate email scanners open links and burn the 
 - Checks: complete, counterbalance (buttoned-up needs something loose or undone), contrast (fitted with relaxed, patterned with solid), palette harmony, your own fabric and shape rules, formality and warmth, scorecard cuts.
 - Saved outfits live on `/outfits` with the check that was true when saved.
 
+## Session 6: Today
+
+- `/today` is the landing page. Pick an occasion, the hours you will be outside and whether indoor air is cold; get three outfits with a one-line reason each.
+- Weather is Open-Meteo (no key). The profile's city is geocoded once and saved as `latitude`, `longitude`, `timezone` (migration 0009). Each day is cached in `day_profiles`.
+- `src/lib/today/candidates.ts` (pure, tested) filters the closet by status, season, warmth and dress level, builds outfits from templates, runs the composition check, ranks by composition, affinity and recency, and keeps at most two candidates per top. Missing pieces are named instead of forcing a bad pick.
+- `src/lib/today/recommend.ts` asks Claude (`claude-sonnet-5-5`) to pick three and write the lines; without the key it takes the top three. Picks are saved as `outfits` (source `generated`) and one `recommendations` row.
+- Feedback: Wore it (last worn, affinity up), Skip, Not me (affinity down, optional note), Exactly me / Felt like a costume (new benchmarks). Swap a piece opens the builder prefilled.
+
+## Session 7: palette card and Ask
+
+- `/profile/palette` shows swatches; `/api/palette-card` renders a 1080x1350 PNG with `next/og`. Share uses the Web Share API, else downloads.
+- `/ask` takes free text. Claude turns it into constraints (day, hours, stated temperature, occasion, exclusions, named pieces); a regex fallback works without the key. Exclusions match the garment's head noun, so "no dress" keeps dress shirts.
+
+## Session 8: haul review
+
+- `/hauls` lists saved hauls; `/hauls/[id]` takes product links (one per line) or screenshots (upload, drop or paste) and reviews them one at a time.
+- Scraper chain (`src/lib/retail/scrape.ts`): Shopify `/products/<handle>.js` when it applies, then **Scrapling** (`SCRAPLING_URL`, optional `SCRAPLING_TOKEN`; the app POSTs `{url}` and accepts `{html}` JSON or raw HTML), then **Firecrawl** (`FIRECRAWL_API_KEY`, backup), then a plain fetch. JSON-LD Product data first, then Open Graph tags.
+- The product image is saved under `<user>/hauls/`, tagged by Claude, compared with the listed color (a mismatch is flagged), and scored with the same pipeline as closet items (`src/lib/scorecard/run.ts`). Bought it copies the piece and photo into the closet. Migration 0010.
+
+## Session 9: retailer playbook, wishlist, sourcing
+
+- `src/lib/retail/strategies.ts` is the playbook: which stores are Shopify, which need a browser (L'Agence, Azazie, Nordstrom Rack), and the tip shown when a page fails.
+- `/wishlist` adds, closes and deletes wishes and shows upcoming needs. Find options builds a few queries from color synonyms (`synonyms.ts`) and loved brands, searches (Firecrawl search with the key, else DuckDuckGo HTML), reads up to six product pages, reads each photo's color (`claude-haiku-5-5`) and shows the in-palette ones. Full review sends a result through the haul review. Migration 0011 (`wishlist_candidates`).
+
+## Session 10: closet gaps
+
+- `/gaps` counts the outfits the closet makes across five typical days, adds each missing basic (in its own color or the first two palette colors) and counts again. A suggestion shows only when it adds 3 or more outfits, with a link that adds it to the wishlist. Price watch is deferred (see the tracker).
+
+## Environment variables
+
+| Name | Needed for | Status |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | everything | set |
+| `ANTHROPIC_API_KEY` | tagging, scorecards, Today picks, Ask, haul review | set |
+| `SCRAPLING_URL`, `SCRAPLING_TOKEN` | primary scraper for haul review and sourcing | to add |
+| `FIRECRAWL_API_KEY` | backup scraper and better product search | to add |
+
 ## Tests
 
 ```bash
-node --test scripts/test-rules.mjs scripts/test-composition.mjs
+node --test scripts/test-rules.mjs scripts/test-composition.mjs scripts/test-today.mjs scripts/test-gaps.mjs
 ```
 
-Needs Node 22.18+. The rules and composition modules are erasable TypeScript, so Node runs them directly (28 tests).
+Needs Node 22.18+. The rules, composition, candidate and gap modules are erasable TypeScript, so Node runs them directly (40 tests).
 
 ## Deploying without the CLI
 

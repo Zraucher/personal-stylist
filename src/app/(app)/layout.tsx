@@ -3,10 +3,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 const NAV = [
+  { href: "/today", label: "Today" },
   { href: "/closet", label: "Closet" },
-  { href: "/closet/basics", label: "Basics" },
-  { href: "/closet/review", label: "Review" },
   { href: "/outfits", label: "Outfits" },
+  { href: "/ask", label: "Ask" },
+  { href: "/hauls", label: "Shop" },
   { href: "/profile", label: "Profile" },
 ];
 
@@ -29,7 +30,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh bg-stone-50 text-stone-900">
       <header className="sticky top-0 z-10 border-b border-stone-200 bg-stone-50/90 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <nav className="flex items-center gap-4 text-sm">
+          <nav className="flex min-w-0 items-center gap-4 overflow-x-auto whitespace-nowrap text-sm">
             <span className="font-semibold tracking-tight">Stylist</span>
             {NAV.map((n) => (
               <Link key={n.href} href={n.href} className="text-stone-600 hover:text-stone-900">

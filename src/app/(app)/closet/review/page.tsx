@@ -46,6 +46,9 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       signedImageUrls(supabase, [next.image_path]),
     ]);
     scorecard = (latest as ScorecardRow | null) ?? null;
+    // Older cards that stalled on "no color recorded" are scored again, now that the
+    // color is read from the photo.
+    if (scorecard && scorecard.headline?.includes("no color recorded")) scorecard = null;
     url = next.image_path ? urls[next.image_path] : undefined;
   }
 
