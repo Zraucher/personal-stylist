@@ -15,9 +15,9 @@ export const VERDICT_SHORT: Record<Verdict, string> = {
 };
 
 export const VERDICT_CLASS: Record<Verdict, string> = {
-  keep: "bg-emerald-700 text-white",
-  provisional: "bg-amber-500 text-stone-900",
-  cut: "bg-red-700 text-white",
+  keep: "bg-emerald-700 text-on-accent",
+  provisional: "bg-amber-500 text-ink",
+  cut: "bg-red-700 text-on-accent",
 };
 
 export const verdictLabel = (v: string | null | undefined, short = false): string =>
