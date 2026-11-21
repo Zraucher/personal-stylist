@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { loadRecommendation } from "@/lib/today/recommend";
 import { localDate } from "@/lib/today/weather";
 import TodayClient from "./TodayClient";
+import PlannedToday from "./PlannedToday";
+import Link from "next/link";
+import { signedImageUrls } from "@/lib/closet/images";
+import { isoDaysAgo } from "@/lib/time";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -25,12 +29,56 @@ export default async function TodayPage() {
   const initial = latest ? await loadRecommendation(supabase, uid, latest.id as string) : null;
   const fresh = initial && initial.weather?.date === today ? initial : null;
 
+  // Today's planned outfit, new votes from friends, and price drops on watched finds.
+  const [{ data: plan }, { data: asks }, { data: watched }] = await Promise.all([
+    supabase.from("plans").select("date, worn, outfit_id").eq("user_id", uid).eq("date", today).maybeSingle(),
+    supabase.from("second_opinions").select("id, seen_at, created_at").eq("user_id", uid).gt("created_at", isoDaysAgo(30)),
+    supabase.from("wishlist_candidates").select("id, price, first_price").eq("user_id", uid).eq("watch", true),
+  ]);
+  let planned: { name: string; items: Array<{ id: string; name: string; url: string | null; hex: string | null }> } | null = null;
+  if (plan?.outfit_id) {
+    const { data: o } = await supabase.from("outfits").select("name, item_ids").eq("id", plan.outfit_id).maybeSingle();
+    const ids = (o?.item_ids as string[] | undefined) ?? [];
+    const { data: rows } = ids.length ? await supabase.from("closet_items").select("id, name, colors, image_path").in("id", ids) : { data: [] };
+    const urls = await signedImageUrls(supabase, (rows ?? []).map((r) => r.image_path as string | null));
+    const byId = new Map((rows ?? []).map((r) => [r.id as string, r]));
+    planned = {
+      name: (o?.name as string | null) ?? "Your outfit",
+      items: ids
+        .map((id) => byId.get(id))
+        .filter((r): r is NonNullable<typeof r> => !!r)
+        .map((r) => ({ id: r.id as string, name: (r.name as string | null) ?? "Piece", url: r.image_path ? urls[r.image_path as string] ?? null : null, hex: (Array.isArray(r.colors) ? (r.colors as Array<{ hex?: string }>)[0]?.hex : null) ?? null })),
+    };
+  }
+  let newVotes = 0;
+  if (asks?.length) {
+    const { data: votes } = await supabase.from("opinion_votes").select("opinion_id, created_at").in("opinion_id", asks.map((a) => a.id as string));
+    const seen = new Map(asks.map((a) => [a.id as string, ((a.seen_at as string | null) ?? (a.created_at as string)) as string]));
+    newVotes = (votes ?? []).filter((v) => (v.created_at as string) > (seen.get(v.opinion_id as string) ?? "")).length;
+  }
+  const drops = (watched ?? []).filter((c) => c.price != null && c.first_price != null && Number(c.first_price) - Number(c.price) >= 1 && Number(c.price) <= Number(c.first_price) * 0.97).length;
+
   return (
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Today</h1>
         <p className="text-sm text-stone-500">Three outfits from your closet for the weather and where you are going.</p>
       </div>
+      {(newVotes > 0 || drops > 0) && (
+        <div className="flex flex-wrap gap-2 text-sm">
+          {newVotes > 0 && (
+            <Link href="/opinions" className="rounded-full bg-blush px-3 py-1.5 font-semibold text-stone-900">
+              {newVotes} new vote{newVotes === 1 ? "" : "s"} from friends
+            </Link>
+          )}
+          {drops > 0 && (
+            <Link href="/wishlist" className="rounded-full bg-emerald-100 px-3 py-1.5 font-semibold text-emerald-900">
+              {drops} price drop{drops === 1 ? "" : "s"} on finds you watch
+            </Link>
+          )}
+        </div>
+      )}
+      {planned && <PlannedToday date={today} name={planned.name} items={planned.items} worn={!!plan?.worn} />}
       <TodayClient initial={fresh} closetSize={closetSize ?? 0} />
     </div>
   );

@@ -28,8 +28,10 @@ const FEATURES = [
   { name: "Ask", body: "“Rooftop dinner Friday, 95 at sunset, no dress.” Say it the way you'd text a friend and get looks that fit.", tone: "bg-blush" },
   { name: "Shop check", body: "Paste a product link or a screenshot. We read the photo, not the color name, and tell you if it works before you buy.", tone: "bg-amber-100" },
   { name: "Closet gaps", body: "See the one piece that would unlock the most new outfits from what you already own, with the number to prove it.", tone: "bg-emerald-100" },
-  { name: "Price watch", body: "Save a find and we keep an eye on it. When the price drops, you'll see exactly how much.", tone: "bg-sky-brand" },
-  { name: "Palette card", body: "Your best colors on one shareable card. Handy in a fitting room, fun in a group chat.", tone: "bg-blush" },
+  { name: "Second opinion", body: "Send a look or a find to friends. They vote works, almost or not in one tap, no account needed.", tone: "bg-sky-brand" },
+  { name: "Plan ahead", body: "Your whole week laid out against the forecast, and a packing list for every trip built from what you own.", tone: "bg-blush" },
+  { name: "Price watch", body: "Save a find and we check it every day. When the price drops, you'll know.", tone: "bg-amber-100" },
+  { name: "Closet insights", body: "Cost per wear, your real favorites, and the pieces that haven't seen daylight in months.", tone: "bg-emerald-100" },
 ];
 
 const FAQ = [

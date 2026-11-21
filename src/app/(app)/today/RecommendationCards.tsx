@@ -5,6 +5,7 @@ import Link from "next/link";
 import ItemPlaceholder from "@/lib/closet/placeholder";
 import type { RecommendationView } from "@/lib/today/recommend";
 import { respondToOutfit } from "./actions";
+import AskFriendsButton from "@/components/AskFriendsButton";
 
 type Fb = "wore" | "skipped" | "disliked" | "benchmark" | "failure";
 const FB_LABEL: Record<Fb, string> = { wore: "wore it", skipped: "skip", disliked: "not me", benchmark: "this is so me", failure: "felt like a costume" };
@@ -149,6 +150,9 @@ export default function RecommendationCards({ rec }: { rec: RecommendationView }
             <button type="button" onClick={() => setMoreFor(moreFor === p.outfitId ? null : p.outfitId)} className="px-1 text-stone-500 underline-offset-2 hover:underline" aria-expanded={moreFor === p.outfitId}>
               More
             </button>
+          </div>
+          <div className="mt-2">
+            <AskFriendsButton target={{ kind: "outfit", outfitId: p.outfitId }} compact />
           </div>
           {moreFor === p.outfitId && (
             <div className="mt-2 flex flex-wrap gap-2 text-sm">

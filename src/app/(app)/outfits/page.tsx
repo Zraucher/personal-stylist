@@ -4,6 +4,8 @@ import { signedImageUrls } from "@/lib/closet/images";
 import type { Composition } from "@/lib/outfit/composition";
 import { OverallChip } from "./CompositionPanel";
 import DeleteOutfitButton from "./DeleteOutfitButton";
+import ClosetSubnav from "../ClosetSubnav";
+import AskFriendsButton from "@/components/AskFriendsButton";
 
 type OutfitRow = {
   id: string;
@@ -17,7 +19,7 @@ type OutfitRow = {
 
 export default async function OutfitsPage() {
   const supabase = await createClient();
-  const { data } = await supabase.from("outfits").select("id, name, occasion, item_ids, composition, composition_notes, created_at").order("created_at", { ascending: false });
+  const { data } = await supabase.from("outfits").select("id, name, occasion, item_ids, composition, composition_notes, created_at").is("origin", null).order("created_at", { ascending: false });
   const outfits = (data ?? []) as OutfitRow[];
 
   const allIds = Array.from(new Set(outfits.flatMap((o) => o.item_ids)));
@@ -32,6 +34,7 @@ export default async function OutfitsPage() {
 
   return (
     <div className="space-y-6">
+      <ClosetSubnav />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Outfits</h1>
@@ -39,9 +42,14 @@ export default async function OutfitsPage() {
             {outfits.length} saved. Each one is checked for counterbalance, contrast and palette.
           </p>
         </div>
-        <Link href="/outfits/new" className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white">
-          Build outfit
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/opinions" className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium hover:border-stone-500">
+            Votes
+          </Link>
+          <Link href="/outfits/new" className="whitespace-nowrap rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white">
+            Build outfit
+          </Link>
+        </div>
       </div>
 
       {outfits.length === 0 ? (
@@ -60,6 +68,9 @@ export default async function OutfitsPage() {
                   {o.name && o.occasion && <p className="truncate text-xs text-stone-500">{o.occasion}</p>}
                 </div>
                 <DeleteOutfitButton id={o.id} />
+              </div>
+              <div className="mt-2">
+                <AskFriendsButton target={{ kind: "outfit", outfitId: o.id }} compact />
               </div>
               <div className="mt-2 flex gap-2 overflow-x-auto">
                 {o.item_ids.map((id) => {
