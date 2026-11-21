@@ -34,7 +34,6 @@ self.addEventListener("fetch", (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Signing out wipes what this device kept of the account.
   // Signing out (or arriving at sign-in) wipes what this device kept of the account,
   // and stops notifications for it on this device.
   if (req.method === "POST" && url.origin === location.origin && url.pathname === "/auth/signout") {
