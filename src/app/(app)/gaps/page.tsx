@@ -4,6 +4,7 @@ import { loadStyleContext } from "@/lib/profile/context";
 import { loadCloset } from "@/lib/today/recommend";
 import { findGaps, gapLabel, SCENARIOS } from "@/lib/gaps/unlock";
 import ItemPlaceholder from "@/lib/closet/placeholder";
+import ClosetSubnav from "../ClosetSubnav";
 
 // A suggestion appears only when it is quantified and worth it.
 const MIN_ADDED = 3;
@@ -19,11 +20,9 @@ export default async function GapsPage() {
 
   return (
     <div className="space-y-6">
+      <ClosetSubnav />
       <div>
-        <Link href="/closet" className="text-sm text-stone-500 hover:text-stone-900">
-          ← Closet
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">Closet gaps</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Closet gaps</h1>
         <p className="text-sm text-stone-500">
           Your closet makes {base} {base === 1 ? "outfit" : "outfits"} across {SCENARIOS.length} typical days ({SCENARIOS.map((s) => s.label).join(", ")}). These single pieces would add the most.
         </p>

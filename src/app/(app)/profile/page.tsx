@@ -10,6 +10,7 @@ import {
   type BrandRow,
 } from "./ProfileEditor";
 import ProfilePhotos from "./ProfilePhotos";
+import AppCard from "@/components/pwa/AppCard";
 
 const strs = (xs: unknown): string[] => (Array.isArray(xs) ? xs.filter((x): x is string => typeof x === "string") : []);
 const fabrics = (xs: unknown): Array<{ name: string; strength: "soft" | "hard" }> =>
@@ -106,6 +107,8 @@ export default async function ProfilePage() {
       <BrandsCard brands={(brands ?? []) as BrandRow[]} />
 
       <ProfilePhotos urls={photoUrls} />
+
+      <AppCard />
     </div>
   );
 }

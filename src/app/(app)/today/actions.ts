@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { localDate } from "@/lib/today/weather";
+import { recordWear } from "@/lib/wear";
 
 const Input = z.object({
   recommendationId: z.string().uuid(),
@@ -35,20 +36,18 @@ export async function respondToOutfit(raw: z.input<typeof Input>): Promise<{ ok:
   const { error } = await supabase.from("feedback").insert({ user_id: user.id, target: "outfit", target_id: outfitId, type, note: note || null });
   if (error) return { ok: false, error: error.message };
 
-  if (type === "wore" || type === "disliked") {
-    const delta = type === "wore" ? 0.5 : -0.5;
-    const { data: rows } = await supabase.from("closet_items").select("id, affinity").in("id", itemIds).eq("user_id", user.id);
+  if (type === "wore") {
     const { data: prof } = await supabase.from("profiles").select("timezone").eq("id", user.id).maybeSingle();
     const today = localDate((prof?.timezone as string | null) ?? null);
+    await recordWear(supabase, user.id, itemIds, today, { outfitId, affinity: 0.5 });
+    await supabase.from("recommendations").update({ chosen_outfit_id: outfitId }).eq("id", recommendationId).eq("user_id", user.id);
+  }
+  if (type === "disliked") {
+    const { data: rows } = await supabase.from("closet_items").select("id, affinity").in("id", itemIds).eq("user_id", user.id);
     for (const r of rows ?? []) {
-      const affinity = Math.max(-5, Math.min(5, Number(r.affinity ?? 0) + delta));
-      await supabase
-        .from("closet_items")
-        .update(type === "wore" ? { affinity, last_worn: today } : { affinity })
-        .eq("id", r.id)
-        .eq("user_id", user.id);
+      const affinity = Math.max(-5, Math.min(5, Number(r.affinity ?? 0) - 0.5));
+      await supabase.from("closet_items").update({ affinity }).eq("id", r.id).eq("user_id", user.id);
     }
-    if (type === "wore") await supabase.from("recommendations").update({ chosen_outfit_id: outfitId }).eq("id", recommendationId).eq("user_id", user.id);
   }
 
   if (type === "benchmark" || type === "failure") {

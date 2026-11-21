@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       <main className="mx-auto max-w-3xl space-y-8 px-5 pb-20 pt-6 leading-relaxed">
         <div className="space-y-2">
           <h1 className="font-display text-4xl font-extrabold">privacy</h1>
-          <p className="text-stone-500">Last updated November 16, 2026</p>
+          <p className="text-stone-500">Last updated November 21, 2026</p>
         </div>
         <section className="space-y-2">
           <h2 className="font-display text-xl font-bold">What we collect</h2>
@@ -25,7 +25,9 @@ export default function PrivacyPage() {
             <li>Your email address, to sign you in and, if you join the waitlist, to send your invite.</li>
             <li>The profile you build: colors, style preferences, sizes, brands and your city for weather.</li>
             <li>Your closet: the items you add and any photos you upload.</li>
-            <li>Your feedback on outfits, so suggestions get better.</li>
+            <li>Your feedback on outfits and what you wear, so suggestions and closet insights get better.</li>
+            <li>If you share a look for a second opinion: anyone with that link can see the pieces in it and vote until it closes. Friends who vote give only an optional first name and comment.</li>
+            <li>If you turn on notifications: a device address from your browser, used only to send you Valette notifications.</li>
           </ul>
         </section>
         <section className="space-y-2">

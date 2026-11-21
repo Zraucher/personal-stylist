@@ -56,7 +56,7 @@ export async function geocode(location: string): Promise<{ latitude: number; lon
   }
 }
 
-type Hourly = {
+export type Hourly = {
   time: string[];
   temperature_2m: number[];
   apparent_temperature: number[];
@@ -65,11 +65,11 @@ type Hourly = {
   wind_speed_10m: number[];
 };
 
-export async function forecast(latitude: number, longitude: number): Promise<Hourly | null> {
+export async function forecast(latitude: number, longitude: number, days = 7): Promise<Hourly | null> {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}` +
     `&hourly=temperature_2m,apparent_temperature,precipitation_probability,uv_index,wind_speed_10m` +
-    `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=7`;
+    `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&forecast_days=${Math.min(16, Math.max(1, days))}`;
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(8000), next: { revalidate: 1800 } });
     if (!r.ok) return null;

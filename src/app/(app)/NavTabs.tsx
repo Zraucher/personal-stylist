@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export const NAV = [
-  { href: "/today", label: "Today", match: ["/today"] },
-  { href: "/closet", label: "Closet", match: ["/closet", "/gaps"] },
-  { href: "/outfits", label: "Outfits", match: ["/outfits"] },
+  { href: "/today", label: "Today", match: ["/today", "/opinions"] },
+  { href: "/plan", label: "Plan", match: ["/plan"] },
+  { href: "/closet", label: "Closet", match: ["/closet", "/gaps", "/outfits"] },
   { href: "/ask", label: "Ask", match: ["/ask"] },
   { href: "/hauls", label: "Shop", match: ["/hauls", "/wishlist"] },
   { href: "/profile", label: "Profile", match: ["/profile"] },

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addWish, deleteWish, setCandidateState, setWatch, setWishStatus, sourcingHaul, upcomingStatus } from "./actions";
 import { priceDrop } from "@/lib/retail/price";
+import AskFriendsButton from "@/components/AskFriendsButton";
 
 export type WishView = { id: string; title: string; preferences: string | null; budget: string | null; colors: string[]; status: "open" | "found" | "dropped"; lastSearched: string | null };
 export type CandidateView = {
@@ -230,6 +231,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
                         <button type="button" onClick={() => candState(c, "dismissed")} className="rounded-full border border-stone-300 px-2 py-0.5">
                           Dismiss
                         </button>
+                        <AskFriendsButton target={{ kind: "find", candidateId: c.id }} compact />
                       </div>
                     </div>
                   </div>

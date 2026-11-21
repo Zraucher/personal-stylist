@@ -6,6 +6,8 @@ import { CATEGORIES, type Category, type ClosetItem } from "@/lib/closet/taxonom
 import ItemForm, { type ItemFormValues } from "../ItemForm";
 import DeleteItemButton from "./DeleteItemButton";
 import ScorecardPanel, { type ScorecardRow } from "../ScorecardPanel";
+import WearPanel from "./WearPanel";
+import { localDate } from "@/lib/today/weather";
 
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -36,6 +38,13 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     answer = (fb?.type as "agree" | "disagree" | undefined) ?? null;
   }
 
+  const [{ data: wearRows }, { data: prof }] = await Promise.all([
+    supabase.from("wear_log").select("worn_on").eq("item_id", id).order("worn_on", { ascending: false }),
+    supabase.from("profiles").select("timezone").eq("id", item.user_id).maybeSingle(),
+  ]);
+  const wornDates = (wearRows ?? []).map((r) => r.worn_on as string);
+  const today = localDate((prof?.timezone as string | null) ?? null);
+
   const initial: ItemFormValues = {
     name: item.name ?? "",
     category: (CATEGORIES as readonly string[]).includes(item.category ?? "") ? (item.category as Category) : "top",
@@ -63,6 +72,8 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
       </div>
 
       <ScorecardPanel itemId={item.id} hasImage={!!item.image_path} initial={scorecard} initialAnswer={answer} />
+
+      <WearPanel itemId={item.id} wears={wornDates.length} lastWorn={wornDates[0] ?? item.last_worn ?? null} wornToday={wornDates[0] === today} price={item.price != null ? Number(item.price) : null} />
 
       <ItemForm initial={initial} itemId={item.id} imagePath={item.image_path} imageUrl={item.image_path ? urls[item.image_path] ?? null : null} />
 

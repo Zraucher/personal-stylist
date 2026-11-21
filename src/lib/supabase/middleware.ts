@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/privacy"];
+const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/o/", "/offline", "/api/cron/"];
 // The marketing home page is public; signed-in people skip it and land on Today.
 const PUBLIC_EXACT = ["/"];
 

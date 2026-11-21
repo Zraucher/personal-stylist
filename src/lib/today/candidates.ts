@@ -77,13 +77,13 @@ export function singular(s: string): string {
   return w;
 }
 const head = (s: string | null | undefined) => singular((s ?? "").trim().split(/\s+/).pop() ?? "");
-const isLayer = (p: ClosetPiece) =>
+export const isLayer = (p: ClosetPiece) =>
   ["outerwear", "layer"].includes(word(p.category)) ||
   /hoodie|sweatshirt|quarter-zip|cardigan|overshirt|jacket|blazer|coat|vest/.test(word(p.subcategory)) && word(p.category) !== "bottom";
-const isTop = (p: ClosetPiece) => word(p.category) === "top" && !isLayer(p) || (word(p.category) === "activewear" && /polo|top|tee|tank/.test(word(p.subcategory)));
-const isBottom = (p: ClosetPiece) => word(p.category) === "bottom" || (word(p.category) === "activewear" && /short|legging|pant|jogger/.test(word(p.subcategory)));
-const isDress = (p: ClosetPiece) => word(p.category) === "dress";
-const isShoe = (p: ClosetPiece) => word(p.category) === "shoes";
+export const isTop = (p: ClosetPiece) => word(p.category) === "top" && !isLayer(p) || (word(p.category) === "activewear" && /polo|top|tee|tank/.test(word(p.subcategory)));
+export const isBottom = (p: ClosetPiece) => word(p.category) === "bottom" || (word(p.category) === "activewear" && /short|legging|pant|jogger/.test(word(p.subcategory)));
+export const isDress = (p: ClosetPiece) => word(p.category) === "dress";
+export const isShoe = (p: ClosetPiece) => word(p.category) === "shoes";
 
 function daysSince(date: string | null | undefined, today: string): number {
   if (!date) return 60;

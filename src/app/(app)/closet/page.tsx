@@ -4,6 +4,7 @@ import { signedImageUrls } from "@/lib/closet/images";
 import ItemPlaceholder from "@/lib/closet/placeholder";
 import { CATEGORIES, CATEGORY_LABELS, STATUS_LABELS, type ClosetItem } from "@/lib/closet/taxonomy";
 import { verdictClass, verdictLabel } from "@/lib/verdict";
+import ClosetSubnav from "../ClosetSubnav";
 
 const LAYER = /hoodie|sweatshirt|jacket|cardigan|vest|coat|blazer|quarter-zip|overshirt/i;
 
@@ -44,6 +45,7 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-6">
+      <ClosetSubnav />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Closet</h1>
