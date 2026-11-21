@@ -14,6 +14,7 @@ export function ConfirmButton({
   confirmLabel = "Delete",
   cancelLabel = "Keep it",
   onConfirm,
+  confirmTone = "danger",
   variant = "danger",
   size = "sm",
   disabled,
@@ -25,6 +26,8 @@ export function ConfirmButton({
   confirmLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
+  /** "danger" (Clay) for deletes, "neutral" (Night) for anything reversible. */
+  confirmTone?: "danger" | "neutral";
   variant?: ButtonVariant;
   size?: ButtonSize;
   disabled?: boolean;
@@ -59,7 +62,10 @@ export function ConfirmButton({
               ref.current?.close();
               onConfirm();
             }}
-            className={buttonClass("primary", "sm") + " bg-red-700 hover:bg-red-700/90"}
+            className={
+              "inline-flex min-h-9 items-center justify-center rounded-full px-3.5 text-sm font-semibold transition-transform duration-200 ease-soft active:scale-[0.98] tap " +
+              (confirmTone === "danger" ? "bg-red-700 text-on-accent hover:opacity-90" : "bg-stone-900 text-stone-50 hover:opacity-90")
+            }
           >
             {confirmLabel}
           </button>

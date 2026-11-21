@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { RecommendationView } from "@/lib/today/recommend";
 import RecommendationCards from "../today/RecommendationCards";
+import { Button, Card, Field, Notice, Skeleton, Textarea } from "@/components/ui";
 
 const EXAMPLES = [
   "Rooftop dinner Friday, it'll be 95 at sunset, no dress",
@@ -36,38 +37,54 @@ export default function AskClient({ initial }: { initial: RecommendationView | n
 
   return (
     <div className="space-y-6">
-      <form
-        onSubmit={(e) => {
+      <Card
+        as="form"
+        onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
           void ask(text);
         }}
-        className="space-y-3 rounded-xl border border-stone-200 bg-white p-4"
+        className="space-y-3"
       >
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={3}
-          maxLength={500}
-          placeholder="Describe the day: where, when, the weather, anything you won't wear"
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-base outline-none focus:border-stone-900"
-        />
-        <div className="flex flex-wrap gap-2">
+        <Field label="Describe the day" srOnly>
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder="Describe the day: where, when, the weather, anything you won't wear"
+          />
+        </Field>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Examples">
           {EXAMPLES.map((ex) => (
-            <button key={ex} type="button" onClick={() => setText(ex)} className="rounded-full border border-stone-300 px-3 py-1 text-xs text-stone-600 hover:border-stone-500">
+            <button
+              key={ex}
+              type="button"
+              onClick={() => setText(ex)}
+              className="tap inline-flex min-h-9 items-center rounded-full bg-card px-3.5 py-1.5 text-left text-[13px] leading-snug text-stone-600 ring-1 ring-inset ring-line-strong transition-colors duration-200 ease-soft hover:text-stone-900 hover:ring-stone-400"
+            >
               {ex}
             </button>
           ))}
         </div>
-        <button type="submit" disabled={loading || text.trim().length < 3} className="rounded-full bg-emerald-700 px-5 py-2 font-bold text-white disabled:opacity-60">
+        <Button type="submit" variant="primary" disabled={loading || text.trim().length < 3} aria-busy={loading}>
           {loading ? "Thinking…" : "Ask"}
-        </button>
-        {error && <p className="text-sm text-red-700">{error}</p>}
-      </form>
-      {rec && (
-        <div className="space-y-2">
-          {rec.prompt && <p className="text-sm text-stone-500">For: “{rec.prompt}”</p>}
-          <RecommendationCards key={rec.id} rec={rec} />
+        </Button>
+        {error && <Notice tone="error">{error}</Notice>}
+      </Card>
+      {loading ? (
+        <div role="status" aria-live="polite" className="space-y-3">
+          <span className="sr-only">Thinking…</span>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-72" />
+          ))}
         </div>
+      ) : (
+        rec && (
+          <div className="space-y-2">
+            {rec.prompt && <p className="text-sm text-stone-500">For: “{rec.prompt}”</p>}
+            <RecommendationCards key={rec.id} rec={rec} />
+          </div>
+        )
       )}
     </div>
   );

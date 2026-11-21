@@ -2,15 +2,33 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import ItemPlaceholder from "@/lib/closet/placeholder";
 import type { RecommendationView } from "@/lib/today/recommend";
 import { respondToOutfit } from "./actions";
 import AskFriendsButton from "@/components/AskFriendsButton";
+import { Button, ButtonLink, Card, CheckTick, Chip, Field, Input, Notice, Thumb, buttonClass, cx, type ButtonVariant } from "@/components/ui";
 
 type Fb = "wore" | "skipped" | "disliked" | "benchmark" | "failure";
 const FB_LABEL: Record<Fb, string> = { wore: "wore it", skipped: "skip", disliked: "not me", benchmark: "this is so me", failure: "felt like a costume" };
-const PRIMARY: Fb[] = ["wore", "disliked"];
+const PRIMARY: Array<{ t: Fb; variant: ButtonVariant }> = [
+  { t: "wore", variant: "secondary" },
+  { t: "disliked", variant: "quiet" },
+];
 const MORE: Fb[] = ["benchmark", "failure", "skipped"];
+
+// Buttons use sentence case; the stored labels stay lowercase.
+const cap = (x: string) => x[0].toUpperCase() + x.slice(1);
+
+// Selected feedback is Night (never green: green means "works on you").
+const NIGHT =
+  "tap inline-flex min-h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-stone-900 px-3.5 text-sm font-semibold text-stone-50 transition-[background-color,color,transform] duration-200 ease-soft active:scale-[0.98] disabled:opacity-50";
+
+function FbButton({ on, variant, disabled, onClick, children }: { on: boolean; variant: ButtonVariant; disabled: boolean; onClick: () => void; children: string }) {
+  return (
+    <button type="button" aria-pressed={on} disabled={disabled} onClick={onClick} className={on ? NIGHT : buttonClass(variant, "sm")}>
+      {cap(children)}
+    </button>
+  );
+}
 
 // A thin closet gets a direct way to fill it.
 const THIN_CLOSET = 8;
@@ -29,7 +47,7 @@ export function WeatherLine({ rec }: { rec: RecommendationView }) {
       ) : (
         <>
           No forecast available, so this assumes a mild day.{" "}
-          <Link href="/profile" className="underline">
+          <Link href="/profile" className="font-medium text-stone-900 underline underline-offset-2">
             Add your city
           </Link>{" "}
           for real weather.
@@ -42,30 +60,34 @@ export function WeatherLine({ rec }: { rec: RecommendationView }) {
 function FillCloset({ missing, size }: { missing: string[]; size: number }) {
   if (!missing.length && size >= THIN_CLOSET) return null;
   return (
-    <div className="space-y-2 rounded-xl border border-dashed border-stone-300 bg-white p-4 text-sm">
+    <Card variant="warm" className="space-y-2 text-sm text-stone-700">
       {missing.length > 0 && (
         <>
-          <p className="font-medium">Your closet is missing:</p>
-          <ul className="list-disc space-y-0.5 pl-5 text-stone-600">
+          <p className="font-semibold text-stone-900">Your closet is missing:</p>
+          <ul className="list-disc space-y-0.5 pl-5">
             {missing.map((m) => (
               <li key={m}>{m}</li>
             ))}
           </ul>
         </>
       )}
-      {size < THIN_CLOSET && <p className="text-stone-600">You have {size} {size === 1 ? "piece" : "pieces"} so far. Tick the basics you own and the picks get much better.</p>}
-      <div className="flex flex-wrap gap-2 pt-1">
-        <Link href="/closet/basics" className="rounded-lg bg-stone-900 px-3 py-1.5 text-white">
+      {size < THIN_CLOSET && (
+        <p>
+          You have {size} {size === 1 ? "piece" : "pieces"} so far. Tick the basics you own and the picks get much better.
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-2 pt-1">
+        <ButtonLink href="/closet/basics" variant="secondary" size="sm">
           Tick your basics
-        </Link>
-        <Link href="/closet/new" className="rounded-lg border border-stone-300 px-3 py-1.5 hover:border-stone-500">
+        </ButtonLink>
+        <ButtonLink href="/closet/new" variant="quiet" size="sm">
           Add a piece
-        </Link>
-        <Link href="/gaps" className="rounded-lg border border-stone-300 px-3 py-1.5 hover:border-stone-500">
+        </ButtonLink>
+        <ButtonLink href="/gaps" variant="quiet" size="sm">
           What to buy next
-        </Link>
+        </ButtonLink>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -94,92 +116,95 @@ export default function RecommendationCards({ rec }: { rec: RecommendationView }
     });
 
   const click = (outfitId: string, t: Fb) => (t === "disliked" || t === "failure" ? setNoteFor({ id: outfitId, type: t }) : send(outfitId, t));
-  const chip = (on: boolean) =>
-    "rounded-full border px-3 py-1 disabled:opacity-60 " + (on ? "border-emerald-700 bg-emerald-700 text-white" : "border-stone-300 bg-white hover:border-stone-500");
 
   return (
     <div className="space-y-4">
       <WeatherLine rec={rec} />
-      {rec.note && <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">{rec.note}</p>}
+      {rec.note && <Notice tone="warn">{rec.note}</Notice>}
       {rec.relaxed && rec.picks.length > 0 && (
-        <p className="rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-700">
-          Nothing in your closet fully fits this, so these are the closest matches. Adding one of the missing pieces below will fix it.
-        </p>
+        <Notice tone="info">Nothing in your closet fully fits this, so these are the closest matches. Adding one of the missing pieces below will fix it.</Notice>
       )}
       {rec.picks.length === 0 && <p className="text-sm text-stone-600">No outfit from your closet fits yet.</p>}
-      {rec.picks.map((p, idx) => (
-        <article key={p.outfitId} className={"rounded-xl border bg-white p-4 " + (chosen === p.outfitId ? "border-emerald-700" : "border-stone-200")}>
-          <div className="flex items-baseline justify-between gap-3">
-            <h3 className="font-display text-lg font-bold">
-              {idx + 1}. {p.name}
-            </h3>
-            {chosen === p.outfitId ? (
-              <span className="shrink-0 rounded-full bg-emerald-700 px-2.5 py-0.5 text-xs font-semibold text-white">✓ wearing it</span>
-            ) : rec.relaxed ? (
-              <span className="shrink-0 rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-semibold text-stone-900">◐ closest match</span>
-            ) : (
-              <span className="shrink-0 rounded-full bg-emerald-700 px-2.5 py-0.5 text-xs font-semibold text-white">✓ works on you</span>
-            )}
-          </div>
-          {p.why && p.why !== p.headline && <p className="mt-1 text-sm text-stone-700">{p.why}</p>}
-          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5">
-            {p.items.map((i) => (
-              <Link key={i.id} href={`/closet/${i.id}`} className="overflow-hidden rounded-lg border border-stone-200">
-                <div className="aspect-square bg-stone-100">
-                  {i.url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={i.url} alt={i.name} className="h-full w-full object-cover" />
+      <div className="space-y-3">
+        {rec.picks.map((p) => {
+          const isChosen = chosen === p.outfitId;
+          const open = moreFor === p.outfitId;
+          return (
+            <Card as="article" key={p.outfitId} variant={isChosen ? "active" : "surface"} className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="min-w-0 font-display text-lg font-bold leading-snug">{p.name}</h3>
+                <span role="status" aria-live="polite" className="shrink-0">
+                  {isChosen ? (
+                    <Chip tone="works">
+                      {/* The disc matches the chip, so the tick draws straight onto it. */}
+                      <CheckTick size={14} className="-ml-1 text-emerald-700" />
+                      wearing it
+                    </Chip>
+                  ) : rec.relaxed ? (
+                    <Chip tone="almost">
+                      <span aria-hidden="true">◐</span> closest match
+                    </Chip>
                   ) : (
-                    <ItemPlaceholder category={i.category} subcategory={i.subcategory} colors={i.colors} />
+                    <Chip tone="works">
+                      <span aria-hidden="true">✓</span> works on you
+                    </Chip>
                   )}
+                </span>
+              </div>
+              {p.why && p.why !== p.headline && <p className="text-sm leading-relaxed text-stone-700">{p.why}</p>}
+              <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
+                {p.items.map((i) => (
+                  <li key={i.id} className="min-w-0">
+                    <Link href={`/closet/${i.id}`} className="group block space-y-1 rounded-thumb">
+                      <Thumb src={i.url} alt={i.name} item={i} size="fill" className="transition-opacity duration-200 ease-soft group-hover:opacity-90" />
+                      <p className="truncate text-xs text-stone-600">{i.name}</p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {p.headline && <p className="text-xs text-stone-500">{p.headline}</p>}
+              <div className="flex flex-wrap items-center gap-2">
+                {PRIMARY.map(({ t, variant }) => (
+                  <FbButton key={t} on={given[p.outfitId] === t} variant={variant} disabled={pending} onClick={() => click(p.outfitId, t)}>
+                    {FB_LABEL[t]}
+                  </FbButton>
+                ))}
+                <ButtonLink href={`/outfits/new?items=${p.items.map((i) => i.id).join(",")}`} variant="quiet" size="sm">
+                  Swap a piece
+                </ButtonLink>
+                <Button type="button" variant="quiet" size="sm" onClick={() => setMoreFor(open ? null : p.outfitId)} aria-expanded={open}>
+                  More
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={cx("transition-transform duration-200 ease-soft", open && "rotate-180")}>
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </Button>
+                <AskFriendsButton target={{ kind: "outfit", outfitId: p.outfitId }} compact />
+              </div>
+              {open && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {MORE.map((t) => (
+                    <FbButton key={t} on={given[p.outfitId] === t} variant="quiet" disabled={pending} onClick={() => click(p.outfitId, t)}>
+                      {FB_LABEL[t]}
+                    </FbButton>
+                  ))}
                 </div>
-                <p className="truncate px-1.5 py-1 text-[11px] text-stone-600">{i.name}</p>
-              </Link>
-            ))}
-          </div>
-          <p className="mt-2 text-xs text-stone-500">{p.headline}</p>
-          <div className="mt-3 flex flex-wrap gap-2 text-sm">
-            {PRIMARY.map((t) => (
-              <button key={t} type="button" disabled={pending} onClick={() => click(p.outfitId, t)} className={chip(given[p.outfitId] === t)}>
-                {FB_LABEL[t]}
-              </button>
-            ))}
-            <Link href={`/outfits/new?items=${p.items.map((i) => i.id).join(",")}`} className={chip(false)}>
-              Swap a piece
-            </Link>
-            <button type="button" onClick={() => setMoreFor(moreFor === p.outfitId ? null : p.outfitId)} className="px-1 text-stone-500 underline-offset-2 hover:underline" aria-expanded={moreFor === p.outfitId}>
-              More
-            </button>
-          </div>
-          <div className="mt-2">
-            <AskFriendsButton target={{ kind: "outfit", outfitId: p.outfitId }} compact />
-          </div>
-          {moreFor === p.outfitId && (
-            <div className="mt-2 flex flex-wrap gap-2 text-sm">
-              {MORE.map((t) => (
-                <button key={t} type="button" disabled={pending} onClick={() => click(p.outfitId, t)} className={chip(given[p.outfitId] === t)}>
-                  {FB_LABEL[t]}
-                </button>
-              ))}
-            </div>
-          )}
-          {noteFor?.id === p.outfitId && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <input
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="What was off? (optional)"
-                className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-base"
-              />
-              <button type="button" disabled={pending} onClick={() => send(p.outfitId, noteFor.type, note)} className="rounded-lg bg-stone-900 px-3 py-2 text-sm text-white">
-                Save
-              </button>
-            </div>
-          )}
-        </article>
-      ))}
+              )}
+              {noteFor?.id === p.outfitId && (
+                <div className="flex flex-wrap items-end gap-2">
+                  <Field label="What was off? (optional)" srOnly className="min-w-0 flex-1">
+                    <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was off? (optional)" />
+                  </Field>
+                  <Button type="button" variant="secondary" disabled={pending} aria-busy={pending} onClick={() => send(p.outfitId, noteFor.type, note)}>
+                    Save
+                  </Button>
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
       <FillCloset missing={rec.missing} size={rec.closetSize} />
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }

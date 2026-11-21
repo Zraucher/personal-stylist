@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { requestMagicLink, verifyCode, type LoginState } from "./actions";
 import Wordmark from "@/components/Wordmark";
+import { Button, Card, Field, Input, Notice } from "@/components/ui";
 
 const initial: LoginState = { status: "idle" };
 
@@ -11,7 +12,7 @@ export default function LoginPage() {
   const [codeState, codeAction, codePending] = useActionState(verifyCode, initial);
 
   return (
-    <main className="min-h-dvh flex items-center justify-center px-4 py-12 bg-stone-50 text-stone-900">
+    <main className="flex min-h-dvh items-center justify-center bg-ground px-4 py-12 text-stone-900">
       <div className="w-full max-w-sm">
         <h1 className="sr-only">valette</h1>
         <Wordmark size={40} />
@@ -21,38 +22,37 @@ export default function LoginPage() {
         </p>
 
         {state.status === "sent" ? (
-          <div className="mt-8 rounded-lg border border-stone-200 bg-white p-5">
-            <p className="font-medium">Check your email</p>
-            <p className="mt-1 text-sm text-stone-600">
-              We sent a sign-in code to <span className="font-medium">{state.email}</span>.
-              Type it here. Stay on this page until you have it.
-            </p>
-            <form action={codeAction} className="mt-4 space-y-3">
+          <Card className="mt-8 space-y-4">
+            <div role="status">
+              <p className="font-display text-lg font-bold leading-snug">Check your email</p>
+              <p className="mt-1 text-sm text-stone-600">
+                We sent a sign-in code to <span className="font-medium">{state.email}</span>.
+                Type it here. Stay on this page until you have it.
+              </p>
+            </div>
+            <form action={codeAction} className="space-y-3">
               <input type="hidden" name="email" value={state.email ?? ""} />
-              <input
-                name="code"
-                required
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                maxLength={8}
-                placeholder="Code"
-                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-center text-lg tracking-widest outline-none focus:border-stone-900"
-              />
-              <button
-                type="submit"
-                disabled={codePending}
-                className="w-full rounded-lg bg-stone-900 px-3 py-2.5 text-base font-medium text-white disabled:opacity-60"
-              >
+              <Field label="Sign-in code" srOnly>
+                <Input
+                  name="code"
+                  required
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={8}
+                  placeholder="Code"
+                  className="text-center text-lg tracking-widest"
+                />
+              </Field>
+              <Button type="submit" variant="primary" block disabled={codePending} aria-busy={codePending || undefined}>
                 {codePending ? "Checking…" : "Sign in with code"}
-              </button>
-              {codeState.message && <p className="text-sm text-red-700">{codeState.message}</p>}
+              </Button>
+              {codeState.message && <Notice tone="error">{codeState.message}</Notice>}
             </form>
-          </div>
+          </Card>
         ) : (
           <form action={formAction} className="mt-8 space-y-3">
-            <label className="block">
-              <span className="sr-only">Email</span>
-              <input
+            <Field label="Email" srOnly>
+              <Input
                 type="email"
                 name="email"
                 required
@@ -60,25 +60,18 @@ export default function LoginPage() {
                 inputMode="email"
                 defaultValue={state.email ?? ""}
                 placeholder="you@example.com"
-                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5 text-base outline-none focus:border-stone-900"
               />
-            </label>
-            <button
-              type="submit"
-              disabled={pending}
-              className="w-full rounded-lg bg-stone-900 px-3 py-2.5 text-base font-medium text-white disabled:opacity-60"
-            >
+            </Field>
+            <Button type="submit" variant="primary" block disabled={pending} aria-busy={pending || undefined}>
               {pending ? "Sending…" : "Send sign-in code"}
-            </button>
+            </Button>
 
             {state.status === "not_invited" && (
-              <p className="text-sm text-amber-700">
+              <Notice tone="warn">
                 That email isn&apos;t on the invite list yet. Ask Zack to add it.
-              </p>
+              </Notice>
             )}
-            {state.status === "error" && (
-              <p className="text-sm text-red-700">{state.message}</p>
-            )}
+            {state.status === "error" && <Notice tone="error">{state.message}</Notice>}
           </form>
         )}
       </div>

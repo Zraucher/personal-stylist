@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { askForOpinion } from "@/app/(app)/opinions/actions";
+import { Button, Card, Field, Input } from "@/components/ui";
 
 type Target = { kind: "outfit"; outfitId: string } | { kind: "find"; candidateId: string };
 
@@ -46,41 +47,45 @@ export default function AskFriendsButton({ target, compact = false }: { target: 
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className={"rounded-full border-[1.5px] border-stone-900 font-semibold hover:bg-stone-900 hover:text-stone-50 " + (compact ? "px-3 py-1 text-xs" : "px-4 py-1.5 text-sm")}>
+      <Button type="button" variant="secondary" size={compact ? "sm" : "md"} onClick={() => setOpen(true)}>
         Ask a friend
-      </button>
+      </Button>
     );
   }
 
   return (
-    <div className="w-full space-y-2 rounded-xl bg-blush/60 p-3 text-sm">
+    <Card variant="warm" pad="sm" className="w-full space-y-2.5 text-sm text-stone-700">
       {done ? (
-        <div className="space-y-1.5">
-          <p className="font-semibold">{done.copied ? "Link copied. Paste it in a text." : "Sent. Votes show up as friends answer."}</p>
-          <input readOnly value={done.url} onFocus={(e) => e.currentTarget.select()} className="w-full rounded-lg border border-stone-300 bg-white px-2 py-1 text-xs" aria-label="Share link" />
-          <Link href={`/opinions/${done.id}`} className="inline-block font-semibold underline">See votes</Link>
+        <div className="space-y-2">
+          <p role="status" aria-live="polite" className="font-semibold text-stone-900">
+            {done.copied ? "Link copied. Paste it in a text." : "Sent. Votes show up as friends answer."}
+          </p>
+          <Input readOnly value={done.url} onFocus={(e) => e.currentTarget.select()} aria-label="Share link" />
+          <Link href={`/opinions/${done.id}`} className="inline-block font-semibold text-stone-900 underline underline-offset-2">
+            See votes
+          </Link>
         </div>
       ) : (
         <>
-          <label className="block">
-            <span className="text-stone-700">Anything to ask? (optional)</span>
-            <input
-              value={question}
-              onChange={(e) => setQuestion(e.target.value.slice(0, 200))}
-              placeholder="Rooftop dinner Friday. Too much?"
-              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base"
-            />
-          </label>
-          <div className="flex items-center gap-2">
-            <button type="button" disabled={pending} onClick={share} className="rounded-full bg-emerald-700 px-4 py-1.5 font-semibold text-white disabled:opacity-60">
+          <Field label="Anything to ask? (optional)">
+            <Input value={question} onChange={(e) => setQuestion(e.target.value.slice(0, 200))} placeholder="Rooftop dinner Friday. Too much?" />
+          </Field>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="secondary" size="sm" disabled={pending} aria-busy={pending} onClick={share}>
               {pending ? "Making link…" : "Share for votes"}
-            </button>
-            <button type="button" onClick={() => setOpen(false)} className="text-stone-600">Cancel</button>
+            </Button>
+            <Button type="button" variant="quiet" size="sm" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
           </div>
           <p className="text-xs text-stone-600">Anyone with the link can see these pieces and vote. No account needed.</p>
         </>
       )}
-      {error && <p className="text-red-700">{error}</p>}
-    </div>
+      {error && (
+        <p role="alert" className="text-red-700">
+          {error}
+        </p>
+      )}
+    </Card>
   );
 }

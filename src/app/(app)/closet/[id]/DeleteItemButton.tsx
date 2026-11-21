@@ -1,21 +1,20 @@
 "use client";
 
 import { useTransition } from "react";
+import { ConfirmButton } from "@/components/ui";
 import { deleteItem } from "../actions";
 
 export default function DeleteItemButton({ id }: { id: string }) {
   const [pending, startTransition] = useTransition();
   return (
-    <button
-      type="button"
+    <ConfirmButton
+      title="Remove this item?"
+      body="Remove this item and its photo? If it just left your closet, set the status to Gone instead."
+      confirmLabel="Remove"
       disabled={pending}
-      onClick={() => {
-        if (!confirm("Remove this item and its photo? If it just left your closet, set the status to Gone instead.")) return;
-        startTransition(() => deleteItem(id));
-      }}
-      className="text-red-700 hover:underline disabled:opacity-60"
+      onConfirm={() => startTransition(() => deleteItem(id))}
     >
-      {pending ? "Removing…" : "Remove"}
-    </button>
+      <span aria-live="polite">{pending ? "Removing…" : "Remove"}</span>
+    </ConfirmButton>
   );
 }

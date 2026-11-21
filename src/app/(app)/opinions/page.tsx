@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { tally } from "@/lib/opinions/tally";
 import type { OpinionSnapshot } from "@/lib/opinions/server";
 import { stillOpen } from "@/lib/time";
+import { Chip, EmptyState, ListCard, ListRow, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Second opinions · valette" };
 
@@ -19,18 +20,35 @@ export default async function OpinionsPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <Link href="/today" className="text-sm text-stone-500 hover:text-stone-900">← Today</Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">Second opinions</h1>
-        <p className="text-sm text-stone-500">Looks and finds you asked friends about. Tap <b>Ask a friend</b> on any outfit or shop find to start one.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        back={{ href: "/today", label: "Today" }}
+        title="Second opinions"
+        subtitle={
+          <>
+            Looks and finds you asked friends about. Tap <b className="font-semibold text-stone-700">Ask a friend</b> on any outfit or shop find to start one.
+          </>
+        }
+      />
       {!rows?.length ? (
-        <div className="rounded-xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-600">
-          Nothing shared yet. On <Link href="/today" className="underline">Today</Link> or <Link href="/outfits" className="underline">Outfits</Link>, tap <b>Ask a friend</b> and send the link. Friends vote without an account.
-        </div>
+        <EmptyState
+          title="Nothing shared yet."
+          body={
+            <>
+              On{" "}
+              <Link href="/today" className="font-medium underline underline-offset-2">
+                Today
+              </Link>{" "}
+              or{" "}
+              <Link href="/outfits" className="font-medium underline underline-offset-2">
+                Outfits
+              </Link>
+              , tap <b>Ask a friend</b> and send the link. Friends vote without an account.
+            </>
+          }
+        />
       ) : (
-        <ul className="space-y-2">
+        <ListCard>
           {rows.map((r) => {
             const vs = byOpinion.get(r.id as string) ?? [];
             const t = tally(vs);
@@ -39,18 +57,28 @@ export default async function OpinionsPage() {
             const open = stillOpen(r.closes_at as string);
             const s = r.snapshot as OpinionSnapshot;
             return (
-              <li key={r.id as string}>
-                <Link href={`/opinions/${r.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white p-3 hover:border-stone-400">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{s?.title ?? "Look"}</p>
-                    <p className="truncate text-sm text-stone-500">{r.question ? `“${r.question}” · ` : ""}{t.summary}{open ? "" : " · closed"}</p>
-                  </div>
-                  {fresh > 0 && <span className="shrink-0 rounded-full bg-emerald-700 px-2.5 py-0.5 text-xs font-bold text-white">{fresh} new</span>}
-                </Link>
-              </li>
+              <ListRow
+                key={r.id as string}
+                href={`/opinions/${r.id}`}
+                title={s?.title ?? "Look"}
+                meta={
+                  <>
+                    {r.question ? `“${r.question}” · ` : ""}
+                    {t.summary}
+                    {open ? "" : " · closed"}
+                  </>
+                }
+                trailing={
+                  fresh > 0 ? (
+                    <Chip tone="warm" className="shrink-0 tabular-nums">
+                      {fresh} new
+                    </Chip>
+                  ) : undefined
+                }
+              />
             );
           })}
-        </ul>
+        </ListCard>
       )}
     </div>
   );

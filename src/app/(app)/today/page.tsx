@@ -4,6 +4,7 @@ import { localDate } from "@/lib/today/weather";
 import TodayClient from "./TodayClient";
 import PlannedToday from "./PlannedToday";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui";
 import { signedImageUrls } from "@/lib/closet/images";
 import { isoDaysAgo } from "@/lib/time";
 
@@ -35,11 +36,11 @@ export default async function TodayPage() {
     supabase.from("second_opinions").select("id, seen_at, created_at").eq("user_id", uid).gt("created_at", isoDaysAgo(30)),
     supabase.from("wishlist_candidates").select("id, price, first_price").eq("user_id", uid).eq("watch", true),
   ]);
-  let planned: { name: string; items: Array<{ id: string; name: string; url: string | null; hex: string | null }> } | null = null;
+  let planned: { name: string; items: Array<{ id: string; name: string; url: string | null; hex: string | null; category: string | null; subcategory: string | null; colors: Array<{ name: string; hex?: string }> }> } | null = null;
   if (plan?.outfit_id) {
     const { data: o } = await supabase.from("outfits").select("name, item_ids").eq("id", plan.outfit_id).maybeSingle();
     const ids = (o?.item_ids as string[] | undefined) ?? [];
-    const { data: rows } = ids.length ? await supabase.from("closet_items").select("id, name, colors, image_path").in("id", ids) : { data: [] };
+    const { data: rows } = ids.length ? await supabase.from("closet_items").select("id, name, category, subcategory, colors, image_path").in("id", ids) : { data: [] };
     const urls = await signedImageUrls(supabase, (rows ?? []).map((r) => r.image_path as string | null));
     const byId = new Map((rows ?? []).map((r) => [r.id as string, r]));
     planned = {
@@ -47,7 +48,7 @@ export default async function TodayPage() {
       items: ids
         .map((id) => byId.get(id))
         .filter((r): r is NonNullable<typeof r> => !!r)
-        .map((r) => ({ id: r.id as string, name: (r.name as string | null) ?? "Piece", url: r.image_path ? urls[r.image_path as string] ?? null : null, hex: (Array.isArray(r.colors) ? (r.colors as Array<{ hex?: string }>)[0]?.hex : null) ?? null })),
+        .map((r) => ({ id: r.id as string, name: (r.name as string | null) ?? "Piece", url: r.image_path ? urls[r.image_path as string] ?? null : null, hex: (Array.isArray(r.colors) ? (r.colors as Array<{ hex?: string }>)[0]?.hex : null) ?? null, category: (r.category as string | null) ?? null, subcategory: (r.subcategory as string | null) ?? null, colors: Array.isArray(r.colors) ? (r.colors as Array<{ name: string; hex?: string }>) : [] })),
     };
   }
   let newVotes = 0;
@@ -59,20 +60,17 @@ export default async function TodayPage() {
   const drops = (watched ?? []).filter((c) => c.price != null && c.first_price != null && Number(c.first_price) - Number(c.price) >= 1 && Number(c.price) <= Number(c.first_price) * 0.97).length;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Today</h1>
-        <p className="text-sm text-stone-500">Three outfits from your closet for the weather and where you are going.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title="Today" subtitle="Three outfits from your closet for the weather and where you are going." />
       {(newVotes > 0 || drops > 0) && (
-        <div className="flex flex-wrap gap-2 text-sm">
+        <div className="flex flex-wrap gap-2">
           {newVotes > 0 && (
-            <Link href="/opinions" className="rounded-full bg-blush px-3 py-1.5 font-semibold text-stone-900">
+            <Link href="/opinions" className="tap inline-flex min-h-9 items-center rounded-full bg-blush px-3.5 text-sm font-semibold text-ink transition-colors dark:text-stone-900 duration-200 ease-soft hover:bg-blush/80">
               {newVotes} new vote{newVotes === 1 ? "" : "s"} from friends
             </Link>
           )}
           {drops > 0 && (
-            <Link href="/wishlist" className="rounded-full bg-emerald-100 px-3 py-1.5 font-semibold text-emerald-900">
+            <Link href="/wishlist" className="tap inline-flex min-h-9 items-center rounded-full bg-sky-brand px-3.5 text-sm font-semibold text-ink transition-colors dark:text-stone-900 duration-200 ease-soft hover:bg-sky-brand/80">
               {drops} price drop{drops === 1 ? "" : "s"} on finds you watch
             </Link>
           )}

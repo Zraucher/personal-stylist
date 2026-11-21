@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
 import HaulReview, { type HaulItemView } from "./HaulReview";
+import { PageHeader } from "@/components/ui";
 
 export default async function HaulPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -33,16 +33,8 @@ export default async function HaulPage({ params }: { params: Promise<{ id: strin
   }));
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <Link href="/hauls" className="text-sm text-stone-500 hover:text-stone-900">
-            ← Shop
-          </Link>
-          <h1 className="mt-1 truncate text-xl font-semibold tracking-tight">{(haul.retailer as string) || "Haul review"}</h1>
-          {haul.notes && <p className="text-sm text-stone-500">{haul.notes as string}</p>}
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader back={{ href: "/hauls", label: "Shop" }} title={(haul.retailer as string) || "Haul review"} subtitle={haul.notes ? (haul.notes as string) : undefined} />
       <HaulReview haulId={id} initial={items} />
     </div>
   );

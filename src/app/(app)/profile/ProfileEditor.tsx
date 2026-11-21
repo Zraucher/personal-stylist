@@ -3,12 +3,11 @@
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { addBrand, deleteBrand, saveAccount, saveColor, saveMeasurements, saveStyle } from "./actions";
+import { Button, Card as UICard, Chip, Field, Input, Notice, SectionTitle, Select, Textarea, type ChipTone } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
 // Shared bits
 // ---------------------------------------------------------------------------
-const input = "mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base outline-none focus:border-stone-900";
-
 function Card({
   title,
   editing,
@@ -31,32 +30,35 @@ function Card({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-stone-500">{title}</h2>
-        {!editing && (
-          <button type="button" onClick={onEdit} className="text-sm text-stone-600 underline-offset-2 hover:underline">
-            Edit
-          </button>
-        )}
-      </div>
+    <UICard as="section" className="space-y-3">
+      <SectionTitle
+        action={
+          !editing && (
+            <Button type="button" variant="quiet" size="sm" onClick={onEdit} aria-label={`Edit ${title}`}>
+              Edit
+            </Button>
+          )
+        }
+      >
+        {title}
+      </SectionTitle>
       {editing ? (
-        <div className="mt-3 space-y-3">
+        <div className="space-y-4">
           {children}
-          {error && <p className="text-sm text-red-700">{error}</p>}
-          <div className="flex gap-3 text-sm">
-            <button type="button" onClick={onSave} disabled={pending} className="rounded-lg bg-stone-900 px-4 py-2 text-white disabled:opacity-60">
+          {error && <Notice tone="error">{error}</Notice>}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="primary" size="sm" onClick={onSave} disabled={pending} aria-busy={pending || undefined}>
               {pending ? "Saving…" : "Save"}
-            </button>
-            <button type="button" onClick={onCancel} disabled={pending} className="text-stone-500 underline">
+            </Button>
+            <Button type="button" variant="quiet" size="sm" onClick={onCancel} disabled={pending}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
-        <div className="mt-2">{view}</div>
+        <div>{view}</div>
       )}
-    </section>
+    </UICard>
   );
 }
 
@@ -101,12 +103,17 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 function Empty() {
-  return <span className="text-stone-400">—</span>;
+  return (
+    <span className="text-stone-500">
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">Not set</span>
+    </span>
+  );
 }
-const Dl = ({ children }: { children: ReactNode }) => <dl className="grid grid-cols-[9rem_1fr] gap-y-1 text-sm">{children}</dl>;
+const Dl = ({ children }: { children: ReactNode }) => <dl className="grid grid-cols-[8.5rem_1fr] gap-x-3 gap-y-1.5 text-sm leading-relaxed">{children}</dl>;
 const list = (xs: string[]) => (xs.length ? xs.join(", ") : null);
 
-function TagInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
+function TagInput({ label, value, onChange, placeholder }: { label: string; value: string[]; onChange: (v: string[]) => void; placeholder?: string }) {
   const [draft, setDraft] = useState("");
   const add = () => {
     const t = draft.trim().replace(/,$/, "");
@@ -114,13 +121,13 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
     setDraft("");
   };
   return (
-    <div className="mt-1 rounded-lg border border-stone-300 bg-white p-2">
+    <div className="rounded-control border border-stone-400/70 bg-inset p-1.5 transition-colors duration-200 ease-soft focus-within:border-stone-900">
       <div className="flex flex-wrap gap-1.5">
         {value.map((t) => (
-          <span key={t} className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-sm">
+          <span key={t} className="inline-flex items-center gap-0.5 rounded-full bg-card py-0.5 pl-3 pr-0.5 text-sm ring-1 ring-line">
             {t}
-            <button type="button" onClick={() => onChange(value.filter((x) => x !== t))} className="text-stone-400 hover:text-stone-900" aria-label={`Remove ${t}`}>
-              ×
+            <button type="button" onClick={() => onChange(value.filter((x) => x !== t))} className="tap inline-grid size-7 place-items-center rounded-full text-base leading-none text-stone-500 transition-colors duration-200 ease-soft hover:bg-stone-900/[0.06] hover:text-stone-900" aria-label={`Remove ${t}`}>
+              <span aria-hidden="true">×</span>
             </button>
           </span>
         ))}
@@ -135,7 +142,8 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
           }}
           onBlur={add}
           placeholder={value.length ? "" : placeholder}
-          className="min-w-[8rem] flex-1 bg-transparent px-1 py-1 text-base outline-none"
+          aria-label={label}
+          className="min-h-9 min-w-[8rem] flex-1 rounded-[10px] bg-transparent px-2 py-1 text-base placeholder:text-stone-500"
         />
       </div>
     </div>
@@ -143,7 +151,7 @@ function TagInput({ value, onChange, placeholder }: { value: string[]; onChange:
 }
 
 type Fabric = { name: string; strength: "soft" | "hard" };
-function FabricInput({ value, onChange, placeholder }: { value: Fabric[]; onChange: (v: Fabric[]) => void; placeholder?: string }) {
+function FabricInput({ label, value, onChange, placeholder }: { label: string; value: Fabric[]; onChange: (v: Fabric[]) => void; placeholder?: string }) {
   const [draft, setDraft] = useState("");
   const add = () => {
     const t = draft.trim().replace(/,$/, "");
@@ -151,21 +159,26 @@ function FabricInput({ value, onChange, placeholder }: { value: Fabric[]; onChan
     setDraft("");
   };
   return (
-    <div className="mt-1 rounded-lg border border-stone-300 bg-white p-2">
+    <div className="rounded-control border border-stone-400/70 bg-inset p-1.5 transition-colors duration-200 ease-soft focus-within:border-stone-900">
       <div className="flex flex-wrap gap-1.5">
         {value.map((f) => (
-          <span key={f.name} className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-sm">
+          <span key={f.name} className="inline-flex items-center gap-1 rounded-full bg-card py-0.5 pl-3 pr-0.5 text-sm ring-1 ring-line">
             {f.name}
             <button
               type="button"
               onClick={() => onChange(value.map((x) => (x.name === f.name ? { ...x, strength: x.strength === "soft" ? "hard" : "soft" } : x)))}
-              className={"rounded px-1 text-[11px] " + (f.strength === "hard" ? "bg-stone-900 text-white" : "bg-white text-stone-500")}
+              aria-pressed={f.strength === "hard"}
+              aria-label={`${f.name} as a hard rule`}
+              className={
+                "tap inline-flex items-center rounded-full px-2 text-[11px] font-semibold transition-colors duration-200 ease-soft " +
+                (f.strength === "hard" ? "bg-stone-900 text-stone-50" : "bg-inset text-stone-600 ring-1 ring-inset ring-line-strong")
+              }
               title="Tap to switch between soft (a preference) and hard (a rule)"
             >
               {f.strength}
             </button>
-            <button type="button" onClick={() => onChange(value.filter((x) => x.name !== f.name))} className="text-stone-400 hover:text-stone-900" aria-label={`Remove ${f.name}`}>
-              ×
+            <button type="button" onClick={() => onChange(value.filter((x) => x.name !== f.name))} className="tap inline-grid size-7 place-items-center rounded-full text-base leading-none text-stone-500 transition-colors duration-200 ease-soft hover:bg-stone-900/[0.06] hover:text-stone-900" aria-label={`Remove ${f.name}`}>
+              <span aria-hidden="true">×</span>
             </button>
           </span>
         ))}
@@ -180,7 +193,8 @@ function FabricInput({ value, onChange, placeholder }: { value: Fabric[]; onChan
           }}
           onBlur={add}
           placeholder={value.length ? "" : placeholder}
-          className="min-w-[8rem] flex-1 bg-transparent px-1 py-1 text-base outline-none"
+          aria-label={label}
+          className="min-h-9 min-w-[8rem] flex-1 rounded-[10px] bg-transparent px-2 py-1 text-base placeholder:text-stone-500"
         />
       </div>
     </div>
@@ -214,22 +228,19 @@ export function AccountCard({ data }: { data: AccountData }) {
         </Dl>
       }
     >
-      <label className="block text-sm">
-        <span className="text-stone-500">Name</span>
-        <input value={e.v.name} onChange={(ev) => e.setV({ ...e.v, name: ev.target.value })} className={input} />
-      </label>
-      <label className="block text-sm">
-        <span className="text-stone-500">Location (city, used for weather)</span>
-        <input value={e.v.location} onChange={(ev) => e.setV({ ...e.v, location: ev.target.value })} placeholder="Las Vegas, NV" className={input} />
-      </label>
-      <label className="block text-sm">
-        <span className="text-stone-500">Outfits for</span>
-        <select value={e.v.presentation} onChange={(ev) => e.setV({ ...e.v, presentation: ev.target.value as AccountData["presentation"] })} className={input}>
+      <Field label="Name">
+        <Input value={e.v.name} onChange={(ev) => e.setV({ ...e.v, name: ev.target.value })} />
+      </Field>
+      <Field label="Location (city, used for weather)">
+        <Input value={e.v.location} onChange={(ev) => e.setV({ ...e.v, location: ev.target.value })} placeholder="Las Vegas, NV" />
+      </Field>
+      <Field label="Outfits for">
+        <Select value={e.v.presentation} onChange={(ev) => e.setV({ ...e.v, presentation: ev.target.value as AccountData["presentation"] })}>
           <option value="mens">Men&apos;s</option>
           <option value="womens">Women&apos;s</option>
           <option value="both">Both</option>
-        </select>
-      </label>
+        </Select>
+      </Field>
     </Card>
   );
 }
@@ -285,27 +296,23 @@ export function MeasurementsCard({ data }: { data: MeasurementsData }) {
     >
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {M_FIELDS.map(([k, label]) => (
-          <label key={k} className="block text-sm">
-            <span className="text-stone-500">{label}</span>
-            <input
+          <Field key={k} label={label}>
+            <Input
               type="number"
               inputMode="decimal"
               step="0.25"
               value={(e.v[k] as number | null) ?? ""}
               onChange={(ev) => e.setV({ ...e.v, [k]: ev.target.value === "" ? null : Number(ev.target.value) })}
-              className={input}
             />
-          </label>
+          </Field>
         ))}
       </div>
-      <label className="block text-sm">
-        <span className="text-stone-500">Rise target</span>
-        <input value={e.v.rise_target_in} onChange={(ev) => e.setV({ ...e.v, rise_target_in: ev.target.value })} placeholder="11 to 12 in" className={input} />
-      </label>
-      <label className="block text-sm">
-        <span className="text-stone-500">Sizing notes</span>
-        <textarea value={e.v.sizing_notes} onChange={(ev) => e.setV({ ...e.v, sizing_notes: ev.target.value })} rows={3} placeholder="Tees run M to XL by brand; tall in pants" className={input} />
-      </label>
+      <Field label="Rise target">
+        <Input value={e.v.rise_target_in} onChange={(ev) => e.setV({ ...e.v, rise_target_in: ev.target.value })} placeholder="11 to 12 in" />
+      </Field>
+      <Field label="Sizing notes">
+        <Textarea value={e.v.sizing_notes} onChange={(ev) => e.setV({ ...e.v, sizing_notes: ev.target.value })} rows={3} placeholder="Tees run M to XL by brand; tall in pants" />
+      </Field>
     </Card>
   );
 }
@@ -326,10 +333,9 @@ export type ColorData = {
 export function ColorCard({ data }: { data: ColorData }) {
   const e = useEditor<ColorData>(data, (v) => saveColor(v));
   const field = (k: "season_label" | "undertone" | "depth" | "contrast", label: string, ph: string) => (
-    <label className="block text-sm">
-      <span className="text-stone-500">{label}</span>
-      <input value={e.v[k]} onChange={(ev) => e.setV({ ...e.v, [k]: ev.target.value })} placeholder={ph} className={input} />
-    </label>
+    <Field label={label}>
+      <Input value={e.v[k]} onChange={(ev) => e.setV({ ...e.v, [k]: ev.target.value })} placeholder={ph} />
+    </Field>
   );
   return (
     <Card
@@ -358,18 +364,17 @@ export function ColorCard({ data }: { data: ColorData }) {
         {field("depth", "Depth", "light, medium, deep")}
         {field("contrast", "Contrast", "low, medium, high")}
       </div>
-      <div className="text-sm">
-        <span className="text-stone-500">Best colors (the scorecard checks these)</span>
-        <TagInput value={e.v.best_colors} onChange={(best_colors) => e.setV({ ...e.v, best_colors })} placeholder="Type a color, press Enter" />
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium text-stone-700" aria-hidden="true">Best colors (the scorecard checks these)</p>
+        <TagInput label="Best colors (the scorecard checks these)" value={e.v.best_colors} onChange={(best_colors) => e.setV({ ...e.v, best_colors })} placeholder="Type a color, press Enter" />
       </div>
-      <div className="text-sm">
-        <span className="text-stone-500">Colors to avoid</span>
-        <TagInput value={e.v.avoid_colors} onChange={(avoid_colors) => e.setV({ ...e.v, avoid_colors })} placeholder="Type a color, press Enter" />
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium text-stone-700" aria-hidden="true">Colors to avoid</p>
+        <TagInput label="Colors to avoid" value={e.v.avoid_colors} onChange={(avoid_colors) => e.setV({ ...e.v, avoid_colors })} placeholder="Type a color, press Enter" />
       </div>
-      <label className="block text-sm">
-        <span className="text-stone-500">Notes</span>
-        <textarea value={e.v.notes} onChange={(ev) => e.setV({ ...e.v, notes: ev.target.value })} rows={2} className={input} />
-      </label>
+      <Field label="Notes">
+        <Textarea value={e.v.notes} onChange={(ev) => e.setV({ ...e.v, notes: ev.target.value })} rows={2} />
+      </Field>
     </Card>
   );
 }
@@ -390,9 +395,9 @@ export type StyleData = {
 export function StyleCard({ data }: { data: StyleData }) {
   const e = useEditor<StyleData>(data, (v) => saveStyle(v));
   const tagField = (k: "loves" | "dislikes" | "silhouettes_preferred" | "silhouettes_avoid", label: string, ph: string) => (
-    <div className="text-sm">
-      <span className="text-stone-500">{label}</span>
-      <TagInput value={e.v[k]} onChange={(val) => e.setV({ ...e.v, [k]: val })} placeholder={ph} />
+    <div className="space-y-1.5">
+      <p className="text-sm font-medium text-stone-700" aria-hidden="true">{label}</p>
+      <TagInput label={label} value={e.v[k]} onChange={(val) => e.setV({ ...e.v, [k]: val })} placeholder={ph} />
     </div>
   );
   return (
@@ -416,21 +421,20 @@ export function StyleCard({ data }: { data: StyleData }) {
         </Dl>
       }
     >
-      <label className="block text-sm">
-        <span className="text-stone-500">Aesthetic, in a sentence or two</span>
-        <textarea value={e.v.aesthetic_statement} onChange={(ev) => e.setV({ ...e.v, aesthetic_statement: ev.target.value })} rows={3} className={input} />
-      </label>
+      <Field label="Aesthetic, in a sentence or two">
+        <Textarea value={e.v.aesthetic_statement} onChange={(ev) => e.setV({ ...e.v, aesthetic_statement: ev.target.value })} rows={3} />
+      </Field>
       {tagField("loves", "Loves", "Type something you love, press Enter")}
       {tagField("dislikes", "Dislikes (the scorecard checks these against construction)", "Ruffles, stiff fabrics…")}
       {tagField("silhouettes_preferred", "Silhouettes you prefer", "Modern knit polo cut…")}
       {tagField("silhouettes_avoid", "Silhouettes to avoid", "Boxy, cropped…")}
-      <div className="text-sm">
-        <span className="text-stone-500">Fabrics you like (tap soft/hard to change)</span>
-        <FabricInput value={e.v.fabrics_preferred} onChange={(fabrics_preferred) => e.setV({ ...e.v, fabrics_preferred })} placeholder="Stretch, performance knit…" />
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium text-stone-700" aria-hidden="true">Fabrics you like (tap soft/hard to change)</p>
+        <FabricInput label="Fabrics you like (tap soft/hard to change)" value={e.v.fabrics_preferred} onChange={(fabrics_preferred) => e.setV({ ...e.v, fabrics_preferred })} placeholder="Stretch, performance knit…" />
       </div>
-      <div className="text-sm">
-        <span className="text-stone-500">Fabrics to avoid (hard = never, soft = rather not)</span>
-        <FabricInput value={e.v.fabrics_avoid} onChange={(fabrics_avoid) => e.setV({ ...e.v, fabrics_avoid })} placeholder="Linen, itchy wool…" />
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium text-stone-700" aria-hidden="true">Fabrics to avoid (hard = never, soft = rather not)</p>
+        <FabricInput label="Fabrics to avoid (hard = never, soft = rather not)" value={e.v.fabrics_avoid} onChange={(fabrics_avoid) => e.setV({ ...e.v, fabrics_avoid })} placeholder="Linen, itchy wool…" />
       </div>
     </Card>
   );
@@ -440,10 +444,11 @@ export function StyleCard({ data }: { data: StyleData }) {
 // Brands
 // ---------------------------------------------------------------------------
 export type BrandRow = { id: string; name: string; status: "loved" | "mixed" | "avoid"; note: string | null };
-const STATUS_STYLE: Record<BrandRow["status"], string> = {
-  loved: "bg-emerald-100 text-emerald-900",
-  mixed: "bg-amber-100 text-amber-900",
-  avoid: "bg-red-100 text-red-900",
+// Soft tones, not verdict fills: green stays reserved for "works on you".
+const STATUS_TONE: Record<BrandRow["status"], ChipTone> = {
+  loved: "warm",
+  mixed: "neutral",
+  avoid: "outline",
 };
 
 export function BrandsCard({ brands }: { brands: BrandRow[] }) {
@@ -474,39 +479,51 @@ export function BrandsCard({ brands }: { brands: BrandRow[] }) {
     });
 
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="text-sm font-medium text-stone-500">Brands</h2>
+    <UICard as="section" className="space-y-3">
+      <SectionTitle>Brands</SectionTitle>
       {brands.length === 0 ? (
-        <p className="mt-2 text-sm text-stone-600">No brands yet.</p>
+        <p className="text-sm text-stone-600">No brands yet.</p>
       ) : (
-        <ul className="mt-2 divide-y divide-stone-100 text-sm">
+        <ul className="divide-y divide-line text-sm">
           {brands.map((b) => (
-            <li key={b.id} className="flex items-center gap-3 py-2">
-              <span className={"rounded-full px-2 py-0.5 text-xs " + STATUS_STYLE[b.status]}>{b.status}</span>
-              <span className="flex-1">
-                {b.name}
+            <li key={b.id} className="flex min-h-12 items-center gap-3 py-1.5">
+              <Chip tone={STATUS_TONE[b.status]}>{b.status}</Chip>
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">{b.name}</span>
                 {b.note && <span className="ml-2 text-stone-500">{b.note}</span>}
               </span>
-              <button type="button" onClick={() => remove(b.id)} disabled={pending} className="text-stone-400 hover:text-red-700" aria-label={`Remove ${b.name}`}>
-                ×
+              <button
+                type="button"
+                onClick={() => remove(b.id)}
+                disabled={pending}
+                className="tap inline-grid size-8 shrink-0 place-items-center rounded-full text-lg leading-none text-stone-500 transition-colors duration-200 ease-soft hover:bg-red-100 hover:text-red-700 disabled:opacity-50"
+                aria-label={`Remove ${b.name}`}
+              >
+                <span aria-hidden="true">×</span>
               </button>
             </li>
           ))}
         </ul>
       )}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a brand" className="min-w-0 flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-base" />
-        <select value={status} onChange={(e) => setStatus(e.target.value as BrandRow["status"])} className="rounded-lg border border-stone-300 bg-white px-2 py-2 text-base">
-          <option value="loved">loved</option>
-          <option value="mixed">mixed</option>
-          <option value="avoid">avoid</option>
-        </select>
-        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" className="w-40 rounded-lg border border-stone-300 bg-white px-3 py-2 text-base" />
-        <button type="button" onClick={add} disabled={pending || !name.trim()} className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white disabled:opacity-50">
+      <div className="flex flex-wrap items-end gap-2 border-t border-line pt-3">
+        <Field label="Brand" srOnly className="min-w-[10rem] flex-1">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a brand" />
+        </Field>
+        <Field label="Status" srOnly className="w-28">
+          <Select value={status} onChange={(e) => setStatus(e.target.value as BrandRow["status"])}>
+            <option value="loved">loved</option>
+            <option value="mixed">mixed</option>
+            <option value="avoid">avoid</option>
+          </Select>
+        </Field>
+        <Field label="Note" srOnly className="min-w-[8rem] flex-1 sm:w-40 sm:flex-none">
+          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" />
+        </Field>
+        <Button type="button" variant="secondary" onClick={add} disabled={pending || !name.trim()}>
           Add
-        </button>
+        </Button>
       </div>
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-    </section>
+      {error && <Notice tone="error">{error}</Notice>}
+    </UICard>
   );
 }

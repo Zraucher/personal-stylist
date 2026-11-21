@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
 import type { ClosetItem } from "@/lib/closet/taxonomy";
+import { ButtonLink, Card, EmptyState, PageHeader, Thumb } from "@/components/ui";
 import ScorecardPanel, { type ScorecardRow } from "../ScorecardPanel";
 
 const GOAL = 10;
@@ -55,42 +55,40 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
   const skipHref = next ? `/closet/review?skip=${[...skipped, next.id].join(",")}` : "/closet/review";
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Review</h1>
-          <p className="text-sm text-stone-500">
+    <div className="space-y-6">
+      <PageHeader
+        title="Review"
+        back={{ href: "/closet", label: "Closet" }}
+        subtitle={
+          <>
             {reviewed} reviewed, {agreed} agreed
             {reviewed > 0 && ` (${Math.round((agreed / reviewed) * 100)}%)`}. Goal: agree with 8 of {GOAL}.
-          </p>
-        </div>
-        <Link href="/closet" className="text-sm text-stone-600 hover:text-stone-900">
-          Back to closet
-        </Link>
-      </div>
+          </>
+        }
+      />
 
-      <div className="h-1.5 overflow-hidden rounded-full bg-stone-200">
-        <div className="h-full bg-stone-900 transition-all" style={{ width: `${Math.min(100, (reviewed / GOAL) * 100)}%` }} />
+      <div
+        role="progressbar"
+        aria-label="Review progress"
+        aria-valuemin={0}
+        aria-valuemax={GOAL}
+        aria-valuenow={Math.min(GOAL, reviewed)}
+        className="h-1.5 overflow-hidden rounded-full bg-stone-200"
+      >
+        <div className="h-full rounded-full bg-stone-900 transition-[width] duration-300 ease-soft" style={{ width: `${Math.min(100, (reviewed / GOAL) * 100)}%` }} />
       </div>
 
       {next ? (
         <>
-          <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
-            <div className="aspect-[4/3] bg-stone-100">
-              {url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={url} alt={next.name ?? ""} className="h-full w-full object-contain" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-stone-400">Photo unavailable</div>
-              )}
-            </div>
-            <div className="flex items-center justify-between p-3">
-              <p className="font-medium">{next.name ?? "Untitled"}</p>
-              <Link href={skipHref} className="text-sm text-stone-500 hover:text-stone-900">
+          <Card variant="active" pad="sm" className="space-y-3">
+            <Thumb src={url} alt={next.name ?? ""} item={next} size="fill" className="mx-auto max-w-xs" />
+            <div className="flex items-center justify-between gap-3 pl-1">
+              <p className="min-w-0 truncate font-display text-lg font-bold leading-snug">{next.name ?? "Untitled"}</p>
+              <ButtonLink href={skipHref} variant="quiet" size="sm">
                 Skip
-              </Link>
+              </ButtonLink>
             </div>
-          </div>
+          </Card>
           <ScorecardPanel
             key={next.id}
             itemId={next.id}
@@ -102,18 +100,22 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           />
         </>
       ) : (
-        <div className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center">
-          <p className="font-medium">{reviewed >= GOAL ? "Review goal reached" : "Nothing left with a photo"}</p>
-          <p className="mt-1 text-sm text-stone-600">
-            {reviewed >= GOAL
-              ? `You agreed with ${agreed} of ${reviewed}. Disagreements are saved as feedback for the next tuning pass.`
-              : "Photograph more pieces to keep reviewing."}
-            {noPhoto > 0 && ` ${noPhoto} ${noPhoto === 1 ? "piece has" : "pieces have"} no photo yet.`}
-          </p>
-          <Link href="/closet/new" className="mt-4 inline-block rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white">
-            Add a piece
-          </Link>
-        </div>
+        <EmptyState
+          title={reviewed >= GOAL ? "review goal reached" : "nothing left with a photo"}
+          body={
+            <>
+              {reviewed >= GOAL
+                ? `You agreed with ${agreed} of ${reviewed}. Disagreements are saved as feedback for the next tuning pass.`
+                : "Photograph more pieces to keep reviewing."}
+              {noPhoto > 0 && ` ${noPhoto} ${noPhoto === 1 ? "piece has" : "pieces have"} no photo yet.`}
+            </>
+          }
+          action={
+            <ButtonLink href="/closet/new" variant="primary">
+              Add a piece
+            </ButtonLink>
+          }
+        />
       )}
     </div>
   );

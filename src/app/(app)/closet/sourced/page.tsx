@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SourcedList, { type SourcedItem } from "./SourcedList";
+import { ButtonLink, EmptyState, PageHeader } from "@/components/ui";
 
 export default async function SourcedPage() {
   const supabase = await createClient();
@@ -23,21 +23,21 @@ export default async function SourcedPage() {
   }));
 
   return (
-    <div className="space-y-5">
-      <div>
-        <Link href="/closet" className="text-sm text-stone-500 hover:text-stone-900">
-          ← Closet
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">Sourced photos</h1>
-        <p className="text-sm text-stone-600">
-          Product photos found online for pieces without a photo. Check the color and style match what you own. A photo you
-          accept is copied into your private closet.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Sourced photos"
+        back={{ href: "/closet", label: "Closet" }}
+        subtitle="Product photos found online for pieces without a photo. Check the color and style match what you own. A photo you accept is copied into your private closet."
+      />
       {items.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-600">
-          Nothing waiting for review.
-        </p>
+        <EmptyState
+          title="nothing waiting for review"
+          action={
+            <ButtonLink href="/closet" variant="secondary">
+              Back to closet
+            </ButtonLink>
+          }
+        />
       ) : (
         <SourcedList items={items} />
       )}

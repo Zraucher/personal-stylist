@@ -6,7 +6,7 @@ export default function Wordmark({ size = 22, className = "" }: { size?: number;
       valette
       <svg width={disc} height={disc} viewBox="0 0 36 36" aria-hidden="true" className="shrink-0">
         <circle cx="18" cy="18" r="18" className="fill-emerald-700" />
-        <path d="M10 18.5l5.5 5.5L26.5 12.5" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="text-white" />
+        <path d="M10 18.5l5.5 5.5L26.5 12.5" fill="none" stroke="var(--color-on-accent)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </span>
   );
@@ -17,7 +17,7 @@ export function CheckDisc({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 36 36" aria-hidden="true" className="inline-block shrink-0">
       <circle cx="18" cy="18" r="18" className="fill-current" />
-      <path d="M10 18.5l5.5 5.5L26.5 12.5" fill="none" stroke="white" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 18.5l5.5 5.5L26.5 12.5" fill="none" stroke="var(--color-on-accent)" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

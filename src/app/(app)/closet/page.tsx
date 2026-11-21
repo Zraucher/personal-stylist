@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
-import ItemPlaceholder from "@/lib/closet/placeholder";
 import { CATEGORIES, CATEGORY_LABELS, STATUS_LABELS, type ClosetItem } from "@/lib/closet/taxonomy";
-import { verdictClass, verdictLabel } from "@/lib/verdict";
+import { verdictLabel } from "@/lib/verdict";
+import { ButtonLink, Chip, EmptyState, Field, Input, Notice, PageHeader, Swatch, Thumb, type ChipTone } from "@/components/ui";
 import ClosetSubnav from "../ClosetSubnav";
 
 const LAYER = /hoodie|sweatshirt|jacket|cardigan|vest|coat|blazer|quarter-zip|overshirt/i;
+const VERDICT_TONE: Record<string, ChipTone> = { keep: "works", provisional: "almost", cut: "not" };
 
 export default async function ClosetPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
@@ -46,71 +47,81 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
   return (
     <div className="space-y-6">
       <ClosetSubnav />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Closet</h1>
-          <p className="text-sm text-stone-500">
+      <PageHeader
+        title="Closet"
+        subtitle={
+          <>
             {all.length} {all.length === 1 ? "item" : "items"}
             {all.length > 0 && `, ${withPhoto} with photos`}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/closet/review" className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium hover:border-stone-500">
-            Review
-          </Link>
-          <Link href="/closet/basics" className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm font-medium hover:border-stone-500">
-            Basics
-          </Link>
-          <Link href="/closet/new" className="rounded-lg bg-stone-900 px-3 py-2 text-sm font-medium text-white">
-            Add item
-          </Link>
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <ButtonLink href="/closet/review" size="sm">
+              Review
+            </ButtonLink>
+            <ButtonLink href="/closet/basics" size="sm">
+              Basics
+            </ButtonLink>
+            <ButtonLink href="/closet/new" variant="primary" size="sm">
+              Add item
+            </ButtonLink>
+          </>
+        }
+      />
 
       {all.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <form action="/closet" className="min-w-0 flex-1">
-            <input name="q" defaultValue={q ?? ""} placeholder="Search by name, brand or color" className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base" />
+          <form action="/closet" role="search" className="min-w-0 flex-1">
+            <Field label="Search closet" srOnly>
+              <Input type="search" name="q" defaultValue={q ?? ""} placeholder="Search by name, brand or color" />
+            </Field>
           </form>
-          <Link href="/gaps" className="rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm hover:border-stone-500">What to buy next</Link>
+          <ButtonLink href="/gaps" variant="quiet" size="sm">
+            What to buy next
+          </ButtonLink>
         </div>
       )}
       {query && (
-        <p className="text-sm text-stone-500">
-          {items.length} {items.length === 1 ? "match" : "matches"} for “{q}”. <Link href="/closet" className="underline">Clear</Link>
+        <p role="status" aria-live="polite" className="text-sm text-stone-500">
+          {items.length} {items.length === 1 ? "match" : "matches"} for “{q}”.{" "}
+          <Link href="/closet" className="font-medium text-stone-700 underline underline-offset-2 hover:text-stone-900">
+            Clear
+          </Link>
         </p>
       )}
 
       {sourced > 0 && (
-        <Link
-          href="/closet/sourced"
-          className="block rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:border-amber-500"
-        >
-          <span className="font-medium">
-            {sourced} product {sourced === 1 ? "photo" : "photos"} found online.
-          </span>{" "}
-          Review and add them →
-        </Link>
+        <Notice tone="warn">
+          <Link href="/closet/sourced" className="block hover:underline">
+            <span className="font-semibold">
+              {sourced} product {sourced === 1 ? "photo" : "photos"} found online.
+            </span>{" "}
+            Review and add them <span aria-hidden="true">→</span>
+          </Link>
+        </Notice>
       )}
 
       {all.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center">
-          <p className="font-medium">Nothing here yet</p>
-          <p className="mt-1 text-sm text-stone-600">
-            Fastest start: tick what you own on the <Link href="/closet/basics" className="underline">basics list</Link>, then
-            photograph the pieces that matter.
-          </p>
-        </div>
+        <EmptyState
+          title="nothing here yet"
+          body="Fastest start: tick what you own on the basics list, then photograph the pieces that matter."
+          action={
+            <ButtonLink href="/closet/basics" variant="primary">
+              Open the basics list
+            </ButtonLink>
+          }
+        />
       ) : (
         Array.from(groups.entries())
           .filter(([, list]) => list.length > 0)
           .map(([key, list]) => (
-            <section key={key}>
-              <h2 className="mb-2 text-sm font-medium text-stone-500">
+            <section key={key} className="space-y-3">
+              <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-700">
                 {key === "outerwear" ? "Outerwear & layers" : key in CATEGORY_LABELS ? CATEGORY_LABELS[key as keyof typeof CATEGORY_LABELS] : "Socks, underlayers & extras"}{" "}
-                <span className="text-stone-400">{list.length}</span>
+                <span className="tabular-nums text-stone-500">{list.length}</span>
               </h2>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
                 {list.map((item) => (
                   <ItemCard key={item.id} item={item} url={item.image_path ? urls[item.image_path] : undefined} verdict={verdicts.get(item.id)} />
                 ))}
@@ -123,38 +134,39 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
 }
 
 function ItemCard({ item, url, verdict }: { item: ClosetItem; url?: string; verdict?: string }) {
+  const tone = verdict ? VERDICT_TONE[verdict] : undefined;
   return (
-    <Link href={`/closet/${item.id}`} className="group overflow-hidden rounded-xl border border-stone-200 bg-white">
-      <div className="relative aspect-square bg-stone-100">
-        {url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={item.name ?? ""} className="h-full w-full object-cover" loading="lazy" />
-        ) : (
-          <ItemPlaceholder category={item.category} subcategory={item.subcategory} colors={item.colors} />
-        )}
-        {item.status !== "available" && (
-          <span className="absolute left-2 top-2 rounded-full bg-stone-900/80 px-2 py-0.5 text-[11px] text-white">
-            {STATUS_LABELS[item.status]}
-          </span>
-        )}
-        {verdict && (
-          <span className={"absolute right-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-semibold " + verdictClass(verdict)}>
-            {verdictLabel(verdict, true)}
-          </span>
-        )}
-      </div>
-      <div className="p-2.5">
-        <p className="truncate text-sm font-medium">{item.name ?? "Untitled"}</p>
-        <div className="mt-1 flex items-center justify-between">
+    <Link
+      href={`/closet/${item.id}`}
+      className="group block rounded-card bg-card p-1.5 ring-1 ring-line transition-shadow duration-200 ease-soft hover:ring-line-strong"
+    >
+      <Thumb
+        src={url}
+        alt={item.name ?? ""}
+        item={item}
+        size="fill"
+        badge={
+          <>
+            {item.status !== "available" && (
+              <Chip tone="overlay" className="absolute left-2 top-2">
+                {STATUS_LABELS[item.status]}
+              </Chip>
+            )}
+            {tone && (
+              <Chip tone={tone} className="absolute right-2 top-2">
+                {verdictLabel(verdict, true)}
+              </Chip>
+            )}
+          </>
+        }
+      />
+      <div className="px-1 pb-0.5 pt-2">
+        <p className="truncate text-sm font-semibold">{item.name ?? "Untitled"}</p>
+        <div className="mt-0.5 flex items-center justify-between gap-2">
           <p className="truncate text-xs text-stone-500">{[item.brand ?? item.subcategory, item.colors[0]?.name].filter(Boolean).join(" · ")}</p>
-          <div className="flex gap-1">
+          <div className="flex shrink-0 gap-1">
             {item.colors.slice(0, 4).map((c, i) => (
-              <span
-                key={i}
-                title={c.name}
-                className="h-3 w-3 rounded-full border border-stone-300"
-                style={{ background: c.hex ?? "transparent" }}
-              />
+              <Swatch key={i} hex={c.hex} name={c.name} />
             ))}
           </div>
         </div>

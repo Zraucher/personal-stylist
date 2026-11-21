@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Button, ButtonLink, PageHeader } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
 import {
@@ -49,12 +49,14 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">Profile</h1>
-        <Link href="/profile/palette" className="text-sm text-stone-600 underline-offset-2 hover:underline">
-          Palette card
-        </Link>
-      </div>
+      <PageHeader
+        title="Profile"
+        actions={
+          <ButtonLink href="/profile/palette" variant="secondary" size="sm">
+            Palette card
+          </ButtonLink>
+        }
+      />
 
       <AccountCard
         data={{
@@ -109,6 +111,12 @@ export default async function ProfilePage() {
       <ProfilePhotos urls={photoUrls} />
 
       <AppCard />
+
+      <form action="/auth/signout" method="post" className="sm:hidden">
+        <Button type="submit" variant="secondary" block>
+          Sign out
+        </Button>
+      </form>
     </div>
   );
 }

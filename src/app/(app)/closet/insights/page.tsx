@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
 import { loadStyleContext } from "@/lib/profile/context";
@@ -7,10 +8,24 @@ import { computeInsights, type InsightItem } from "@/lib/insights/compute";
 import { ROLE_LABEL } from "@/lib/plan/sequence";
 import ClosetSubnav from "../../ClosetSubnav";
 import { isoDaysAgo } from "@/lib/time";
+import { ButtonLink, Card, EmptyState, ListCard, ListRow, Notice, PageHeader, SectionTitle, StatTile, Thumb } from "@/components/ui";
 
 export const metadata = { title: "Insights · valette" };
 
 const money = (n: number) => (n >= 100 ? `$${Math.round(n)}` : `$${n.toFixed(2).replace(/\.00$/, "")}`);
+
+/** A section: SectionTitle and one line of context above its content. */
+function Section({ title, sub, children }: { title: string; sub?: string; children: ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <div className="space-y-1">
+        <SectionTitle>{title}</SectionTitle>
+        {sub && <p className="text-sm text-stone-500">{sub}</p>}
+      </div>
+      {children}
+    </section>
+  );
+}
 
 type Row = { id: string; name: string | null; category: string | null; subcategory: string | null; price: number | null; colors: unknown; status: string | null; created_at: string; image_path: string | null };
 
@@ -50,42 +65,34 @@ export default async function InsightsPage() {
   const priced = items.filter((i) => i.status !== "gone" && i.price != null && i.price > 0).length;
   const totalWears = Object.values(ins.wears).reduce((a, b) => a + b, 0);
 
-  const Thumb = ({ id }: { id: string }) => {
+  const pieceThumb = (id: string) => {
     const r = byId.get(id);
     const url = r?.image_path ? urls[r.image_path] : undefined;
     return (
-      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-stone-100">
-        {url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className="h-full w-full object-cover" loading="lazy" />
-        ) : (
-          <div className="flex h-full items-center justify-center px-1 text-center text-[9px] leading-tight text-stone-400">{r?.subcategory ?? "piece"}</div>
-        )}
-      </div>
+      <Thumb
+        size="xs"
+        src={url}
+        alt={r?.name ?? r?.subcategory ?? "piece"}
+        item={{ category: r?.category, subcategory: r?.subcategory, colors: Array.isArray(r?.colors) ? (r?.colors as Array<{ name: string; hex?: string }>) : [] }}
+      />
     );
   };
-  const Piece = ({ id, right, sub }: { id: string; right?: string; sub?: string }) => (
-    <li>
-      <Link href={`/closet/${id}`} className="flex items-center gap-3 rounded-lg p-1.5 hover:bg-stone-50">
-        <Thumb id={id} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">{byId.get(id)?.name ?? "Piece"}</p>
-          {sub && <p className="truncate text-xs text-stone-500">{sub}</p>}
-        </div>
-        {right && <span className="shrink-0 text-sm font-semibold">{right}</span>}
-      </Link>
-    </li>
+  const piece = (id: string, right?: string, sub?: string) => (
+    <ListRow
+      key={id}
+      href={`/closet/${id}`}
+      leading={pieceThumb(id)}
+      title={byId.get(id)?.name ?? "Piece"}
+      meta={sub}
+      trailing={right ? <span className="shrink-0 text-sm font-semibold tabular-nums">{right}</span> : undefined}
+    />
   );
-  const card = "rounded-2xl border border-stone-200 bg-white p-4";
   const palTotal = ins.palette.in + ins.palette.near + ins.palette.off + ins.palette.unknown || 1;
 
   return (
     <div className="space-y-6">
       <ClosetSubnav />
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Closet insights</h1>
-        <p className="text-sm text-stone-500">What you actually wear, what it costs per wear, and what has been sitting.</p>
-      </div>
+      <PageHeader title="Closet insights" subtitle="What you actually wear, what it costs per wear, and what has been sitting." />
 
       <div className="grid grid-cols-3 gap-3">
         {[
@@ -93,124 +100,142 @@ export default async function InsightsPage() {
           { n: `${Math.round(ins.usedShare * 100)}%`, label: "worn in 90 days" },
           { n: String(ins.wearsLast30), label: "wears this month" },
         ].map((s) => (
-          <div key={s.label} className={card + " text-center"}>
-            <p className="font-display text-3xl font-extrabold">{s.n}</p>
-            <p className="text-xs text-stone-500">{s.label}</p>
-          </div>
+          <StatTile key={s.label} value={s.n} label={s.label} className="px-3 sm:px-4" />
         ))}
       </div>
 
       {totalWears === 0 && (
-        <p className="rounded-2xl border border-dashed border-stone-300 bg-white p-4 text-sm text-stone-600">
-          Insights grow as you log what you wear. Tap <b>wore it</b> on Today or your plan, or <b>Wore it today</b> on any piece.
-        </p>
+        <EmptyState
+          compact
+          title="Insights grow as you log what you wear."
+          body={
+            <>
+              Insights grow as you log what you wear. Tap <b>wore it</b> on Today or your plan, or <b>Wore it today</b> on any piece.
+            </>
+          }
+        />
       )}
 
       {ins.sleepers.length > 0 && (
-        <section className={card}>
-          <h2 className="font-display text-lg font-bold">Sleeping in your closet</h2>
-          <p className="mb-2 text-sm text-stone-500">Not worn in 60 days or more. Give one a turn this week, or let it go.</p>
-          <ul className="divide-y divide-stone-100">
+        <Section title="Sleeping in your closet" sub="Not worn in 60 days or more. Give one a turn this week, or let it go.">
+          <ListCard>
             {ins.sleepers.map((s) => (
-              <Piece key={s.id} id={s.id} sub={s.days == null ? "Never logged as worn" : `${s.days} days since you wore it`} />
+              piece(s.id, undefined, s.days == null ? "Never logged as worn" : `${s.days} days since you wore it`)
             ))}
-          </ul>
-          <Link href={`/outfits/new?items=${ins.sleepers[0].id}`} className="mt-3 inline-block rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">
+          </ListCard>
+          <ButtonLink variant="primary" size="sm" href={`/outfits/new?items=${ins.sleepers[0].id}`}>
             Build an outfit around the first one
-          </Link>
-        </section>
+          </ButtonLink>
+        </Section>
       )}
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <section className={card}>
-          <h2 className="font-display text-lg font-bold">Best value</h2>
-          <p className="mb-2 text-sm text-stone-500">Lowest cost per wear.</p>
+        <Section title="Best value" sub="Lowest cost per wear.">
           {ins.bestValue.length ? (
-            <ul className="divide-y divide-stone-100">
+            <ListCard>
               {ins.bestValue.map((r) => (
-                <Piece key={r.id} id={r.id} right={money(r.cpw!)} sub={`${money(r.price)} · worn ${r.wears}×`} />
+                piece(r.id, money(r.cpw!), `${money(r.price)} · worn ${r.wears}×`)
               ))}
-            </ul>
+            </ListCard>
           ) : (
-            <p className="text-sm text-stone-500">{priced ? "Log a few wears to see cost per wear." : "Add what you paid on a piece's page to see cost per wear."}</p>
+            <EmptyState compact title={priced ? "Log a few wears to see cost per wear." : "Add what you paid on a piece's page to see cost per wear."} />
           )}
-        </section>
-        <section className={card}>
-          <h2 className="font-display text-lg font-bold">Still paying off</h2>
-          <p className="mb-2 text-sm text-stone-500">Highest cost per wear so far.</p>
+        </Section>
+        <Section title="Still paying off" sub="Highest cost per wear so far.">
           {ins.worstValue.length ? (
-            <ul className="divide-y divide-stone-100">
+            <ListCard>
               {ins.worstValue.map((r) => (
-                <Piece key={r.id} id={r.id} right={r.cpw != null ? money(r.cpw) : "unworn"} sub={`${money(r.price)} · worn ${r.wears}×`} />
+                piece(r.id, r.cpw != null ? money(r.cpw) : "unworn", `${money(r.price)} · worn ${r.wears}×`)
               ))}
-            </ul>
+            </ListCard>
           ) : (
-            <p className="text-sm text-stone-500">Nothing priced yet.</p>
+            <EmptyState compact title="Nothing priced yet." />
           )}
-        </section>
+        </Section>
       </div>
 
       {ins.mostWorn.length > 0 && (
-        <section className={card}>
-          <h2 className="font-display text-lg font-bold">Your favorites</h2>
-          <p className="mb-2 text-sm text-stone-500">Most worn this year. More like these is a safe bet.</p>
-          <ul className="divide-y divide-stone-100">
+        <Section title="Your favorites" sub="Most worn this year. More like these is a safe bet.">
+          <ListCard>
             {ins.mostWorn.map((r) => (
-              <Piece key={r.id} id={r.id} right={`${r.wears}×`} />
+              piece(r.id, `${r.wears}×`)
             ))}
-          </ul>
-        </section>
+          </ListCard>
+        </Section>
       )}
 
       <div className="grid gap-6 sm:grid-cols-2">
-        <section className={card}>
-          <h2 className="font-display text-lg font-bold">Palette fit</h2>
-          <p className="mb-3 text-sm text-stone-500">How your closet sits against your best colors.</p>
-          <div className="flex h-4 overflow-hidden rounded-full bg-stone-100" role="img" aria-label={`${ins.palette.in} in palette, ${ins.palette.near} close, ${ins.palette.off} off palette, ${ins.palette.unknown} unknown`}>
+        <Card as="section" className="space-y-3">
+          <div className="space-y-1">
+            <SectionTitle>Palette fit</SectionTitle>
+            <p className="text-sm text-stone-500">How your closet sits against your best colors.</p>
+          </div>
+          <div
+            className="flex h-4 overflow-hidden rounded-full bg-inset ring-1 ring-inset ring-line"
+            role="img"
+            aria-label={`${ins.palette.in} in palette, ${ins.palette.near} close, ${ins.palette.off} off palette, ${ins.palette.unknown} unknown`}
+          >
             <span className="bg-emerald-700" style={{ width: `${(ins.palette.in / palTotal) * 100}%` }} />
             <span className="bg-emerald-300" style={{ width: `${(ins.palette.near / palTotal) * 100}%` }} />
             <span className="bg-red-600" style={{ width: `${(ins.palette.off / palTotal) * 100}%` }} />
           </div>
-          <ul className="mt-3 grid grid-cols-2 gap-1 text-sm">
-            <li><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-emerald-700" />{ins.palette.in} in palette</li>
-            <li><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-emerald-300" />{ins.palette.near} close</li>
-            <li><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-red-600" />{ins.palette.off} off palette</li>
-            <li><span className="mr-1.5 inline-block h-2.5 w-2.5 rounded-full bg-stone-200" />{ins.palette.unknown} no color yet</li>
+          <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm tabular-nums">
+            <li className="flex items-center gap-2">
+              <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-emerald-700" />
+              {ins.palette.in} in palette
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-emerald-300" />
+              {ins.palette.near} close
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-red-600" />
+              {ins.palette.off} off palette
+            </li>
+            <li className="flex items-center gap-2">
+              <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full bg-inset ring-1 ring-inset ring-line-strong" />
+              {ins.palette.unknown} no color yet
+            </li>
           </ul>
           {ins.topColors.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 pt-1">
               {ins.topColors.map((c) => (
-                <span key={c.name} className="inline-flex items-center gap-1.5 rounded-full border border-stone-200 px-2 py-0.5 text-xs">
-                  <span className="h-3 w-3 rounded-full border border-stone-300" style={{ background: c.hex ?? "transparent" }} />
+                <span key={c.name} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-stone-700 ring-1 ring-inset ring-line-strong">
+                  <span aria-hidden="true" className="size-3 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15" style={{ background: c.hex ?? "transparent" }} />
                   {c.name} · {c.count}
                 </span>
               ))}
             </div>
           )}
-        </section>
-        <section className={card}>
-          <h2 className="font-display text-lg font-bold">Closet balance</h2>
-          <ul className="mt-2 space-y-1.5 text-sm">
+        </Card>
+        <Card as="section" className="space-y-3">
+          <SectionTitle>Closet balance</SectionTitle>
+          <ul className="space-y-2 text-sm">
             {ins.roles.map((r) => {
               const max = Math.max(...ins.roles.map((x) => x.count));
               return (
                 <li key={r.role} className="flex items-center gap-2">
                   <span className="w-16 shrink-0 text-stone-600">{ROLE_LABEL[r.role]}</span>
-                  <span className="h-2.5 rounded-full bg-stone-800" style={{ width: `${Math.max(6, (r.count / max) * 100)}%` }} />
-                  <span className="text-stone-500">{r.count}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block h-2.5 rounded-full bg-stone-800" style={{ width: `${Math.max(6, (r.count / max) * 100)}%` }} />
+                  </span>
+                  <span className="w-6 shrink-0 text-right tabular-nums text-stone-500">{r.count}</span>
                 </li>
               );
             })}
           </ul>
           {ins.balanceHint && (
-            <p className="mt-3 rounded-xl bg-amber-100 p-3 text-sm text-stone-800">
-              {ins.balanceHint} <Link href="/gaps" className="font-semibold underline">See gaps</Link>
-            </p>
+            <Notice tone="warn">
+              {ins.balanceHint}{" "}
+              <Link href="/gaps" className="font-semibold underline underline-offset-2">
+                See gaps
+              </Link>
+            </Notice>
           )}
-          <p className="mt-3 text-sm text-stone-500">
+          <p className="text-sm text-stone-500">
             {ins.verdicts.works} work on you · {ins.verdicts.almost} almost · {ins.verdicts.not} not for you · {ins.verdicts.unchecked} unchecked
           </p>
-        </section>
+        </Card>
       </div>
     </div>
   );

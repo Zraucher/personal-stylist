@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Wordmark, { CheckDisc } from "@/components/Wordmark";
 import WaitlistForm from "@/components/landing/WaitlistForm";
+import { ButtonLink, Card, Chip } from "@/components/ui";
 
 // Public marketing home. Signed-in visitors never see it: the proxy sends them to /today.
 
@@ -45,26 +46,26 @@ const FAQ = [
 function PhoneMock() {
   return (
     <div className="mx-auto w-full max-w-[300px] rounded-[2.2rem] bg-stone-900 p-3 shadow-[0_24px_60px_rgba(29,27,43,0.25)]" aria-hidden="true">
-      <div className="space-y-3 rounded-[1.6rem] bg-stone-50 p-4 text-stone-900">
+      <div className="space-y-3 rounded-[1.6rem] bg-ground p-4 text-stone-900">
         <div className="flex justify-between text-[11px] font-semibold text-stone-500">
           <span>today</span>
           <span>las vegas · 82°</span>
         </div>
         <p className="font-display text-2xl font-extrabold leading-none">rooftop at 7</p>
-        <div className="space-y-2 rounded-2xl bg-white p-3 shadow-[0_6px_20px_rgba(29,27,43,0.08)]">
+        <div className="space-y-2 rounded-2xl bg-raised p-3 shadow-active ring-1 ring-line">
           <div className="flex items-baseline justify-between gap-2">
             <p className="text-sm font-bold">Easy linen evening</p>
           </div>
           <div className="grid grid-cols-3 gap-1.5">
             <i className="block aspect-square rounded-lg bg-sky-brand" />
             <i className="block aspect-square rounded-lg bg-[#6b7a4b]" />
-            <i className="block aspect-square rounded-lg border border-stone-200 bg-stone-100" />
+            <i className="block aspect-square rounded-lg bg-stone-100 ring-1 ring-inset ring-line" />
           </div>
           <p className="text-xs leading-snug text-stone-600">Linen shirt, olive chinos, white sneakers. Light enough for 82° and sharp enough for the rooftop.</p>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-700 px-2.5 py-1 text-xs font-semibold text-white">✓ works on you</span>
+          <Chip tone="works">✓ works on you</Chip>
         </div>
         <div className="flex gap-2 text-xs font-bold">
-          <span className="flex-1 rounded-full bg-emerald-700 py-2 text-center text-white">wore it</span>
+          <span className="flex-1 rounded-full bg-emerald-700 py-2 text-center text-on-accent">wore it</span>
           <span className="flex-1 rounded-full border-[1.5px] border-stone-900 py-[7px] text-center">not me</span>
         </div>
       </div>
@@ -74,17 +75,17 @@ function PhoneMock() {
 
 export default function Home() {
   return (
-    <div className="min-h-dvh bg-stone-50 text-stone-900">
+    <div className="min-h-dvh bg-ground text-stone-900">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
-        <Link href="/" aria-label="valette home">
+        <Link href="/" aria-label="valette home" className="rounded-full">
           <Wordmark size={26} />
         </Link>
-        <nav className="flex items-center gap-5 text-sm font-semibold">
+        <nav aria-label="Primary" className="flex items-center gap-5 text-sm font-semibold">
           <a href="#how" className="hidden text-stone-600 hover:text-stone-900 sm:inline">How it works</a>
           <a href="#faq" className="hidden text-stone-600 hover:text-stone-900 sm:inline">FAQ</a>
-          <Link href="/login" className="rounded-full border-[1.5px] border-stone-900 px-4 py-1.5 hover:bg-stone-900 hover:text-white">
+          <ButtonLink href="/login" variant="secondary" size="sm">
             Sign in
-          </Link>
+          </ButtonLink>
         </nav>
       </header>
 
@@ -107,15 +108,17 @@ export default function Home() {
         </section>
 
         {/* Verdicts */}
-        <section className="border-y border-stone-200 bg-white">
+        <section className="border-y border-line bg-card">
           <div className="mx-auto grid max-w-6xl gap-6 px-5 py-10 sm:grid-cols-3">
             {[
-              { chip: "✓ works on you", cls: "bg-emerald-700 text-white", body: "The colors, fabric and shape all suit you. Wear it with confidence." },
-              { chip: "◐ almost", cls: "bg-amber-500 text-stone-900", body: "Close. We tell you the one change that turns it into a yes." },
-              { chip: "✕ not for you", cls: "bg-red-700 text-white", body: "It fights your coloring or your style, and we show you better options you already own." },
+              { chip: "✓ works on you", tone: "works" as const, body: "The colors, fabric and shape all suit you. Wear it with confidence." },
+              { chip: "◐ almost", tone: "almost" as const, body: "Close. We tell you the one change that turns it into a yes." },
+              { chip: "✕ not for you", tone: "not" as const, body: "It fights your coloring or your style, and we show you better options you already own." },
             ].map((v) => (
               <div key={v.chip} className="space-y-2">
-                <span className={"inline-flex rounded-full px-3 py-1 text-sm font-semibold " + v.cls}>{v.chip}</span>
+                <Chip tone={v.tone} size="md">
+                  {v.chip}
+                </Chip>
                 <p className="text-stone-600">{v.body}</p>
               </div>
             ))}
@@ -127,11 +130,11 @@ export default function Home() {
           <h2 className="font-display text-4xl font-extrabold sm:text-5xl">how it works</h2>
           <ol className="mt-10 grid gap-6 md:grid-cols-3">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="space-y-3 rounded-3xl border border-stone-200 bg-white p-6">
+              <Card as="li" key={s.title} pad="lg" className="space-y-3">
                 <span className="inline-grid h-9 w-9 place-items-center rounded-full bg-stone-900 font-display text-lg font-extrabold text-stone-50">{i + 1}</span>
                 <h3 className="font-display text-xl font-bold">{s.title}</h3>
                 <p className="leading-relaxed text-stone-600">{s.body}</p>
-              </li>
+              </Card>
             ))}
           </ol>
         </section>
@@ -150,7 +153,7 @@ export default function Home() {
             <ul className="grid gap-3 text-lg">
               {["More outfits. Fewer second guesses.", "Only buy what works on you.", "Every skin tone, every gender, every budget."].map((t) => (
                 <li key={t} className="flex items-center gap-3 rounded-2xl bg-stone-50/10 px-5 py-4 font-semibold">
-                  <span className="text-emerald-400"><CheckDisc size={22} /></span>
+                  <span className="text-emerald-700"><CheckDisc size={22} /></span>
                   {t}
                 </li>
               ))}
@@ -164,25 +167,25 @@ export default function Home() {
           <p className="mt-3 max-w-2xl text-lg text-stone-600">Everything starts with your colors, so every suggestion is made for you, not for a trend.</p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
-              <article key={f.name} className="space-y-3 rounded-3xl border border-stone-200 bg-white p-6">
-                <span className={"block h-2 w-14 rounded-full " + f.tone} />
+              <Card as="article" key={f.name} pad="lg" className="space-y-3">
+                <span aria-hidden="true" className={"block h-2 w-14 rounded-full " + f.tone} />
                 <h3 className="font-display text-xl font-bold">{f.name}</h3>
                 <p className="leading-relaxed text-stone-600">{f.body}</p>
-              </article>
+              </Card>
             ))}
           </div>
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="scroll-mt-6 border-t border-stone-200 bg-white">
+        <section id="faq" className="scroll-mt-6 border-t border-line bg-card">
           <div className="mx-auto max-w-3xl px-5 py-20">
             <h2 className="font-display text-4xl font-extrabold">questions</h2>
-            <div className="mt-8 divide-y divide-stone-200">
+            <div className="mt-8 divide-y divide-line-strong">
               {FAQ.map((f) => (
                 <details key={f.q} className="group py-4">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 rounded-control text-lg font-semibold [&::-webkit-details-marker]:hidden">
                     {f.q}
-                    <span className="text-2xl leading-none text-stone-400 transition-transform group-open:rotate-45">+</span>
+                    <span aria-hidden="true" className="shrink-0 text-2xl leading-none text-stone-500 transition-transform duration-200 ease-soft group-open:rotate-45">+</span>
                   </summary>
                   <p className="mt-3 leading-relaxed text-stone-600">{f.a}</p>
                 </details>
@@ -206,8 +209,8 @@ export default function Home() {
       <footer className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-8 text-sm text-stone-500">
         <Wordmark size={18} />
         <div className="flex gap-5">
-          <Link href="/privacy" className="hover:text-stone-900">Privacy</Link>
-          <Link href="/login" className="hover:text-stone-900">Sign in</Link>
+          <Link href="/privacy" className="tap inline-flex items-center hover:text-stone-900">Privacy</Link>
+          <Link href="/login" className="tap inline-flex items-center hover:text-stone-900">Sign in</Link>
         </div>
         <p>© 2026 valette</p>
       </footer>
