@@ -2,13 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/o/", "/offline", "/api/cron/"];
-// The marketing home page is public; signed-in people skip it and land on Today.
+// The marketing home page is public for everyone; signed-in visitors see it too, with an "Open the app" button.
 const PUBLIC_EXACT = ["/"];
 
 /**
  * Refreshes the Supabase session cookie on every request and gates the app:
  * signed-out users go to /login (the home page and privacy page stay public),
- * signed-in users on /login or the home page go to /today.
+ * signed-in users on /login go to /today. The installed app opens on /today (manifest start_url).
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -49,7 +49,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && (path === "/login" || path === "/")) {
+  if (user && path === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = "/today";
     return NextResponse.redirect(url);
