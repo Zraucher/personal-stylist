@@ -130,7 +130,7 @@ export function scorePalette(item: ScoreItem, cp: ScoreColorProfile): Criterion 
     return { status: "unknown", reason: "No usable color yet. Add a photo or set the swatch." };
   }
   if (!cp || (cp.best_colors.length === 0 && cp.avoid_colors.length === 0)) {
-    return { status: "ok", reason: "No palette on file to check against." };
+    return { status: "ok", reason: "Add your best colors on Profile to check this." };
   }
 
   const [primary, ...rest] = hexes;
@@ -154,13 +154,13 @@ export function scorePalette(item: ScoreItem, cp: ScoreColorProfile): Criterion 
     const d = deltaE(primary.hex, bh);
     if (!nearest || d < nearest.d) nearest = { name: best, d };
   }
-  if (!nearest) return { status: "ok", reason: "Best colors could not be matched to swatches." };
+  if (!nearest) return { status: "ok", reason: "We couldn't match your best colors to real shades. Check the names on Profile." };
   if (nearest.d < 20) return { status: "good", reason: `${cap(primary.name)} sits inside your palette (near ${nearest.name}).` };
-  if (nearest.d < 38) return { status: "ok", reason: `${cap(primary.name)} is close to your palette (nearest: ${nearest.name}).` };
+  if (nearest.d < 38) return { status: "ok", reason: `${cap(primary.name)} is close to your palette (closest is ${nearest.name}).` };
   if (cp.confidence === "high") {
-    return { status: "caution", reason: `${cap(primary.name)} is outside your best colors (nearest: ${nearest.name}).` };
+    return { status: "caution", reason: `${cap(primary.name)} is outside your best colors (closest is ${nearest.name}).` };
   }
-  return { status: "ok", reason: `${cap(primary.name)} is outside the stated palette, which is low confidence.` };
+  return { status: "ok", reason: `${cap(primary.name)} isn't in your palette. Your palette list is short, so take this lightly.` };
 }
 
 // ---------------------------------------------------------------------------
@@ -193,8 +193,8 @@ function fabricHit(rule: FabricRule, text: string): boolean {
 
 export function scoreFabric(item: ScoreItem, style: ScoreStyle): Criterion {
   const text = `${item.material ?? ""} ${item.name ?? ""}`.toLowerCase();
-  if (!item.material && !item.name) return { status: "unknown", reason: "Material not recorded." };
-  if (!style) return { status: "ok", reason: "No fabric preferences on file." };
+  if (!item.material && !item.name) return { status: "unknown", reason: "No material recorded yet." };
+  if (!style) return { status: "ok", reason: "Add your fabrics on Profile to check this." };
 
   for (const r of style.fabrics_avoid) {
     if (fabricHit(r, text) && r.strength === "hard") {
@@ -209,7 +209,7 @@ export function scoreFabric(item: ScoreItem, style: ScoreStyle): Criterion {
   for (const r of style.fabrics_preferred) {
     if (fabricHit(r, text)) return { status: "good", reason: `${cap(r.name)} is on your preferred list.` };
   }
-  if (!item.material) return { status: "unknown", reason: "Material not recorded." };
+  if (!item.material) return { status: "unknown", reason: "No material recorded yet." };
   return { status: "ok", reason: `${cap(item.material)} is neutral for you.` };
 }
 
@@ -253,7 +253,7 @@ function itemText(item: ScoreItem): string {
 }
 
 export function scoreSilhouette(item: ScoreItem, style: ScoreStyle): Criterion {
-  if (!style) return { status: "ok", reason: "No silhouette preferences on file." };
+  if (!style) return { status: "ok", reason: "Add your shapes on Profile to check this." };
   const text = itemText(item);
 
   for (const phrase of [...style.dislikes, ...style.silhouettes_avoid]) {
@@ -303,29 +303,29 @@ export function decideVerdict(
   opts: { hasImage: boolean; photoUnclear?: boolean }
 ): { verdict: Verdict; headline: string } {
   if (!opts.hasImage) {
-    return { verdict: "provisional", headline: "Provisional: no photo yet, and color names alone are not enough to judge." };
+    return { verdict: "provisional", headline: "No photo yet. Color names alone aren't enough to judge." };
   }
   if (opts.photoUnclear || !vibe) {
-    return { verdict: "provisional", headline: "Provisional: the photo is not clear enough to finalize. Retake it in daylight." };
+    return { verdict: "provisional", headline: "The photo isn't clear enough to judge. Retake it in daylight." };
   }
   if (rules.palette.status === "unknown") {
-    return { verdict: "provisional", headline: "Provisional: no color recorded for this piece yet." };
+    return { verdict: "provisional", headline: "No color recorded for this piece yet." };
   }
   if (vibe.rating === "fail") {
-    return { verdict: "cut", headline: "Cut: it fails the vibe check, and the vibe check outranks the rules." };
+    return { verdict: "cut", headline: "It fails the vibe check, and the vibe check outranks the rules." };
   }
   const hard = (Object.entries(rules) as Array<[string, Criterion]>).filter(([, c]) => c.hard);
   if (hard.length > 0) {
     if (vibe.rating === "strong") {
-      return { verdict: "keep", headline: `Keep, with a flag: it breaks a rule (${hard[0][0]}) but the vibe is strong enough to override.` };
+      return { verdict: "keep", headline: `It breaks a rule (${hard[0][0]}), and the vibe is strong enough to carry it.` };
     }
-    return { verdict: "cut", headline: `Cut: it breaks a hard rule (${hard[0][0]}) and the vibe does not rescue it.` };
+    return { verdict: "cut", headline: `It breaks a hard rule (${hard[0][0]}), and the vibe doesn't rescue it.` };
   }
   const cautions = Object.values(rules).filter((c) => c.status === "caution").length;
   if (vibe.rating === "weak" && cautions > 0) {
-    return { verdict: "cut", headline: "Cut: the vibe is lukewarm and a rule is already flagging it." };
+    return { verdict: "cut", headline: "The vibe is lukewarm, and a rule is already flagging it." };
   }
-  return { verdict: "keep", headline: cautions > 0 ? "Keep, with a note: a rule flagged something small." : "Keep: it passes the rules and the vibe." };
+  return { verdict: "keep", headline: cautions > 0 ? "It works. One rule flagged something small." : "It passes the rules and the vibe." };
 }
 
 function cap(s: string): string {

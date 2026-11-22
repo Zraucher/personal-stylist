@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui";
+import { OutfitCardSkeleton, Skeleton } from "@/components/ui";
 
 // Today waits on the forecast and the closet: show the page's shape while it loads.
 export default function TodayLoading() {
@@ -11,8 +11,11 @@ export default function TodayLoading() {
         <Skeleton className="h-8 w-32 rounded-full" />
         <Skeleton className="h-4 w-64 rounded-full" />
       </div>
-      <Skeleton className="h-40" />
-      <Skeleton className="h-56" />
+      <div className="space-y-3">
+        {[0, 1, 2].map((i) => (
+          <OutfitCardSkeleton key={i} />
+        ))}
+      </div>
     </div>
   );
 }

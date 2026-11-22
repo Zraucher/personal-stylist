@@ -9,8 +9,8 @@ export default function OfflinePage() {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-ground px-6 text-center text-stone-900">
       <Wordmark size={28} />
-      <h1 className="font-display text-3xl font-extrabold">you&apos;re offline.</h1>
-      <p className="max-w-sm text-stone-600">Pages you opened recently still work: try Today, Plan or your Closet. Anything new needs a connection.</p>
+      <h1 className="font-display text-[28px] font-extrabold leading-[1.05] tracking-[-0.03em]">you&apos;re offline.</h1>
+      <p className="max-w-sm text-stone-600">Pages you opened recently still work, like Today, Plan and Closet. Anything new needs a connection.</p>
       <RetryButton />
       {/* Plain links on purpose: a full page load lets the service worker serve the saved copy offline. */}
       {/* eslint-disable @next/next/no-html-link-for-pages */}

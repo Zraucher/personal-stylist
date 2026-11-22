@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { RecommendationView } from "@/lib/today/recommend";
 import { respondToOutfit } from "./actions";
 import AskFriendsButton from "@/components/AskFriendsButton";
-import { Button, ButtonLink, Card, CheckTick, Chip, Field, Input, Notice, Thumb, buttonClass, cx, type ButtonVariant } from "@/components/ui";
+import { Button, ButtonLink, Card, CheckTick, Chip, Field, Input, Notice, OutfitStrip, WeatherLine, buttonClass, cx, type ButtonVariant } from "@/components/ui";
 
 type Fb = "wore" | "skipped" | "disliked" | "benchmark" | "failure";
 const FB_LABEL: Record<Fb, string> = { wore: "wore it", skipped: "skip", disliked: "not me", benchmark: "this is so me", failure: "felt like a costume" };
@@ -30,27 +30,27 @@ function FbButton({ on, variant, disabled, onClick, children }: { on: boolean; v
 // A thin closet gets a direct way to fill it.
 const THIN_CLOSET = 8;
 
-export function WeatherLine({ rec }: { rec: RecommendationView }) {
+/** The forecast the picks were made for: feels-like high large, the rest as meta. */
+export function RecWeather({ rec }: { rec: RecommendationView }) {
   const w = rec.weather;
   if (!w) return null;
+  if (w.source === "forecast") {
+    return <WeatherLine high={w.feelsMax} place={w.place} meta={[`low ${w.feelsMin}°`, `rain ${w.rainMax}%`, `UV ${w.uvMax}`, `wind ${w.windMax} mph`, `outside ${w.hours.join(", ")}`]} />;
+  }
+  if (w.source === "stated") return <WeatherLine high={w.feelsMax} meta={["the temperature you gave"]} />;
   return (
-    <p className="text-sm text-stone-600">
-      {w.source === "forecast" ? (
+    <WeatherLine
+      high={null}
+      meta={["No forecast, so we planned for a mild day."]}
+      note={
         <>
-          {w.place ? `${w.place}: ` : ""}feels {w.feelsMin}–{w.feelsMax}°F ({w.hours.join(", ")}), rain {w.rainMax}%, UV {w.uvMax}, wind {w.windMax} mph.
-        </>
-      ) : w.source === "stated" ? (
-        <>Planned for {w.feelsMax}°F.</>
-      ) : (
-        <>
-          No forecast available, so this assumes a mild day.{" "}
           <Link href="/profile" className="font-medium text-stone-900 underline underline-offset-2">
             Add your city
           </Link>{" "}
           for real weather.
         </>
-      )}
-    </p>
+      }
+    />
   );
 }
 
@@ -107,6 +107,8 @@ export default function RecommendationCards({ rec, showWeather = true }: { rec: 
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");
+  // Ticks draw only for what the person tapped in this session; saved state shows them finished.
+  const [justWore, setJustWore] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const send = (outfitId: string, type: Fb, text?: string) =>
@@ -118,9 +120,12 @@ export default function RecommendationCards({ rec, showWeather = true }: { rec: 
         return;
       }
       setGiven((g) => ({ ...g, [outfitId]: type }));
-      if (type === "wore") setChosen(outfitId);
+      if (type === "wore") {
+        setChosen(outfitId);
+        setJustWore(outfitId);
+      }
       const name = rec.picks.find((p) => p.outfitId === outfitId)?.name ?? "this outfit";
-      setAnnounce(type === "wore" ? `Wearing ${name}.` : `Saved “${FB_LABEL[type]}” for ${name}.`);
+      setAnnounce(type === "wore" ? `Wore ${name} today.` : `Saved “${FB_LABEL[type]}” for ${name}.`);
       setNoteFor(null);
       setMoreFor(null);
       setNote("");
@@ -130,12 +135,12 @@ export default function RecommendationCards({ rec, showWeather = true }: { rec: 
 
   return (
     <div className="space-y-4">
-      {showWeather && <WeatherLine rec={rec} />}
+      {showWeather && <RecWeather rec={rec} />}
       {rec.note && <Notice tone="warn">{rec.note}</Notice>}
       {rec.relaxed && rec.picks.length > 0 && (
-        <Notice tone="info">Nothing in your closet fully fits this, so these are the closest matches. Adding one of the missing pieces below will fix it.</Notice>
+        <Notice tone="info">Nothing in your closet fully fits this, so these are the closest matches. Add one of the pieces below and the picks get closer.</Notice>
       )}
-      {rec.picks.length === 0 && <p className="text-sm text-stone-600">No outfit from your closet fits yet.</p>}
+      {rec.picks.length === 0 && <p className="text-sm text-stone-600">Nothing in your closet fits this yet. Add a piece below or change where you&rsquo;re going.</p>}
       <p role="status" aria-live="polite" className="sr-only">
         {announce}
       </p>
@@ -146,13 +151,17 @@ export default function RecommendationCards({ rec, showWeather = true }: { rec: 
           const moreId = `more-${p.outfitId}`;
           return (
             <Card as="article" key={p.outfitId} variant={isChosen ? "active" : "surface"} className="space-y-3">
+              <OutfitStrip items={p.items} size="lg" />
               <div className="flex items-start justify-between gap-3">
-                <h2 className="min-w-0 font-display text-lg font-bold leading-snug">{p.name}</h2>
+                <h2 className="flex min-w-0 items-center gap-2 font-display text-lg font-bold leading-snug">
+                  {justWore === p.outfitId && <CheckTick size={22} animate className="text-emerald-700" />}
+                  <span className="min-w-0">{p.name}</span>
+                </h2>
                 {isChosen ? (
                   <Chip tone="works" className="shrink-0">
                     {/* The disc matches the chip, so the tick draws straight onto it. */}
-                    <CheckTick size={14} className="-ml-1 text-emerald-700" />
-                    wearing it
+                    <CheckTick size={14} animate={justWore === p.outfitId} className="-ml-1 text-emerald-700" />
+                    wore it
                   </Chip>
                 ) : rec.relaxed ? (
                   <Chip tone="almost" className="shrink-0">
@@ -161,16 +170,6 @@ export default function RecommendationCards({ rec, showWeather = true }: { rec: 
                 ) : null}
               </div>
               {p.why && p.why !== p.headline && <p className="text-sm leading-relaxed text-stone-700">{p.why}</p>}
-              <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3">
-                {p.items.map((i) => (
-                  <li key={i.id} className="min-w-0">
-                    <Link href={`/closet/${i.id}`} className="group block space-y-1 rounded-thumb">
-                      <Thumb src={i.url} alt="" item={i} size="fill" className="transition-opacity duration-200 ease-soft group-hover:opacity-90" />
-                      <p className="truncate text-xs text-stone-600">{i.name}</p>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
               {p.headline && <p className="text-xs text-stone-500">{p.headline}</p>}
               <div className="flex flex-wrap items-center gap-2">
                 <FbButton on={given[p.outfitId] === "wore"} variant="secondary" disabled={pending} onClick={() => click(p.outfitId, "wore")}>

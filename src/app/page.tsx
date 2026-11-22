@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Wordmark, { CheckDisc } from "@/components/Wordmark";
 import WaitlistForm from "@/components/landing/WaitlistForm";
-import { ButtonLink, Card, Chip } from "@/components/ui";
+import { ButtonLink, Card, Chip, Thumb, VoteBar } from "@/components/ui";
 
 // Public marketing home. Signed-in visitors never see it: the proxy sends them to /today.
 
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 };
 
 const STEPS = [
-  { title: "Tell us your colors", body: "Answer a few questions or let us read your past favorites. Valette builds your palette: the colors that light you up and the ones that fight you." },
+  { title: "Tell us your colors", body: "Answer a few questions or let us read your past favorites. Valette builds your palette, so you know the colors that light you up and the ones that fight you." },
   { title: "Add what you own", body: "Tick the basics in a minute, snap the pieces that matter, or let us find product photos for things you already bought." },
   { title: "Check before you go", body: "Pick where you're headed. Valette checks the weather and your closet and hands you three outfits that work on you." },
 ];
@@ -58,22 +58,19 @@ function LeadFeatures() {
             <span className="tabular-nums text-stone-600">$128</span>
           </div>
           <Chip tone="works">✓ works on you</Chip>
-          <p className="text-xs text-stone-600">Pairs with 9 things you own.</p>
+          <p className="text-xs text-stone-600">Pairs with 9 pieces you own.</p>
         </Card>
         <h3 className="font-display text-xl font-bold">Shop check</h3>
-        <p className="leading-relaxed text-stone-600">Paste a product link or a screenshot. We read the photo, not the color name, and tell you if it works before you buy.</p>
+        <p className="leading-relaxed text-stone-600">Paste a product link or a screenshot. We read the real color from the photo and tell you if it works before you buy.</p>
       </article>
       <article className="space-y-3">
         <Card variant="inset" aria-hidden="true" className="space-y-2">
           <p className="text-sm font-semibold">4 friends voted</p>
-          <div className="flex h-2.5 overflow-hidden rounded-full bg-card">
-            <span className="w-3/4 bg-emerald-700" />
-            <span className="w-1/4 bg-amber-500" />
-          </div>
+          <VoteBar works={3} almost={1} not={0} />
           <p className="text-xs text-stone-600">“Love the color, swap the shoes.” Maya</p>
         </Card>
-        <h3 className="font-display text-xl font-bold">Second opinion</h3>
-        <p className="leading-relaxed text-stone-600">Send a look or a find to friends. They vote works, almost or not in one tap, no account needed.</p>
+        <h3 className="font-display text-xl font-bold">Second opinions</h3>
+        <p className="leading-relaxed text-stone-600">Send a look or a find to friends. They vote works on you, almost or not for you in one tap. No account needed.</p>
       </article>
       <article className="space-y-3">
         <Card variant="inset" aria-hidden="true" className="space-y-1">
@@ -92,8 +89,15 @@ const FAQ = [
   { q: "Do I need a professional color analysis?", a: "No. Valette starts from what you tell it and what you already wear, and you can refine your palette any time. If you've had a color analysis, add your season and it will use it." },
   { q: "Is it only for women?", a: "No. Valette styles menswear, womenswear or both, for every skin tone, size and budget." },
   { q: "Will it push me to buy things?", a: "Your closet comes first. Shopping suggestions only appear when a piece would add real outfits, and only within the budget you set." },
-  { q: "What happens to my photos?", a: "Your closet and photos are private to your account. We use them to give you advice and nothing else, and you can delete any of them at any time." },
+  { q: "What happens to my photos?", a: "Your closet and photos are private to your account. We use them to give you advice. You can delete any photo in the app, and we'll delete your account if you ask." },
   { q: "How much does it cost?", a: "Valette is free during early access. We'll tell you well ahead of any change." },
+];
+
+// Garment silhouettes for the phone mock (no photos on the public page).
+const MOCK_PIECES = [
+  { name: "Linen shirt", item: { subcategory: "button-down shirt", colors: [{ name: "sky", hex: "#9cc3e4" }] } },
+  { name: "Olive chinos", item: { subcategory: "chinos", colors: [{ name: "olive", hex: "#6b7a4b" }] } },
+  { name: "White sneakers", item: { subcategory: "sneakers", colors: [{ name: "white", hex: "#f4f1ec" }] } },
 ];
 
 function PhoneMock() {
@@ -111,16 +115,16 @@ function PhoneMock() {
             <p className="text-sm font-bold">Easy linen evening</p>
           </div>
           <div className="grid grid-cols-3 gap-1.5">
-            <i className="block aspect-square rounded-lg bg-sky-brand" />
-            <i className="block aspect-square rounded-lg bg-[#6b7a4b]" />
-            <i className="block aspect-square rounded-lg bg-stone-100 ring-1 ring-inset ring-line" />
+            {MOCK_PIECES.map((p) => (
+              <Thumb key={p.name} alt={p.name} item={p.item} />
+            ))}
           </div>
           <p className="text-xs leading-snug text-stone-600">Linen shirt, olive chinos, white sneakers. Light enough for 82° and sharp enough for the rooftop.</p>
           <Chip tone="works">✓ works on you</Chip>
         </div>
         <div className="flex gap-2 text-xs font-bold">
-          <span className="flex-1 rounded-full bg-emerald-700 py-2 text-center text-on-accent">wore it</span>
-          <span className="flex-1 rounded-full border-[1.5px] border-stone-900 py-[7px] text-center">not me</span>
+          <span className="flex-1 rounded-full bg-emerald-700 py-2 text-center text-on-accent">Wore it</span>
+          <span className="flex-1 rounded-full border-[1.5px] border-stone-900 py-[7px] text-center">Try another</span>
         </div>
       </div>
     </div>
@@ -150,7 +154,7 @@ export default function Home() {
             <p className="inline-flex items-center gap-2 rounded-full bg-blush px-3 py-1 text-sm font-semibold text-stone-800">
               <span className="text-stone-900"><CheckDisc size={14} /></span> early access, invite only
             </p>
-            <h1 className="font-display text-5xl font-extrabold leading-[0.95] sm:text-6xl lg:text-7xl">check it on you before you wear it.</h1>
+            <h1 className="font-display text-5xl font-extrabold leading-[0.95] tracking-[-0.04em] sm:text-6xl lg:text-7xl">check it on you before you wear it.</h1>
             <p className="max-w-xl text-lg leading-relaxed text-stone-600">
               Valette looks at your outfit, your coloring and your closet, and tells you in seconds if it works. If it doesn&apos;t, it shows you what will.
             </p>
@@ -163,28 +167,34 @@ export default function Home() {
 
         {/* Verdicts */}
         <section className="border-y border-line bg-card">
-          <div className="mx-auto grid max-w-6xl gap-6 px-5 py-10 sm:grid-cols-3">
+          <ul className="mx-auto max-w-6xl divide-y divide-line px-5 py-4">
             {VERDICTS.map((v) => (
-              <div key={v.word} className="space-y-2">
-                <Chip tone={v.tone} size="md">
-                  <VerdictLabel glyph={v.glyph} word={v.word} />
-                </Chip>
+              <li key={v.word} className="grid gap-2 py-5 sm:grid-cols-[12rem_1fr] sm:items-center sm:gap-6">
+                <div>
+                  <Chip tone={v.tone} size="md">
+                    <VerdictLabel glyph={v.glyph} word={v.word} />
+                  </Chip>
+                </div>
                 <p className="text-stone-600">{v.body}</p>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
 
         {/* How it works */}
         <section id="how" className="mx-auto max-w-6xl scroll-mt-6 px-5 py-20">
           <h2 className="font-display text-4xl font-extrabold sm:text-5xl">how it works</h2>
-          <ol className="mt-10 grid gap-6 md:grid-cols-3">
+          <ol className="mt-10 divide-y divide-line border-y border-line-strong">
             {STEPS.map((s, i) => (
-              <Card as="li" key={s.title} pad="lg" className="space-y-3">
-                <span className="inline-grid h-9 w-9 place-items-center rounded-full bg-stone-900 font-display text-lg font-extrabold text-stone-50">{i + 1}</span>
-                <h3 className="font-display text-xl font-bold">{s.title}</h3>
-                <p className="leading-relaxed text-stone-600">{s.body}</p>
-              </Card>
+              <li key={s.title} className="grid grid-cols-[3.5rem_1fr] gap-4 py-6 sm:grid-cols-[5rem_1fr] sm:gap-8 sm:py-8">
+                <span aria-hidden="true" className="font-display text-6xl font-extrabold leading-none text-stone-300 tabular-nums">
+                  {i + 1}
+                </span>
+                <div className="max-w-2xl space-y-2">
+                  <h3 className="font-display text-xl font-bold">{s.title}</h3>
+                  <p className="leading-relaxed text-stone-600">{s.body}</p>
+                </div>
+              </li>
             ))}
           </ol>
         </section>
@@ -194,7 +204,7 @@ export default function Home() {
         <section className="bg-ink text-[#fbf7f2] dark:bg-raised">
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-20 md:grid-cols-2">
             <div className="space-y-4">
-              <p className="text-sm font-semibold uppercase tracking-wider text-[#fbf7f2]/80">more from what you own</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#fbf7f2]/80">more from what you own</p>
               <p className="font-display text-6xl font-extrabold leading-[0.95] sm:text-7xl">
                 23 pieces
                 <br />= 30 outfits
@@ -217,7 +227,7 @@ export default function Home() {
         {/* Features */}
         <section className="mx-auto max-w-6xl px-5 py-20">
           <h2 className="font-display text-4xl font-extrabold sm:text-5xl">a stylist in your pocket</h2>
-          <p className="mt-3 max-w-2xl text-lg text-stone-600">Everything starts with your colors, so every suggestion is made for you, not for a trend.</p>
+          <p className="mt-3 max-w-2xl text-lg text-stone-600">Everything starts with your colors, so every suggestion is made for you.</p>
           <LeadFeatures />
           <ul className="mt-12 grid gap-x-10 border-t border-line-strong sm:grid-cols-2">
             {MORE_FEATURES.map((f) => (

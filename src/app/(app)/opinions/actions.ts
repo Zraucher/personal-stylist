@@ -16,16 +16,16 @@ export type AskResult = { ok: true; id: string; url: string; title: string } | {
 /** Create (or reuse) a share link that asks friends whether a look or a find works on you. */
 export async function askForOpinion(raw: z.input<typeof Input>): Promise<AskResult> {
   const p = Input.safeParse(raw);
-  if (!p.success) return { ok: false, error: "Nothing to share." };
+  if (!p.success) return { ok: false, error: "Couldn't share that. Try again." };
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Signed out" };
+  if (!user) return { ok: false, error: "You're signed out. Sign in again to save this." };
   const origin = siteOrigin(await headers());
   const question = p.data.question || null;
 
-  // One open ask per look or find: sharing again reuses the same link and keeps the votes.
+  // One open second opinion per look or find: sharing again reuses the same link and keeps the votes.
   const col = p.data.kind === "outfit" ? "outfit_id" : "candidate_id";
   const targetId = p.data.kind === "outfit" ? p.data.outfitId : p.data.candidateId;
   const { data: existing } = await supabase
@@ -43,9 +43,9 @@ export async function askForOpinion(raw: z.input<typeof Input>): Promise<AskResu
   }
 
   const snapshot = await buildSnapshot(supabase, user.id, p.data.kind === "outfit" ? { kind: "outfit", outfitId: p.data.outfitId } : { kind: "find", candidateId: p.data.candidateId });
-  if (!snapshot) return { ok: false, error: "That look is no longer in your closet." };
+  if (!snapshot) return { ok: false, error: p.data.kind === "outfit" ? "That look isn't in your closet anymore." : "That product isn't on your wishlist anymore." };
   const { count } = await supabase.from("second_opinions").select("id", { count: "exact", head: true }).eq("user_id", user.id).gt("created_at", new Date(Date.now() - 86400000).toISOString());
-  if ((count ?? 0) >= 30) return { ok: false, error: "That's a lot of asks today. Try again tomorrow." };
+  if ((count ?? 0) >= 30) return { ok: false, error: "You've shared 30 looks today. Try again tomorrow." };
 
   const token = newToken();
   const { data, error } = await supabase
@@ -53,18 +53,18 @@ export async function askForOpinion(raw: z.input<typeof Input>): Promise<AskResu
     .insert({ user_id: user.id, token, kind: p.data.kind, [col]: targetId, question, snapshot })
     .select("id")
     .single();
-  if (error || !data) return { ok: false, error: "Could not create the link." };
+  if (error || !data) return { ok: false, error: "Couldn't make the link. Try again." };
   revalidatePath("/opinions");
   return { ok: true, id: data.id as string, url: `${origin}/o/${token}`, title: snapshot.title };
 }
 
 export async function closeOpinion(id: string): Promise<{ error?: string }> {
-  if (!z.string().uuid().safeParse(id).success) return { error: "Unknown ask" };
+  if (!z.string().uuid().safeParse(id).success) return { error: "That second opinion isn't here anymore." };
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
   await supabase.from("second_opinions").update({ closes_at: new Date().toISOString() }).eq("id", id).eq("user_id", user.id);
   revalidatePath("/opinions");
   revalidatePath(`/opinions/${id}`);
@@ -72,12 +72,12 @@ export async function closeOpinion(id: string): Promise<{ error?: string }> {
 }
 
 export async function deleteOpinion(id: string): Promise<{ error?: string }> {
-  if (!z.string().uuid().safeParse(id).success) return { error: "Unknown ask" };
+  if (!z.string().uuid().safeParse(id).success) return { error: "That second opinion isn't here anymore." };
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
   await supabase.from("second_opinions").delete().eq("id", id).eq("user_id", user.id);
   revalidatePath("/opinions");
   return {};

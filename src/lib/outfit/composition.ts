@@ -51,6 +51,7 @@ const sub = (i: OutfitItem) => (i.subcategory ?? "").toLowerCase();
 const hasTag = (i: OutfitItem, t: string) => i.construction.map((c) => c.toLowerCase()).includes(t);
 const worst = (statuses: Status[]): Status => statuses.reduce<Status>((w, s) => (RANK[s] > RANK[w] ? s : w), "good");
 const joinNames = (xs: OutfitItem[]) => xs.map(label).join(", ");
+const capLabel = (i: OutfitItem) => { const l = label(i); return l.charAt(0).toUpperCase() + l.slice(1); };
 
 /** How buttoned-up a piece is. Subcategory counts once; each structured detail counts, capped at two. */
 export function structurePoints(i: OutfitItem): number {
@@ -98,7 +99,7 @@ function checkCompleteness(items: OutfitItem[]): Check {
     return { id: "complete", label: "Complete", status: "fail", reason: "Two bottoms in one outfit.", fix: "Keep one bottom." };
   }
   if (!cats.includes("shoes")) {
-    return { id: "complete", label: "Complete", status: "caution", reason: "No shoes yet.", fix: "Add shoes; they change the whole read." };
+    return { id: "complete", label: "Complete", status: "caution", reason: "No shoes yet.", fix: "Add shoes. They change the whole look." };
   }
   return { id: "complete", label: "Complete", status: "good", reason: hasDress ? "Dress and shoes." : "Top, bottom and shoes." };
 }
@@ -111,7 +112,7 @@ function checkCounterbalance(items: OutfitItem[]): Check {
 
   if (points < 2) return { ...base, status: "ok", reason: "Nothing stiff here, so nothing to counterbalance." };
   if (soft.length === 0) {
-    const fix = "Swap one piece for something loose or undone: open the collar, add a knit, or go relaxed on the bottom.";
+    const fix = "Swap one piece for something loose or undone. Open the collar, add a knit, or go relaxed on the bottom.";
     if (points >= 4) {
       return { ...base, status: "fail", reason: `Buttoned-up from top to toe (${joinNames(structured)}) with nothing loose or undone to counterbalance it. It reads stiff.`, fix };
     }
@@ -140,14 +141,14 @@ function checkContrast(items: OutfitItem[]): Check {
     if (a === "fitted" && b === "fitted") {
       found.push("caution");
       notes.push(`${label(top)} and ${label(bottom)} are both fitted, so the outfit reads as a column.`);
-      fixes.push("Pair fitted with relaxed: loosen one of them.");
+      fixes.push("Loosen one of them so fitted meets relaxed.");
     } else if (a === "relaxed" && b === "relaxed" && (hasTag(bottom, "high-waisted") || hasTag(top, "cropped") || hasTag(bottom, "belted"))) {
       found.push("good");
-      notes.push("Both relaxed, but the defined waist keeps the shape.");
+      notes.push("Both relaxed, and the defined waist keeps the shape.");
     } else if (a === "relaxed" && b === "relaxed") {
       found.push("caution");
       notes.push(`${label(top)} and ${label(bottom)} are both relaxed, so the shape gets lost.`);
-      fixes.push("Pair relaxed with fitted: define the waist or take one in.");
+      fixes.push("Define the waist or take one of them in.");
     } else if ((a === "fitted" && b === "relaxed") || (a === "relaxed" && b === "fitted")) {
       found.push("good");
       notes.push("Fitted against relaxed gives it shape.");
@@ -162,7 +163,7 @@ function checkContrast(items: OutfitItem[]): Check {
   } else if (patterned.length === 2) {
     found.push("caution");
     notes.push(`Two patterns (${joinNames(patterned)}) compete.`);
-    fixes.push("Pair patterned with solid: make one of them plain.");
+    fixes.push("Make one of them plain.");
   } else if (patterned.length === 1) {
     found.push("good");
     notes.push(`${label(patterned[0])} is the only pattern, which works.`);
@@ -186,8 +187,8 @@ function checkPalette(items: OutfitItem[], cp: ScoreColorProfile): Check {
       // Far from the face a clash is a flag, not a failure.
       const status: Status = nearFace ? r.status : "caution";
       findings.push(status);
-      notes.push(`${label(i)}: ${r.reason}`);
-      fixes.push(nearFace ? `Swap ${label(i)} for something in your palette.` : `${label(i)} is far from your face, so it matters less.`);
+      notes.push(nearFace ? `${capLabel(i)}. ${r.reason}` : `${capLabel(i)}. ${r.reason} It's far from your face, so it matters less.`);
+      if (nearFace) fixes.push(`Swap ${label(i)} for something in your palette.`);
     }
   }
 
@@ -211,10 +212,10 @@ function checkPalette(items: OutfitItem[], cp: ScoreColorProfile): Check {
   }
 
   if (findings.length === 0) {
-    const tail = unresolved > 0 ? ` (${unresolved} color${unresolved === 1 ? "" : "s"} could not be read)` : "";
+    const tail = unresolved > 0 ? ` (${unresolved} color${unresolved === 1 ? "" : "s"} couldn't be read)` : "";
     return { ...base, status: items.every((i) => scorePalette(i, cp).status === "unknown") ? "unknown" : "good", reason: `Colors sit together and inside your palette${tail}.` };
   }
-  return { ...base, status: worst(findings), reason: notes.join(" "), fix: fixes.join(" ") };
+  return { ...base, status: worst(findings), reason: notes.join(" "), fix: fixes.length ? fixes.join(" ") : undefined };
 }
 
 function checkPersonal(items: OutfitItem[], style: ScoreStyle): Check {
@@ -229,7 +230,7 @@ function checkPersonal(items: OutfitItem[], style: ScoreStyle): Check {
   return {
     ...base,
     status: worst(hits.map((h) => h.status)),
-    reason: hits.map((h) => `${label(h.item)}: ${h.reason}`).join(" "),
+    reason: hits.map((h) => `${capLabel(h.item)}. ${h.reason}`).join(" "),
     fix: `Swap ${Array.from(new Set(hits.map((h) => label(h.item)))).join(" and ")}.`,
   };
 }
@@ -262,7 +263,7 @@ function checkLevel(items: OutfitItem[]): Check {
     }
   }
   if (notes.length === 0) {
-    return { ...base, status: formal.length < 2 && base_layers.length < 2 ? "unknown" : "good", reason: formal.length < 2 && base_layers.length < 2 ? "Not enough formality or warmth tags to judge." : "Pieces suit the same occasion and weather." };
+    return { ...base, status: formal.length < 2 && base_layers.length < 2 ? "unknown" : "good", reason: formal.length < 2 && base_layers.length < 2 ? "Add formality and warmth to these pieces to check this." : "Pieces suit the same occasion and weather." };
   }
   return { ...base, status, reason: notes.join(" "), fix: fixes.join(" ") };
 }
@@ -272,10 +273,10 @@ function checkVerdicts(items: OutfitItem[]): Check | null {
   if (cut.length === 0) return null;
   return {
     id: "verdicts",
-    label: "Scorecards",
+    label: "Verdicts",
     status: "caution",
-    reason: `${joinNames(cut)} ${cut.length === 1 ? "was" : "were"} marked cut in review.`,
-    fix: "Wear something you scored keep.",
+    reason: `${joinNames(cut)} came back not for you.`,
+    fix: "Swap in a piece that works on you.",
   };
 }
 
@@ -304,10 +305,10 @@ export function checkOutfit(items: OutfitItem[], cp: ScoreColorProfile, style: S
   const cautions = checks.filter((c) => c.status === "caution");
 
   if (failing.length > 0) {
-    return { overall: "rework", headline: `Rework: ${failing[0].label.toLowerCase()}. ${failing[0].reason}`, checks };
+    return { overall: "rework", headline: failing[0].reason, checks };
   }
   if (cautions.length > 0) {
-    return { overall: "workable", headline: `Workable: ${cautions[0].label.toLowerCase()}. ${cautions[0].reason}`, checks };
+    return { overall: "workable", headline: cautions[0].reason, checks };
   }
-  return { overall: "strong", headline: "Strong: balanced, in palette and nothing breaks your rules.", checks };
+  return { overall: "strong", headline: "Balanced, in your palette, and nothing breaks your rules.", checks };
 }

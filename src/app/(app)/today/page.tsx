@@ -62,7 +62,7 @@ export default async function TodayPage() {
     <div className="space-y-6">
       <PageHeader
         title="Today"
-        subtitle="Three outfits from your closet for the weather and where you are going."
+        subtitle="Three outfits from your closet, picked for the weather and where you're headed."
         actions={
           <ButtonLink href="/opinions" variant="quiet" size="sm" className="-mr-2">
             Second opinions
@@ -78,7 +78,7 @@ export default async function TodayPage() {
           )}
           {drops > 0 && (
             <ChipLink href="/wishlist" tone="info">
-              {drops} price drop{drops === 1 ? "" : "s"} on finds you watch
+              {drops} price drop{drops === 1 ? "" : "s"} on products you watch
             </ChipLink>
           )}
         </div>

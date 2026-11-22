@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { loadPublicOpinion } from "@/lib/opinions/public";
 import { firstName } from "@/lib/opinions/tally";
 import VoteForm from "./VoteForm";
-import { Card, Notice, Thumb } from "@/components/ui";
+import { Card, Notice, OutfitStrip, Thumb, VoteBar } from "@/components/ui";
 
 type Props = { params: Promise<{ token: string }> };
 
@@ -42,6 +42,9 @@ export default async function OpinionPage({ params }: Props) {
     viewerName = n === "your friend" ? null : n;
   }
   const s = o.snapshot;
+  // No first name on file: say "they" and never print "them" as if it were a name.
+  const owner = o.owner === "your friend" ? null : o.owner;
+  const shownPrice = price(s.price, s.currency);
 
   return (
     <div className="min-h-dvh bg-ground text-stone-900">
@@ -53,7 +56,7 @@ export default async function OpinionPage({ params }: Props) {
       </header>
       <main className="mx-auto max-w-xl space-y-5 px-5 pb-16">
         <div className="space-y-2">
-          <h1 className="font-display text-4xl font-extrabold leading-[0.95]">does this work on {o.owner.toLowerCase() === "your friend" ? "them" : o.owner}?</h1>
+          <h1 className="font-display text-4xl font-extrabold leading-[0.95]">does this work on {owner ?? "them"}?</h1>
           {o.question && <p className="text-lg text-stone-700">“{o.question}”</p>}
         </div>
 
@@ -66,35 +69,38 @@ export default async function OpinionPage({ params }: Props) {
           </Notice>
         )}
 
-        <Card as="section" className="space-y-3">
-          <h2 className="font-display text-xl font-bold leading-tight">{s.title}</h2>
-          {o.kind === "outfit" ? (
-            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {(s.items ?? []).map((it, i) => (
-                <li key={i} className="space-y-1.5">
-                  <Thumb src={o.images[i]} alt={it.name} item={{ subcategory: it.subcategory, colors: it.colors }} />
-                  <p className="line-clamp-2 text-sm font-medium">{it.name}</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="flex gap-4">
-              {s.image_url && (
-                <div className="w-32 shrink-0">
-                  <Thumb src={s.image_url} alt={s.title} product />
-                </div>
-              )}
-              <div className="space-y-1 text-sm">
-                {s.brand && <p className="font-semibold">{s.brand}</p>}
-                {price(s.price, s.currency) && <p className="text-lg font-bold">{price(s.price, s.currency)}</p>}
-                {s.store && <p className="text-stone-500">from {s.store}</p>}
+        {o.kind === "outfit" ? (
+          <Card as="section" className="space-y-3">
+            <h2 className="font-display text-xl font-bold leading-tight">{s.title}</h2>
+            <OutfitStrip
+              link={false}
+              items={(s.items ?? []).map((it, i) => ({ id: String(i), name: it.name, url: o.images[i], subcategory: it.subcategory, colors: it.colors }))}
+            />
+            <p className="text-sm text-stone-600">{(s.items ?? []).map((it) => it.name).join(", ")}</p>
+          </Card>
+        ) : (
+          <Card as="section" className="space-y-4">
+            {s.image_url && (
+              <div className="mx-auto w-full max-w-[280px]">
+                <Thumb src={s.image_url} alt={s.title} product />
               </div>
+            )}
+            <div className="space-y-1 text-center">
+              {s.brand && <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">{s.brand}</p>}
+              <h2 className="font-display text-xl font-bold leading-tight">{s.title}</h2>
+              {shownPrice && <p className="font-display text-2xl font-extrabold tabular-nums">{shownPrice}</p>}
+              {s.store && <p className="text-sm text-stone-500">from {s.store}</p>}
             </div>
-          )}
-        </Card>
+          </Card>
+        )}
 
-        {!isOwner && <VoteForm token={token} owner={o.owner === "your friend" ? "them" : o.owner} closed={o.closed} initialTally={o.tally} defaultName={viewerName} />}
-        {isOwner && <p className="text-center text-sm text-stone-600">{o.tally.summary}</p>}
+        {!isOwner && <VoteForm token={token} owner={owner} closed={o.closed} initialTally={o.tally} defaultName={viewerName} />}
+        {isOwner && (
+          <div className="space-y-2">
+            <VoteBar works={o.tally.works} almost={o.tally.almost} not={o.tally.not} />
+            <p className="text-center text-sm text-stone-600">{o.tally.summary}</p>
+          </div>
+        )}
 
         <p className="text-center text-xs text-stone-500">
           Shared from valette, the stylist that checks it on you first. <Link href="/privacy" className="underline underline-offset-2">Privacy</Link>

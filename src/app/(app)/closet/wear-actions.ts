@@ -8,12 +8,12 @@ import { recordWear } from "@/lib/wear";
 
 /** "Wore it today" from a piece's page. */
 export async function markWorn(itemId: string): Promise<{ error?: string }> {
-  if (!z.string().uuid().safeParse(itemId).success) return { error: "Unknown piece" };
+  if (!z.string().uuid().safeParse(itemId).success) return { error: "That piece isn't here anymore. Go back to your closet." };
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
   const { data: prof } = await supabase.from("profiles").select("timezone").eq("id", user.id).maybeSingle();
   await recordWear(supabase, user.id, [itemId], localDate((prof?.timezone as string | null) ?? null), { affinity: 0.25 });
   revalidatePath(`/closet/${itemId}`);
@@ -22,12 +22,12 @@ export async function markWorn(itemId: string): Promise<{ error?: string }> {
 
 /** Undo today's wear for a piece (a mistaken tap). */
 export async function unmarkWorn(itemId: string): Promise<{ error?: string }> {
-  if (!z.string().uuid().safeParse(itemId).success) return { error: "Unknown piece" };
+  if (!z.string().uuid().safeParse(itemId).success) return { error: "That piece isn't here anymore. Go back to your closet." };
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
   const { data: prof } = await supabase.from("profiles").select("timezone").eq("id", user.id).maybeSingle();
   const today = localDate((prof?.timezone as string | null) ?? null);
   const { data: removed } = await supabase.from("wear_log").delete().eq("user_id", user.id).eq("item_id", itemId).eq("worn_on", today).select("id");
@@ -42,17 +42,17 @@ export async function unmarkWorn(itemId: string): Promise<{ error?: string }> {
 
 /** What the piece cost, for cost per wear. Empty clears it. */
 export async function setItemPrice(itemId: string, raw: string): Promise<{ error?: string }> {
-  if (!z.string().uuid().safeParse(itemId).success) return { error: "Unknown piece" };
+  if (!z.string().uuid().safeParse(itemId).success) return { error: "That piece isn't here anymore. Go back to your closet." };
   const text = raw.replace(/[$,\s]/g, "");
   const price = text === "" ? null : Number(text);
-  if (price != null && (!Number.isFinite(price) || price < 0 || price > 100000)) return { error: "Enter a price like 79 or 79.50" };
+  if (price != null && (!Number.isFinite(price) || price < 0 || price > 100000)) return { error: "Enter a price like 79 or 79.50." };
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
   const { error } = await supabase.from("closet_items").update({ price: price == null ? null : Math.round(price * 100) / 100 }).eq("id", itemId).eq("user_id", user.id);
-  if (error) return { error: "Could not save the price." };
+  if (error) return { error: "Couldn't save the price. Try again." };
   revalidatePath(`/closet/${itemId}`);
   return {};
 }

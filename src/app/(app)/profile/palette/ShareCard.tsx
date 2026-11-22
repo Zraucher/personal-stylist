@@ -27,28 +27,26 @@ export default function ShareCard({ alt }: { alt: string }) {
         setMsg("Saved palette.png.");
       }
     } catch (e) {
-      if (!(e instanceof DOMException && e.name === "AbortError")) setMsg("Could not share the card. Try again.");
+      if (!(e instanceof DOMException && e.name === "AbortError")) setMsg("Couldn't share the card. Try again.");
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <Card as="section" className="space-y-3">
-      <SectionTitle
-        action={
-          <Button type="button" variant="primary" size="sm" onClick={share} disabled={busy} aria-busy={busy || undefined}>
-            {busy ? "Preparing…" : "Share or save"}
-          </Button>
-        }
-      >
-        Share image
-      </SectionTitle>
+    <Card as="section" className="flex flex-col gap-4 sm:flex-row sm:items-start">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="mx-auto w-full max-w-xs rounded-thumb ring-1 ring-line" />
-      <p role="status" aria-live="polite" className="text-sm text-stone-600 empty:hidden">
-        {msg}
-      </p>
+      <img src={src} alt={alt} className="mx-auto w-full max-w-[200px] shrink-0 rounded-thumb ring-1 ring-line sm:mx-0" />
+      <div className="min-w-0 flex-1 space-y-3">
+        <SectionTitle>Share image</SectionTitle>
+        <p className="text-sm text-stone-600">Send your palette to a friend, or save it to look at while you shop.</p>
+        <Button type="button" variant="primary" size="sm" onClick={share} disabled={busy} aria-busy={busy || undefined}>
+          {busy ? "Preparing…" : "Share or save"}
+        </Button>
+        <p role="status" aria-live="polite" className="text-sm text-stone-600 empty:hidden">
+          {msg}
+        </p>
+      </div>
     </Card>
   );
 }

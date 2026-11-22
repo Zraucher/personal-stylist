@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { addBrand, deleteBrand, saveAccount, saveColor, saveMeasurements, saveStyle } from "./actions";
-import { Button, Card as UICard, Chip, EmptyState, Field, Input, Notice, SectionTitle, Select, Textarea, type ChipTone } from "@/components/ui";
+import { Button, Card as UICard, Chip, EmptyState, Field, Input, Notice, SectionTitle, Select, Swatch, Textarea, type ChipTone } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
 // Shared bits
@@ -60,7 +60,7 @@ function Card({
       <SectionTitle
         action={
           !editing && (
-            <Button ref={editRef} type="button" variant="quiet" size="sm" onClick={onEdit} disabled={locked} aria-label={`Edit ${title}`} title={locked ? "Finish the card you are editing first" : undefined}>
+            <Button ref={editRef} type="button" variant="quiet" size="sm" onClick={onEdit} disabled={locked} aria-label={`Edit ${title}`} title={locked ? "Finish the card you're editing first" : undefined}>
               Edit
             </Button>
           )
@@ -373,7 +373,24 @@ export type ColorData = {
   notes: string;
 };
 
-export function ColorCard({ data }: { data: ColorData }) {
+/** Colors as swatch chips, the way the palette page shows them. */
+function ColorChips({ names, hexes }: { names: string[]; hexes: Record<string, string | null> }) {
+  if (!names.length) return null;
+  return (
+    <ul className="flex flex-wrap gap-1.5">
+      {names.map((c) => (
+        <li key={c}>
+          <Chip tone="outline">
+            {hexes[c] && <Swatch hex={hexes[c]} className="size-3" />}
+            {c}
+          </Chip>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Record<string, string | null> }) {
   const e = useEditor<ColorData>("color", data, (v) => saveColor(v));
   const field = (k: "season_label" | "undertone" | "depth" | "contrast", label: string, ph: string) => (
     <Field label={label}>
@@ -398,8 +415,8 @@ export function ColorCard({ data }: { data: ColorData }) {
           <Row label="Undertone">{data.undertone || null}</Row>
           <Row label="Depth">{data.depth || null}</Row>
           <Row label="Contrast">{data.contrast || null}</Row>
-          <Row label="Best colors">{list(data.best_colors)}</Row>
-          <Row label="Avoid">{list(data.avoid_colors)}</Row>
+          <Row label="Best colors">{data.best_colors.length ? <ColorChips names={data.best_colors} hexes={hexes} /> : null}</Row>
+          <Row label="Avoid">{data.avoid_colors.length ? <ColorChips names={data.avoid_colors} hexes={hexes} /> : null}</Row>
           <Row label="Notes">{data.notes || null}</Row>
         </Dl>
       }

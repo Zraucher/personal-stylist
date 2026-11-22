@@ -3,8 +3,10 @@
 import { useId, useState } from "react";
 import { OCCASIONS, type Occasion } from "@/lib/today/candidates";
 import type { RecommendationView } from "@/lib/today/recommend";
-import { Button, ButtonLink, Card, Checkbox, ChipButton, ChipGroup, EmptyState, Notice, Skeleton } from "@/components/ui";
-import RecommendationCards, { WeatherLine } from "./RecommendationCards";
+import { Button, ButtonLink, Card, Checkbox, ChipButton, ChipGroup, EmptyState, Notice, OutfitCardSkeleton } from "@/components/ui";
+import RecommendationCards, { RecWeather } from "./RecommendationCards";
+
+const FAILED = "Couldn't pick outfits just now. Try again in a minute.";
 
 type Hour = "morning" | "midday" | "evening";
 const HOURS: Hour[] = ["morning", "midday", "evening"];
@@ -42,11 +44,12 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
         body: JSON.stringify({ occasion, hours, indoorCold, dayOffset: tomorrow ? 1 : 0 }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok || !body.recommendation) throw new Error(body.detail || "Could not build outfits.");
+      if (!res.ok || !body.recommendation) throw new Error(typeof body.detail === "string" ? body.detail : FAILED);
       setRec(body.recommendation);
       setEditing(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not build outfits.");
+      // A network failure throws a TypeError with a browser message: show our line instead.
+      setError(e instanceof Error && !(e instanceof TypeError) ? e.message : FAILED);
     } finally {
       setLoading(false);
     }
@@ -55,7 +58,7 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        {rec && <WeatherLine rec={rec} />}
+        {rec && <RecWeather rec={rec} />}
         {rec && !editing ? (
           <div className="flex items-center justify-between gap-3 rounded-control bg-inset py-1.5 pl-4 pr-1.5">
             <p className="min-w-0 text-sm text-stone-700">{summarize(occasion, hours, indoorCold, tomorrow)}</p>
@@ -108,15 +111,15 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
         <div role="status" aria-live="polite" className="space-y-3">
           <span className="sr-only">Picking outfits…</span>
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-72" />
+            <OutfitCardSkeleton key={i} />
           ))}
         </div>
       ) : rec ? (
         <RecommendationCards key={rec.id} rec={rec} showWeather={false} />
       ) : closetSize < 8 ? (
         <EmptyState
-          title={`Your closet has ${closetSize} ${closetSize === 1 ? "piece" : "pieces"} so far.`}
-          body="Outfits need a top, a bottom and shoes at least. Tick the basics you own; it takes a minute."
+          title={`${closetSize} ${closetSize === 1 ? "piece" : "pieces"} so far`}
+          body="Outfits need at least a top, a bottom and shoes. Tick the basics you own. It takes a minute."
           action={
             <>
               <ButtonLink href="/closet/basics" variant="secondary" size="sm">
@@ -129,7 +132,7 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
           }
         />
       ) : (
-        <p className="text-sm text-stone-500">Choose where you are going and get three outfits from your own closet, matched to the weather.</p>
+        <p className="text-sm text-stone-500">Choose where you&rsquo;re going and get three outfits from your own closet, matched to the weather.</p>
       )}
     </div>
   );

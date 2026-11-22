@@ -4,7 +4,7 @@ import { useRef, useState, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/closet/compress";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
-import { Button, Card, Notice } from "@/components/ui";
+import { Button, Card, Chip, Notice, Thumb } from "@/components/ui";
 import ItemForm, { EMPTY_VALUES, applyTags, requestTags, type ItemFormValues } from "../ItemForm";
 
 type Phase = "pick" | "uploading" | "tagging" | "form";
@@ -37,13 +37,13 @@ export default function ItemCapture() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Signed out. Reload and sign in again.");
+      if (!user) throw new Error("You're signed out. Sign in again to save this.");
 
       const { blob, type } = await compressImage(file);
       const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage.from(CLOSET_BUCKET).upload(path, blob, { contentType: type, upsert: false });
-      if (upErr) throw new Error(upErr.message);
+      if (upErr) throw new Error("Couldn't upload that photo. Check your connection and try again.");
 
       setImagePath(path);
       setPreviewUrl(URL.createObjectURL(blob));
@@ -54,7 +54,7 @@ export default function ItemCapture() {
       setNote(message);
       setPhase("form");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
+      setError(e instanceof Error ? e.message : "Couldn't upload that photo. Try again.");
       setPhase("pick");
     }
   };
@@ -73,10 +73,10 @@ export default function ItemCapture() {
 
       <Card pad="lg" className="space-y-4">
         <div>
-          <h2 className="font-display text-lg font-bold leading-snug">Add a piece</h2>
+          <h2 className="font-display text-lg font-bold leading-snug">Start with a photo</h2>
           <p className="mt-1 text-sm leading-relaxed text-stone-600">
-            Lay it flat or hang it against a plain wall in daylight. One garment per photo. The tagger reads color, construction and
-            formality; you correct anything it gets wrong.
+            Lay it flat or hang it against a plain wall in daylight. One piece per photo. We&rsquo;ll read the color, construction and
+            formality. You fix anything we get wrong.
           </p>
         </div>
         {finePointer ? (
@@ -106,15 +106,27 @@ export default function ItemCapture() {
             setPhase("form");
           }}
         >
-          Enter without a photo
+          Fill in the details yourself
         </Button>
         {error && <Notice tone="error">{error}</Notice>}
       </Card>
 
-      {phase === "tagging" && (
-        <p role="status" aria-live="polite" className="text-center text-sm text-stone-500">
-          The tagger is reading the photo. Ten seconds or so.
-        </p>
+      {phase === "tagging" && previewUrl && (
+        <div className="mx-auto w-full max-w-[240px]">
+          <Thumb
+            src={previewUrl}
+            alt="Your photo"
+            size="fill"
+            badge={
+              <Chip tone="overlay" className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap">
+                Reading photo…
+              </Chip>
+            }
+          />
+          <p role="status" aria-live="polite" className="mt-2 text-center text-sm text-stone-500">
+            We&rsquo;re reading the photo. Ten seconds or so.
+          </p>
+        </div>
       )}
     </div>
   );

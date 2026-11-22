@@ -2,12 +2,19 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
 import { CATEGORIES, CATEGORY_LABELS, STATUS_LABELS, type ClosetItem } from "@/lib/closet/taxonomy";
-import { verdictLabel } from "@/lib/verdict";
-import { ButtonLink, Chip, EmptyState, Field, Input, Notice, PageHeader, Swatch, Thumb, type ChipTone } from "@/components/ui";
+import { VERDICT_SHORT, verdictLabel, type Verdict } from "@/lib/verdict";
+import { ButtonLink, Chip, EmptyState, Field, Input, Notice, PageHeader, Swatch, Thumb } from "@/components/ui";
 import ClosetSubnav from "../ClosetSubnav";
 
 const LAYER = /hoodie|sweatshirt|jacket|cardigan|vest|coat|blazer|quarter-zip|overshirt/i;
-const VERDICT_TONE: Record<string, ChipTone> = { keep: "works", provisional: "almost", cut: "not" };
+// Corner disc on each tile: glyph only, with the full verdict for screen readers.
+const VERDICT_DISC: Record<Verdict, string> = {
+  keep: "bg-emerald-700 text-on-accent",
+  provisional: "bg-amber-500 text-ink",
+  cut: "bg-red-700 text-on-accent",
+};
+
+export const metadata = { title: "Closet · valette" };
 
 export default async function ClosetPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
@@ -50,14 +57,14 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
         title="Closet"
         subtitle={
           <>
-            {all.length} {all.length === 1 ? "item" : "items"}
+            {all.length} {all.length === 1 ? "piece" : "pieces"}
             {all.length > 0 && `, ${withPhoto} with photos`}
           </>
         }
         actions={
           // While the closet is empty the basics list below is the one green action.
           <ButtonLink href="/closet/new" variant={all.length === 0 ? "secondary" : "primary"} size="sm">
-            Add item
+            Add a piece
           </ButtonLink>
         }
       />
@@ -113,9 +120,9 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
           .filter(([, list]) => list.length > 0)
           .map(([key, list]) => (
             <section key={key} className="space-y-3">
-              <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-700">
+              <h2 className="font-display text-lg font-bold leading-snug">
                 {key === "outerwear" ? "Outerwear & layers" : key in CATEGORY_LABELS ? CATEGORY_LABELS[key as keyof typeof CATEGORY_LABELS] : "Socks, underlayers & extras"}{" "}
-                <span className="tabular-nums text-stone-500">{list.length}</span>
+                <span className="font-sans text-sm font-normal tabular-nums text-stone-500">{list.length}</span>
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
                 {list.map((item) => (
@@ -130,17 +137,15 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
 }
 
 function ItemCard({ item, url, verdict }: { item: ClosetItem; url?: string; verdict?: string }) {
-  const tone = verdict ? VERDICT_TONE[verdict] : undefined;
+  const v = verdict && verdict in VERDICT_DISC ? (verdict as Verdict) : undefined;
   return (
-    <Link
-      href={`/closet/${item.id}`}
-      className="group block rounded-card bg-card p-1.5 ring-1 ring-line transition-shadow duration-200 ease-soft hover:ring-line-strong"
-    >
+    <Link href={`/closet/${item.id}`} className="group block rounded-thumb">
       <Thumb
         src={url}
         alt=""
         item={item}
         size="fill"
+        className="[&_img]:transition-transform [&_img]:duration-300 [&_img]:ease-soft group-hover:[&_img]:scale-[1.02]"
         badge={
           <>
             {item.status !== "available" && (
@@ -148,18 +153,19 @@ function ItemCard({ item, url, verdict }: { item: ClosetItem; url?: string; verd
                 {STATUS_LABELS[item.status]}
               </Chip>
             )}
-            {tone && (
-              <Chip tone={tone} className="absolute right-2 top-2">
-                {verdictLabel(verdict, true)}
-              </Chip>
+            {v && (
+              <span className={"absolute right-2 top-2 grid size-5 place-items-center rounded-full text-[11px] font-bold leading-none " + VERDICT_DISC[v]}>
+                <span aria-hidden="true">{VERDICT_SHORT[v].split(" ")[0]}</span>
+                <span className="sr-only">{verdictLabel(v).slice(2)}</span>
+              </span>
             )}
           </>
         }
       />
-      <div className="px-1 pb-0.5 pt-2">
+      <div className="pt-2">
         <p className="truncate text-sm font-semibold">{item.name ?? "Untitled"}</p>
         <div className="mt-0.5 flex items-center justify-between gap-2">
-          <p className="truncate text-xs text-stone-500">{[item.brand ?? item.subcategory, item.colors[0]?.name].filter(Boolean).join(" · ")}</p>
+          <p className="truncate text-xs text-stone-500">{item.brand ?? item.subcategory}</p>
           <div className="flex shrink-0 gap-1">
             {item.colors.slice(0, 4).map((c, i) => (
               <Swatch key={i} hex={c.hex} name={c.name} />

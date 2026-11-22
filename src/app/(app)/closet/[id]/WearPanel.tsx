@@ -34,14 +34,14 @@ export default function WearPanel({ itemId, wears, lastWorn, wornToday, price }:
         {wornToday ? (
           <div className="flex items-center gap-1">
             <p role="status" className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-900">
+              Worn today
               {justMarked ? (
-                <CheckTick className="text-emerald-700" />
+                <CheckTick animate className="text-emerald-700" />
               ) : (
                 <span aria-hidden="true" className="text-emerald-700">
                   ✓
                 </span>
               )}
-              Worn today
             </p>
             <Button
               type="button"
@@ -49,7 +49,7 @@ export default function WearPanel({ itemId, wears, lastWorn, wornToday, price }:
               size="sm"
               disabled={pending}
               aria-busy={pending || undefined}
-              aria-label="Undo worn today"
+              aria-label="Undo: wore it today"
               onClick={() => {
                 setJustMarked(false);
                 start(async () => void (await unmarkWorn(itemId)));
@@ -70,7 +70,7 @@ export default function WearPanel({ itemId, wears, lastWorn, wornToday, price }:
               start(async () => void (await markWorn(itemId)));
             }}
           >
-            Wore it today
+            Wore it
           </Button>
         )}
       </div>

@@ -5,7 +5,7 @@ export default function NewItemPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="New item"
+        title="Add a piece"
         actions={
           <ButtonLink href="/closet" variant="quiet" size="sm">
             Cancel

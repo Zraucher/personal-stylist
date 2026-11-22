@@ -8,6 +8,9 @@ import { ALL_SLOT_IDS } from "@/lib/profile/photo-slots";
 
 type Result = { ok: true } | { ok: false; error: string };
 
+const SIGNED_OUT = "You're signed out. Sign in again to save this.";
+const SAVE_FAILED = "Couldn't save that. Try again.";
+
 const text = (max: number) =>
   z
     .string()
@@ -26,7 +29,7 @@ async function currentUser() {
 }
 
 function fail(e: z.ZodError): Result {
-  return { ok: false, error: e.issues[0]?.message ?? "Check the form" };
+  return { ok: false, error: e.issues[0]?.message ?? "Check the form and try again." };
 }
 
 // ---------------------------------------------------------------------------
@@ -42,7 +45,7 @@ export async function saveAccount(raw: z.input<typeof Account>): Promise<Result>
   const p = Account.safeParse(raw);
   if (!p.success) return fail(p.error);
   const { supabase, user } = await currentUser();
-  if (!user) return { ok: false, error: "Signed out" };
+  if (!user) return { ok: false, error: SIGNED_OUT };
   // A new location must be geocoded again, so clear the saved coordinates and timezone.
   const { data: current } = await supabase.from("profiles").select("location").eq("id", user.id).maybeSingle();
   const moved = (current?.location ?? null) !== p.data.location;
@@ -50,7 +53,7 @@ export async function saveAccount(raw: z.input<typeof Account>): Promise<Result>
     .from("profiles")
     .update(moved ? { ...p.data, latitude: null, longitude: null, timezone: null } : p.data)
     .eq("id", user.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: SAVE_FAILED };
   revalidatePath("/profile");
   return { ok: true };
 }
@@ -75,11 +78,11 @@ export async function saveMeasurements(raw: z.input<typeof Measurements>): Promi
   const p = Measurements.safeParse(raw);
   if (!p.success) return fail(p.error);
   const { supabase, user } = await currentUser();
-  if (!user) return { ok: false, error: "Signed out" };
+  if (!user) return { ok: false, error: SIGNED_OUT };
   const { error } = await supabase
     .from("measurements")
     .upsert({ user_id: user.id, ...p.data, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: SAVE_FAILED };
   revalidatePath("/profile");
   return { ok: true };
 }
@@ -101,11 +104,11 @@ export async function saveColor(raw: z.input<typeof Color>): Promise<Result> {
   const p = Color.safeParse(raw);
   if (!p.success) return fail(p.error);
   const { supabase, user } = await currentUser();
-  if (!user) return { ok: false, error: "Signed out" };
+  if (!user) return { ok: false, error: SIGNED_OUT };
   const { error } = await supabase
     .from("color_profiles")
     .upsert({ user_id: user.id, ...p.data, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: SAVE_FAILED };
   revalidatePath("/profile");
   return { ok: true };
 }
@@ -128,11 +131,11 @@ export async function saveStyle(raw: z.input<typeof Style>): Promise<Result> {
   const p = Style.safeParse(raw);
   if (!p.success) return fail(p.error);
   const { supabase, user } = await currentUser();
-  if (!user) return { ok: false, error: "Signed out" };
+  if (!user) return { ok: false, error: SIGNED_OUT };
   const { error } = await supabase
     .from("style_prefs")
     .upsert({ user_id: user.id, ...p.data, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: SAVE_FAILED };
   revalidatePath("/profile");
   return { ok: true };
 }
@@ -141,7 +144,7 @@ export async function saveStyle(raw: z.input<typeof Style>): Promise<Result> {
 // Brands
 // ---------------------------------------------------------------------------
 const Brand = z.object({
-  name: z.string().trim().min(1, "Give the brand a name").max(80),
+  name: z.string().trim().min(1, "Give the brand a name.").max(80),
   status: z.enum(["loved", "mixed", "avoid"]),
   note: text(200),
 });
@@ -150,18 +153,18 @@ export async function addBrand(raw: z.input<typeof Brand>): Promise<Result> {
   const p = Brand.safeParse(raw);
   if (!p.success) return fail(p.error);
   const { supabase, user } = await currentUser();
-  if (!user) return { ok: false, error: "Signed out" };
+  if (!user) return { ok: false, error: SIGNED_OUT };
   const { error } = await supabase.from("brands").insert({ user_id: user.id, ...p.data });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: SAVE_FAILED };
   revalidatePath("/profile");
   return { ok: true };
 }
 
 export async function deleteBrand(id: string): Promise<Result> {
   const { supabase, user } = await currentUser();
-  if (!user) return { ok: false, error: "Signed out" };
+  if (!user) return { ok: false, error: SIGNED_OUT };
   const { error } = await supabase.from("brands").delete().eq("id", id).eq("user_id", user.id);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: SAVE_FAILED };
   revalidatePath("/profile");
   return { ok: true };
 }
@@ -171,16 +174,16 @@ export async function deleteBrand(id: string): Promise<Result> {
 // ---------------------------------------------------------------------------
 /** Record a photo already uploaded to <user id>/profile/. Replaces (and deletes) the slot's old file. */
 export async function savePhotoSlot(slot: string, path: string): Promise<Result> {
-  if (!ALL_SLOT_IDS.includes(slot)) return { ok: false, error: "Unknown photo slot" };
+  if (!ALL_SLOT_IDS.includes(slot)) return { ok: false, error: "Couldn't find that photo slot. Refresh the page and try again." };
   const { supabase, user } = await currentUser();
-  if (!user) return { ok: false, error: "Signed out" };
-  if (!path.startsWith(`${user.id}/profile/`)) return { ok: false, error: "Image does not belong to you" };
+  if (!user) return { ok: false, error: SIGNED_OUT };
+  if (!path.startsWith(`${user.id}/profile/`)) return { ok: false, error: "That photo isn't from your account. Upload it again." };
 
   const { data: old } = await supabase.from("profile_photos").select("image_path").eq("user_id", user.id).eq("slot", slot).maybeSingle();
   const { error } = await supabase
     .from("profile_photos")
     .upsert({ user_id: user.id, slot, image_path: path, updated_at: new Date().toISOString() }, { onConflict: "user_id,slot" });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: SAVE_FAILED };
   if (old?.image_path && old.image_path !== path) {
     await supabase.storage.from(CLOSET_BUCKET).remove([old.image_path as string]);
   }
@@ -189,12 +192,12 @@ export async function savePhotoSlot(slot: string, path: string): Promise<Result>
 }
 
 export async function removePhotoSlot(slot: string): Promise<Result> {
-  if (!ALL_SLOT_IDS.includes(slot)) return { ok: false, error: "Unknown photo slot" };
+  if (!ALL_SLOT_IDS.includes(slot)) return { ok: false, error: "Couldn't find that photo slot. Refresh the page and try again." };
   const { supabase, user } = await currentUser();
-  if (!user) return { ok: false, error: "Signed out" };
+  if (!user) return { ok: false, error: SIGNED_OUT };
   const { data: old } = await supabase.from("profile_photos").select("image_path").eq("user_id", user.id).eq("slot", slot).maybeSingle();
   const { error } = await supabase.from("profile_photos").delete().eq("user_id", user.id).eq("slot", slot);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: SAVE_FAILED };
   if (old?.image_path) await supabase.storage.from(CLOSET_BUCKET).remove([old.image_path as string]);
   revalidatePath("/profile");
   return { ok: true };

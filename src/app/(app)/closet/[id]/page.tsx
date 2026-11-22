@@ -7,7 +7,7 @@ import DeleteItemButton from "./DeleteItemButton";
 import ScorecardPanel, { type ScorecardRow } from "../ScorecardPanel";
 import WearPanel from "./WearPanel";
 import { localDate } from "@/lib/today/weather";
-import { Card, PageHeader, Thumb } from "@/components/ui";
+import { PageHeader, Thumb } from "@/components/ui";
 
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -66,11 +66,11 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-6">
-      <PageHeader title={item.name ?? "Item"} back={{ href: "/closet", label: "Closet" }} />
+      <PageHeader title={item.name ?? "Piece"} back={{ href: "/closet", label: "Closet" }} />
 
-      <div className="grid gap-4 sm:grid-cols-[240px_minmax(0,1fr)] sm:items-start sm:gap-5">
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] sm:items-start sm:gap-5">
         {/* The garment leads. Its name is the heading right above, so the image needs no alt text. */}
-        <div className="mx-auto w-full max-w-[240px]">
+        <div className="mx-auto w-full max-w-[360px] sm:max-w-none">
           <Thumb src={imageUrl} alt="" item={item} size="fill" />
           {!item.image_path && <p className="mt-2 text-center text-xs text-stone-500">No photo yet. Add one under Edit details.</p>}
         </div>
@@ -94,13 +94,13 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
         <ItemForm initial={initial} itemId={item.id} imagePath={item.image_path} imageUrl={imageUrl} />
       </details>
 
-      <Card pad="sm" className="flex flex-wrap items-center justify-between gap-3 pl-4 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
         <p className="text-stone-500">
           Added {new Date(item.created_at).toLocaleDateString()}
           {item.generic_id && " from the basics list"}
         </p>
         <DeleteItemButton id={item.id} />
-      </Card>
+      </div>
     </div>
   );
 }

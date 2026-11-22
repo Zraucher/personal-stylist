@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
 import WishlistClient, { type CandidateView, type WishView } from "./WishlistClient";
 
+export const metadata = { title: "Wishlist · valette" };
+
 export default async function WishlistPage({ searchParams }: { searchParams: Promise<{ add?: string; prefs?: string }> }) {
   const { add, prefs } = await searchParams;
   const supabase = await createClient();
@@ -46,7 +48,7 @@ export default async function WishlistPage({ searchParams }: { searchParams: Pro
       <PageHeader
         back={{ href: "/hauls", label: "Shop" }}
         title="Wishlist"
-        subtitle="Pieces you want. Find options searches stores with your palette's color words and your loved brands, and shows what fits."
+        subtitle="Pieces you want. Find options searches stores in your colors and from brands you love."
       />
       <WishlistClient
         wishes={wishViews}

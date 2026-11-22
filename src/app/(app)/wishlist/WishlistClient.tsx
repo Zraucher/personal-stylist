@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { addWish, deleteWish, setCandidateState, setWatch, setWishStatus, sourcingHaul, upcomingStatus } from "./actions";
 import { priceDrop } from "@/lib/retail/price";
 import AskFriendsButton from "@/components/AskFriendsButton";
-import { Button, Card, Chip, ChipButton, ConfirmButton, EmptyState, Field, Input, Notice, SectionTitle, Select, Thumb } from "@/components/ui";
+import { Button, Card, Chip, ChipButton, ConfirmButton, EmptyState, Field, Input, Notice, SectionTitle, Select, Skeleton, Thumb } from "@/components/ui";
 
 export type WishView = { id: string; title: string; preferences: string | null; budget: string | null; colors: string[]; status: "open" | "found" | "dropped"; lastSearched: string | null };
 export type CandidateView = {
@@ -26,6 +26,35 @@ export type CandidateView = {
 type Need = { id: string; label: string; season: string | null; status: string };
 
 const IN_PALETTE = new Set(["good", "ok"]);
+const OUT_PALETTE = new Set(["caution", "fail"]);
+const SIGNED_OUT = "You're signed out. Sign in again to save this.";
+
+const summaryClass =
+  "tap inline-flex min-h-9 cursor-pointer list-none items-center gap-1 rounded-full px-1.5 text-sm font-medium text-stone-600 transition-colors duration-200 ease-soft hover:text-stone-900 [&::-webkit-details-marker]:hidden";
+
+function Chevron() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-200 ease-soft group-open:rotate-180">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+/** Loading shape of a found product while the search runs. */
+function CandidateSkeleton() {
+  return (
+    <li aria-hidden="true" className="flex min-w-0 flex-col overflow-hidden rounded-card bg-card ring-1 ring-line">
+      <div className="p-2 pb-0">
+        <Skeleton className="aspect-[4/5] rounded-thumb" />
+      </div>
+      <div className="space-y-2 p-3">
+        <Skeleton className="h-4 w-4/5 rounded-full" />
+        <Skeleton className="h-3 w-1/2 rounded-full" />
+        <Skeleton className="h-9 w-24 rounded-full" />
+      </div>
+    </li>
+  );
+}
 const STATUS_CHIP: Record<WishView["status"], { label: string; tone: "neutral" | "outline" } | null> = {
   open: null,
   found: { label: "Found", tone: "neutral" },
@@ -99,11 +128,13 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
   const find = async (w: WishView) => {
     setBusy(w.id);
     fail(w.id, null);
-    setNotes((n) => ({ ...n, [w.id]: "Searching stores and reading product photos. This takes up to a minute." }));
+    setNotes((n) => ({ ...n, [w.id]: "Searching stores and reading product photos. It takes up to a minute." }));
     try {
       const res = await fetch("/api/wishlist/source", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wishlistId: w.id }) });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.detail || "The search failed.");
+      if (res.status === 401) throw new Error(SIGNED_OUT);
+      if (res.status === 404) throw new Error("That wish isn't here anymore. Refresh the page.");
+      if (!res.ok) throw new Error(body.detail || "Couldn't search stores just now. Try again in a minute.");
       const fresh: CandidateView[] = (body.candidates ?? []).map((c: Record<string, unknown>) => ({
         id: c.id as string,
         wishId: w.id,
@@ -121,10 +152,10 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
       }));
       setCands((xs) => [...fresh, ...xs.filter((x) => !fresh.some((f) => f.id === x.id))]);
       const inPal = fresh.filter((f) => IN_PALETTE.has(f.paletteStatus ?? "")).length;
-      setNotes((n) => ({ ...n, [w.id]: body.note ?? `${fresh.length} products read, ${inPal} in your palette. Searched with: ${(body.queries ?? []).join(" · ")}` }));
+      setNotes((n) => ({ ...n, [w.id]: body.note ?? `Read ${fresh.length} ${fresh.length === 1 ? "product" : "products"}, ${inPal} in your palette. We searched for ${(body.queries ?? []).join(" · ")}.` }));
     } catch (e) {
       setNotes((n) => ({ ...n, [w.id]: "" }));
-      fail(w.id, e instanceof Error ? e.message : "The search failed.");
+      fail(w.id, e instanceof Error ? e.message : "Couldn't search stores just now. Try again in a minute.");
     } finally {
       setBusy(null);
     }
@@ -135,15 +166,15 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
     fail(c.wishId, null);
     try {
       const h = await sourcingHaul(c.wishId);
-      if (!h.ok || !h.id) throw new Error(h.ok ? "Could not open a haul." : h.error);
+      if (!h.ok || !h.id) throw new Error(h.ok ? "Couldn't open a haul for this. Try again." : h.error);
       const res = await fetch("/api/haul/review", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ haulId: h.id, url: c.url }) });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || "The review failed. Try again.");
+        throw new Error(res.status === 401 ? SIGNED_OUT : body.detail || "Couldn't review this product. Try again.");
       }
       router.push(`/hauls/${h.id}`);
     } catch (e) {
-      fail(c.wishId, e instanceof Error ? e.message : "The review failed. Try again.");
+      fail(c.wishId, e instanceof Error ? e.message : "Couldn't review this product. Try again.");
       setBusy(null);
     }
   };
@@ -161,25 +192,31 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
         <h2 id="add-wish-title" className="font-display text-xl font-bold leading-tight">
           Add a wish
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="What">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <Field label="What" className="min-w-0 flex-1">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. tooled leather belt" maxLength={80} required />
           </Field>
-          <Field label="Colors (optional)">
-            <Input value={colors} onChange={(e) => setColors(e.target.value)} placeholder="Comma separated" />
-          </Field>
-          <Field label="Details that matter (optional)" className="sm:col-span-2">
-            <Input value={prefs} onChange={(e) => setPrefs(e.target.value)} maxLength={400} />
-          </Field>
-          <Field label="Budget (optional)">
-            <Input value={budget} onChange={(e) => setBudget(e.target.value)} maxLength={40} />
-          </Field>
-          <div className="flex items-end">
-            <Button type="submit" variant="primary" disabled={!title.trim() || adding} aria-busy={adding || undefined} block>
-              {adding ? "Adding…" : "Add to wishlist"}
-            </Button>
-          </div>
+          <Button type="submit" variant="primary" disabled={!title.trim() || adding} aria-busy={adding || undefined}>
+            {adding ? "Adding…" : "Add to wishlist"}
+          </Button>
         </div>
+        <details className="group" open={!!prefill?.preferences || undefined}>
+          <summary className={summaryClass}>
+            Add details
+            <Chevron />
+          </summary>
+          <div className="grid gap-3 pt-2 sm:grid-cols-2">
+            <Field label="Colors (optional)">
+              <Input value={colors} onChange={(e) => setColors(e.target.value)} placeholder="Comma separated" />
+            </Field>
+            <Field label="Budget (optional)">
+              <Input value={budget} onChange={(e) => setBudget(e.target.value)} maxLength={40} />
+            </Field>
+            <Field label="Details that matter (optional)" className="sm:col-span-2">
+              <Input value={prefs} onChange={(e) => setPrefs(e.target.value)} maxLength={400} />
+            </Field>
+          </div>
+        </details>
         {errors.add && <Notice tone="error">{errors.add}</Notice>}
       </Card>
 
@@ -187,7 +224,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
         <SectionTitle>
           <span id="wishes-title">Your wishes</span>
         </SectionTitle>
-        {wishes.length === 0 && <EmptyState compact title="Nothing on the wishlist yet." />}
+        {wishes.length === 0 && <EmptyState compact title="Nothing on your wishlist yet. Add a piece you're after above." />}
 
         {wishes.map((w) => {
           const mine = cands.filter((c) => c.wishId === w.id);
@@ -231,7 +268,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
                   </div>
                   <ConfirmButton
                     title={`Delete "${w.title}"?`}
-                    body="The wish and the options found for it are removed."
+                    body="The options we found for it go too. This can't be undone."
                     confirmLabel="Delete"
                     onConfirm={async () => {
                       fail(w.id, null);
@@ -252,10 +289,18 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
               <p role="status" aria-live="polite" className="text-xs text-stone-500 empty:hidden">
                 {notes[w.id]}
               </p>
+              {busy === w.id && (
+                <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {[0, 1, 2].map((i) => (
+                    <CandidateSkeleton key={i} />
+                  ))}
+                </ul>
+              )}
               {visible.length > 0 && (
                 <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {visible.map((c) => {
                     const inPal = IN_PALETTE.has(c.paletteStatus ?? "");
+                    const outPal = OUT_PALETTE.has(c.paletteStatus ?? "");
                     const drop = c.watch ? priceDrop(c.firstPrice, c.price) : null;
                     return (
                       <Card as="li" key={c.id} pad="none" className="flex min-w-0 flex-col overflow-hidden">
@@ -265,18 +310,19 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
                         <div className="flex flex-1 flex-col gap-1 p-3 text-xs">
                           <p className="line-clamp-2 text-sm font-semibold leading-snug">{c.name ?? c.url}</p>
                           <p className="tabular-nums text-stone-500">{[c.brand, c.price != null ? `$${c.price.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
-                          {drop ? (
-                            <p className="font-medium text-emerald-800">
-                              Down ${drop.amount.toFixed(2)} ({drop.percent}%) since you started watching
-                            </p>
-                          ) : c.watch ? (
-                            <p className="text-stone-500">Watching the price</p>
-                          ) : null}
-                          {c.paletteReason && (
-                            <p className={inPal ? "text-emerald-800" : "text-amber-800"}>
-                              <span className="font-semibold">{inPal ? "In your palette" : "Outside your palette"}:</span> {c.paletteReason}
-                            </p>
+                          {(drop || inPal || outPal) && (
+                            <div className="flex flex-wrap gap-1 pt-0.5">
+                              {drop && (
+                                <Chip tone="almost">
+                                  <span aria-hidden="true">↓</span>
+                                  <span className="sr-only">Down</span> ${drop.amount.toFixed(2)} ({drop.percent}%)
+                                </Chip>
+                              )}
+                              {inPal && <Chip tone="outline">✓ in palette</Chip>}
+                              {outPal && <Chip tone="outline">outside your palette</Chip>}
+                            </div>
                           )}
+                          {!drop && c.watch && <p className="text-stone-500">Watching the price</p>}
                           <div className="mt-auto space-y-1.5 pt-2">
                             <div className="flex flex-wrap gap-1.5">
                               <Button type="button" size="sm" onClick={() => review(c)} disabled={busy === c.id} aria-busy={busy === c.id}>
@@ -293,13 +339,13 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
                               )}
                             </div>
                             <details className="group">
-                              <summary className="tap inline-flex min-h-9 cursor-pointer list-none items-center gap-1 rounded-full px-1.5 text-sm font-medium text-stone-600 transition-colors duration-200 ease-soft hover:text-stone-900 [&::-webkit-details-marker]:hidden">
+                              <summary className={summaryClass}>
                                 More
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="transition-transform duration-200 ease-soft group-open:rotate-180">
-                                  <path d="m6 9 6 6 6-6" />
-                                </svg>
+                                <Chevron />
                               </summary>
                               <div className="flex flex-wrap gap-1.5 pt-1.5">
+                                {c.paletteReason && <p className="basis-full text-xs leading-relaxed text-stone-600">{c.paletteReason}</p>}
+                                {drop && <p className="basis-full text-xs text-stone-600">Down since you started watching.</p>}
                                 {c.price != null && (
                                   <ChipButton selected={c.watch} onClick={() => toggleWatch(c)}>
                                     {c.watch ? "Watching price" : "Watch price"}
@@ -320,7 +366,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
               )}
               {mine.length > visible.length && (
                 <Button type="button" variant="quiet" size="sm" onClick={() => setShowAll((s) => ({ ...s, [w.id]: !s[w.id] }))} className="-ml-3.5">
-                  {showAll[w.id] ? "Show only in-palette" : `Show ${mine.length - visible.length} outside your palette`}
+                  {showAll[w.id] ? "Show only in your palette" : `Show ${mine.length - visible.length} outside your palette`}
                 </Button>
               )}
             </section>

@@ -4,6 +4,8 @@ import { signedImageUrls } from "@/lib/closet/images";
 import HaulReview, { type HaulItemView } from "./HaulReview";
 import { PageHeader } from "@/components/ui";
 
+export const metadata = { title: "Haul · valette" };
+
 export default async function HaulPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -34,7 +36,7 @@ export default async function HaulPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-6">
-      <PageHeader back={{ href: "/hauls", label: "Shop" }} title={(haul.retailer as string) || "Haul review"} subtitle={haul.notes ? (haul.notes as string) : undefined} />
+      <PageHeader back={{ href: "/hauls", label: "Shop" }} title={(haul.retailer as string) || "Haul"} subtitle={haul.notes ? (haul.notes as string) : undefined} />
       <HaulReview haulId={id} initial={items} />
     </div>
   );

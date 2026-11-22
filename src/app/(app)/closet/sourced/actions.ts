@@ -30,18 +30,18 @@ export async function acceptSourcedPhoto(itemId: string): Promise<SourcedResult>
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Signed out." };
+  if (!user) return { ok: false, error: "You're signed out. Sign in again to save this." };
 
   const { data: item } = await supabase
     .from("closet_items")
     .select("id, image_path, source_image_url")
     .eq("id", itemId)
     .maybeSingle();
-  if (!item || !item.source_image_url) return { ok: false, error: "No sourced photo for this item." };
-  if (item.image_path) return { ok: false, error: "This item already has a photo." };
+  if (!item || !item.source_image_url) return { ok: false, error: "That photo isn't here anymore. Go back to your closet." };
+  if (item.image_path) return { ok: false, error: "This piece already has a photo." };
 
   const url = safeUrl(item.source_image_url as string);
-  if (!url) return { ok: false, error: "That photo link is not allowed." };
+  if (!url) return { ok: false, error: "We can't use that photo link. Add a photo yourself instead." };
 
   let bytes: ArrayBuffer;
   let type: string;
@@ -51,24 +51,24 @@ export async function acceptSourcedPhoto(itemId: string): Promise<SourcedResult>
       signal: AbortSignal.timeout(15000),
       headers: { "User-Agent": "Mozilla/5.0", Accept: "image/jpeg,image/png,image/webp" },
     });
-    if (!res.ok) return { ok: false, error: `The photo could not be fetched (${res.status}).` };
+    if (!res.ok) return { ok: false, error: "We couldn't get that photo. Try again later, or add one yourself." };
     type = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
     if (type === "image/jpg" || type === "image/pjpeg") type = "image/jpeg";
-    if (!TYPES[type]) return { ok: false, error: "The link did not return a usable image." };
+    if (!TYPES[type]) return { ok: false, error: "That link didn't give us a usable photo. Add one yourself instead." };
     bytes = await res.arrayBuffer();
   } catch {
-    return { ok: false, error: "The photo could not be fetched." };
+    return { ok: false, error: "We couldn't get that photo. Try again later, or add one yourself." };
   }
-  if (bytes.byteLength === 0 || bytes.byteLength > MAX_BYTES) return { ok: false, error: "The photo is too large." };
+  if (bytes.byteLength === 0 || bytes.byteLength > MAX_BYTES) return { ok: false, error: "That photo is too large. Add a smaller one yourself." };
 
   const path = `${user.id}/${crypto.randomUUID()}.${TYPES[type]}`;
   const { error: upError } = await supabase.storage.from(CLOSET_BUCKET).upload(path, bytes, { contentType: type });
-  if (upError) return { ok: false, error: "Could not save the photo." };
+  if (upError) return { ok: false, error: "Couldn't save the photo. Try again." };
 
   const { error } = await supabase.from("closet_items").update({ image_path: path }).eq("id", itemId);
   if (error) {
     await supabase.storage.from(CLOSET_BUCKET).remove([path]);
-    return { ok: false, error: "Could not attach the photo." };
+    return { ok: false, error: "Couldn't add the photo to this piece. Try again." };
   }
 
   revalidatePath("/closet");
@@ -83,7 +83,7 @@ export async function dismissSourcedPhoto(itemId: string): Promise<SourcedResult
     .from("closet_items")
     .update({ source_image_url: null, source_page_url: null })
     .eq("id", itemId);
-  if (error) return { ok: false, error: "Could not update the item." };
+  if (error) return { ok: false, error: "Couldn't save that. Try again." };
   revalidatePath("/closet");
   revalidatePath("/closet/sourced");
   return { ok: true };

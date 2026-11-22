@@ -30,45 +30,50 @@ export default function OpinionControls({ id, url, open }: { id: string; url: st
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {open && (
-        <Button type="button" variant="primary" size="sm" onClick={share}>
-          {copied ? "Link copied" : "Share again"}
-        </Button>
-      )}
-      <span role="status" aria-live="polite" className="sr-only">
-        {copied ? "Link copied" : ""}
-      </span>
-      <a href={url} className={buttonClass("secondary", "sm")}>
-        See what friends see
-      </a>
-      {open && (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {open && (
+          <Button type="button" variant="primary" size="sm" onClick={share}>
+            {copied ? "Link copied" : "Share again"}
+          </Button>
+        )}
+        <span role="status" aria-live="polite" className="sr-only">
+          {copied ? "Link copied" : ""}
+        </span>
+        <a href={url} className={buttonClass("secondary", "sm")}>
+          See what friends see
+        </a>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
+        {open && (
+          <ConfirmButton
+            variant="quiet"
+            confirmTone="neutral"
+            disabled={pending}
+            title="Close voting?"
+            body="Friends won't be able to vote anymore, and voting can't be reopened."
+            confirmLabel="Close voting"
+            cancelLabel="Keep it open"
+            onConfirm={() => start(async () => void (await closeOpinion(id), router.refresh()))}
+          >
+            Close voting
+          </ConfirmButton>
+        )}
         <ConfirmButton
-          variant="quiet"
-          confirmTone="neutral"
           disabled={pending}
-          title="Close voting?"
-          body="Friends won't be able to vote any more, and voting can't be reopened."
-          confirmLabel="Close voting"
-          cancelLabel="Keep it open"
-          onConfirm={() => start(async () => void (await closeOpinion(id), router.refresh()))}
+          title="Delete this second opinion and its votes?"
+          body="The link stops working. This can't be undone."
+          confirmLabel="Delete"
+          onConfirm={() =>
+            start(async () => {
+              await deleteOpinion(id);
+              router.push("/opinions");
+            })
+          }
         >
-          Close voting
+          Delete
         </ConfirmButton>
-      )}
-      <ConfirmButton
-        disabled={pending}
-        title="Delete this ask and its votes?"
-        body="The link stops working."
-        onConfirm={() =>
-          start(async () => {
-            await deleteOpinion(id);
-            router.push("/opinions");
-          })
-        }
-      >
-        Delete
-      </ConfirmButton>
+      </div>
     </div>
   );
 }

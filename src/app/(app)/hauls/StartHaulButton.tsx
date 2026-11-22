@@ -8,7 +8,7 @@ export default function StartHaulButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" variant="primary" disabled={pending} aria-busy={pending || undefined}>
-      {pending ? "Starting…" : "Start a haul review"}
+      {pending ? "Starting…" : "Start a haul"}
     </Button>
   );
 }

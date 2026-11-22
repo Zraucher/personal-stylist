@@ -15,10 +15,10 @@ export async function recordAgreement(scorecardId: string, itemId: string, agree
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
 
   const { data: card } = await supabase.from("scorecards").select("id, item_id").eq("id", scorecardId).eq("user_id", user.id).maybeSingle();
-  if (!card || card.item_id !== itemId) return { error: "Scorecard not found" };
+  if (!card || card.item_id !== itemId) return { error: "That review isn't here anymore. Review the piece again." };
 
   await supabase.from("feedback").delete().eq("user_id", user.id).eq("scorecard_id", scorecardId).in("type", ["agree", "disagree"]);
   const { error } = await supabase.from("feedback").insert({
@@ -29,7 +29,7 @@ export async function recordAgreement(scorecardId: string, itemId: string, agree
     note: note?.trim() ? note.trim().slice(0, 600) : null,
     scorecard_id: scorecardId,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't save that. Try again." };
 
   revalidatePath("/closet/review");
   revalidatePath(`/closet/${itemId}`);
@@ -45,13 +45,13 @@ export async function markBenchmark(itemId: string, polarity: "positive" | "nega
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
 
   const reason = why.trim();
-  if (reason.length < 3) return { error: "Say in a few words why it works or why it failed." };
+  if (reason.length < 3) return { error: "Say in a few words why it works or why it doesn't." };
 
   const { data: item } = await supabase.from("closet_items").select("id, name, image_path").eq("id", itemId).eq("user_id", user.id).maybeSingle();
-  if (!item) return { error: "Item not found" };
+  if (!item) return { error: "That piece isn't here anymore. Go back to your closet." };
 
   let imagePath: string | null = null;
   if (item.image_path) {
@@ -68,7 +68,7 @@ export async function markBenchmark(itemId: string, polarity: "positive" | "nega
     why_it_works: reason.slice(0, 600),
     polarity,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't save that. Try again." };
 
   await supabase.from("feedback").insert({
     user_id: user.id,

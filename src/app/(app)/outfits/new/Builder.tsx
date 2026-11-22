@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { checkOutfitAction, saveOutfit } from "../actions";
-import CompositionPanel, { OverallChip } from "../CompositionPanel";
+import CompositionPanel, { OverallChip, cleanHeadline } from "../CompositionPanel";
 import type { Composition } from "@/lib/outfit/composition";
-import ItemPlaceholder from "@/lib/closet/placeholder";
 import { Button, Card, Chip, Field, Input, Thumb } from "@/components/ui";
 
 export type PickItem = {
@@ -82,7 +81,7 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
       : picked.length === 0
         ? "Tap pieces below to build an outfit."
         : composition
-          ? composition.headline
+          ? cleanHeadline(composition.headline)
           : "Checking the combination…");
   const showVerdict = picked.length > 0 && composition !== null && !error && !limitHit;
 
@@ -100,18 +99,11 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
                   key={id}
                   type="button"
                   onClick={() => toggle(id)}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-card py-1 pl-1 pr-3 text-sm ring-1 ring-inset ring-line-strong transition-colors duration-200 ease-soft hover:ring-stone-400"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-[12px] bg-card py-1 pl-1 pr-3 text-sm ring-1 ring-inset ring-line-strong transition-colors duration-200 ease-soft hover:ring-stone-400"
                   title="Remove"
                   aria-label={`Remove ${i.name}`}
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-inset">
-                    {i.url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={i.url} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <ItemPlaceholder category={i.category} subcategory={i.subcategory} colors={i.swatches} label="" compact />
-                    )}
-                  </span>
+                  <Thumb size="xs" src={i.url} alt="" item={{ category: i.category, subcategory: i.subcategory, colors: i.swatches }} className="rounded-[8px]" />
                   <span className="max-w-32 truncate">{i.name}</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="shrink-0 text-stone-500">
                     <path d="M6 6l12 12M18 6 6 18" />
@@ -148,8 +140,8 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
 
       {groups.map((g) => (
         <section key={g.key} className="space-y-3">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-            {g.label} <span className="tabular-nums">{g.items.length}</span>
+          <h2 className="font-display text-lg font-bold leading-snug">
+            {g.label} <span className="font-sans text-sm font-normal tabular-nums text-stone-500">{g.items.length}</span>
           </h2>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
             {g.items.map((i) => {

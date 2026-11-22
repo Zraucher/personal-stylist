@@ -6,6 +6,8 @@ import { Button, Card, Checkbox, SectionTitle } from "@/components/ui";
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Prefs = { morning: boolean; prices: boolean; votes: boolean };
 
+const TURN_ON_FAILED = "Couldn't turn on notifications. Check that this browser allows them, then try again.";
+
 const b64ToBytes = (b64: string) => {
   const pad = "=".repeat((4 - (b64.length % 4)) % 4);
   const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
@@ -78,14 +80,16 @@ export default function AppCard() {
       const r = await fetch("/api/push", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "subscribe", subscription: sub.toJSON(), prefs }) });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        setNote(j.error ?? "Could not turn on notifications.");
+        // Short codes ("bad_request") are for logs; only show full sentences.
+        const msg = typeof j.error === "string" && j.error.includes(" ") ? j.error : null;
+        setNote(r.status === 401 ? "You're signed out. Sign in again to save this." : msg ?? TURN_ON_FAILED);
         return;
       }
       setEndpoint(sub.endpoint);
       await fetch("/api/push", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "test" }) });
-      setNote("On. We just sent a test notification.");
+      setNote("Notifications are on. We just sent a test.");
     } catch {
-      setNote("This browser couldn't turn on notifications.");
+      setNote(TURN_ON_FAILED);
     } finally {
       setBusy(false);
     }
@@ -101,7 +105,7 @@ export default function AppCard() {
         await sub.unsubscribe();
       }
       setEndpoint(null);
-      setNote("Off on this device.");
+      setNote("Notifications are off on this device.");
     } finally {
       setBusy(false);
     }
@@ -142,7 +146,7 @@ export default function AppCard() {
       </div>
 
       <div className="space-y-3 border-t border-line pt-4">
-        <h3 className="font-semibold">Notifications</h3>
+        <h3 className="font-display text-base font-bold">Notifications</h3>
         {!push.supported ? (
           <p className="text-sm text-stone-600">{ios && !standalone ? "Add valette to your home screen first, then turn notifications on here." : "This browser doesn't support notifications."}</p>
         ) : !push.configured ? (

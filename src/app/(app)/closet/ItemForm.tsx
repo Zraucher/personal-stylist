@@ -99,13 +99,19 @@ export async function requestTags(path: string): Promise<{ tags?: NonNullable<Ta
   if (res.ok && body.tags) return { tags: body.tags, message: body.tags.notes || null };
   switch (body.error) {
     case "tagging_unavailable":
-      return { message: "Auto-tagging is off until an Anthropic API key is added. Fill the fields in by hand." };
+      return { message: "Photo reading is off right now. Fill in the details yourself." };
     case "rate_limited":
-      return { message: "The tagger is busy. Try again in a minute, or fill the fields in by hand." };
+      return { message: "We're busy right now. Try again in a minute, or fill in the details yourself." };
+    case "unauthorized":
+      return { message: "You're signed out. Sign in again to save this." };
+    case "forbidden":
+      return { message: "That photo isn't from your account. Upload it again." };
+    case "image_not_found":
+      return { message: "We couldn't find that photo. Upload it again." };
     case "could_not_tag":
-      return { message: "Could not read this photo. Try a clearer shot, or fill the fields in by hand." };
+      return { message: "We couldn't read this photo. Try a clearer shot, or fill in the details yourself." };
     default:
-      return { message: "Auto-tagging failed. Fill the fields in by hand." };
+      return { message: "We couldn't read this photo just now. Fill in the details yourself." };
   }
 }
 
@@ -187,12 +193,12 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Signed out. Reload and sign in again.");
+      if (!user) throw new Error("You're signed out. Sign in again to save this.");
       const { blob, type } = await compressImage(file);
       const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
       const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage.from(CLOSET_BUCKET).upload(path, blob, { contentType: type, upsert: false });
-      if (upErr) throw new Error(upErr.message);
+      if (upErr) throw new Error("Couldn't upload that photo. Check your connection and try again.");
       if (itemId) {
         // Saved item: attach right away so the photo is not lost if the page is closed.
         const r = await setItemPhoto(itemId, path);
@@ -206,10 +212,10 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
         if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
         return URL.createObjectURL(blob);
       });
-      setNote("Photo added. Re-run auto tags if you want the fields read from it.");
+      setNote("Photo added. Tap Read the photo again if you want us to fill in the details from it.");
       if (itemId) router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
+      setError(e instanceof Error ? e.message : "Couldn't upload that photo. Try again.");
     } finally {
       setUploading(false);
     }
@@ -310,7 +316,7 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
           </Field>
           {imagePath && (
             <Button type="button" variant="quiet" size="sm" className="-ml-3.5" onClick={retag} disabled={retagging} aria-busy={retagging || undefined}>
-              {retagging ? "Reading photo…" : "Re-run auto tags"}
+              {retagging ? "Reading photo…" : "Read the photo again"}
             </Button>
           )}
           {note && (
@@ -355,7 +361,7 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
         </div>
       </Section>
 
-      <Section title="Colors" hint="Dominant color first. The swatch is what the scorecard uses; the name is for you.">
+      <Section title="Colors" hint="Main color first. We check the swatch. The name is for you.">
         <div className="space-y-2">
           {v.colors.map((c, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -391,7 +397,7 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
         </div>
       </Section>
 
-      <Section title="Construction" hint="Visible details. These are what your dislikes list checks against.">
+      <Section title="Construction" hint="Details you can see. We check these against your dislikes.">
         <ChipGroup label="Construction details">
           {CONSTRUCTION.map((c) => (
             <ChipButton key={c} selected={v.construction.includes(c)} onClick={() => toggleIn("construction", c)}>

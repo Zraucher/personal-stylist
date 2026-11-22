@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { castVote } from "./actions";
 import type { Tally } from "@/lib/opinions/tally";
-import { Button, ButtonLink, Card, CheckTick, Field, Input, Notice, Textarea } from "@/components/ui";
+import { Button, ButtonLink, Card, CheckTick, EmptyState, Field, Input, Notice, Textarea, VoteBar } from "@/components/ui";
 
 type Verdict = "works" | "almost" | "not";
 
@@ -21,7 +21,7 @@ function saveName(name: string) {
  * One-tap voting: a verdict tap casts the vote right away. The note (comment + name) is an optional
  * follow-up that re-sends the same verdict; castVote upserts per browser, so it updates the vote.
  */
-export default function VoteForm({ token, owner, closed, initialTally, defaultName }: { token: string; owner: string; closed: boolean; initialTally: Tally; defaultName: string | null }) {
+export default function VoteForm({ token, owner, closed, initialTally, defaultName }: { token: string; owner: string | null; closed: boolean; initialTally: Tally; defaultName: string | null }) {
   const [verdict, setVerdict] = useState<Verdict | null>(null);
   const [name, setName] = useState(defaultName ?? "");
   const [comment, setComment] = useState("");
@@ -42,10 +42,12 @@ export default function VoteForm({ token, owner, closed, initialTally, defaultNa
     if (saved) Promise.resolve(saved).then(setName);
   }, [defaultName]);
 
+  // With no first name on file, speak about "they" instead of printing a placeholder as a name.
+  const who = owner ?? "them";
   const OPTIONS: Array<{ v: Verdict; glyph: string; word: string; tint: string }> = [
-    { v: "works", glyph: "✓", word: `works on ${owner}`, tint: "text-emerald-700" },
+    { v: "works", glyph: "✓", word: `works on ${who}`, tint: "text-emerald-700" },
     { v: "almost", glyph: "◐", word: "almost", tint: "text-amber-700" },
-    { v: "not", glyph: "✕", word: `not for ${owner}`, tint: "text-red-700" },
+    { v: "not", glyph: "✕", word: `not for ${who}`, tint: "text-red-700" },
   ];
 
   // aria-disabled (not disabled) while sending, so the tapped button keeps keyboard focus.
@@ -78,19 +80,22 @@ export default function VoteForm({ token, owner, closed, initialTally, defaultNa
 
   if (closed) {
     return (
-      <Card className="text-center">
-        <p className="font-semibold">Voting has closed.</p>
-        <p className="text-sm text-stone-600">{initialTally.summary}</p>
-      </Card>
+      <EmptyState
+        compact
+        title="voting's closed"
+        body={
+          <>
+            <span className="font-semibold">voting&apos;s closed.</span> {initialTally.summary}.
+          </>
+        }
+      />
     );
   }
-
-  const bar = (n: number) => (result && result.total ? `${(n / result.total) * 100}%` : "0%");
 
   return (
     <>
       <Card className="space-y-4">
-        <div role="group" aria-label={`Does this work on ${owner}?`} aria-busy={pending || undefined} className="grid gap-2">
+        <div role="group" aria-label={`Does this work on ${who}?`} aria-busy={pending || undefined} className="grid gap-2">
           {OPTIONS.map((o) => {
             const selected = verdict === o.v;
             return (
@@ -121,15 +126,12 @@ export default function VoteForm({ token, owner, closed, initialTally, defaultNa
           {result && !pending && (
             <>
               <p className="flex items-center gap-2.5 font-display text-2xl font-extrabold">
-                <CheckTick size={26} className="text-emerald-700" />
-                thanks, {owner} will see it.
+                {/* Only rendered right after this person votes, so the tick draws. */}
+                <CheckTick size={26} animate className="text-emerald-700" />
+                {owner ? `thanks, ${owner} will see it.` : "thanks, they'll see it."}
               </p>
-              <div className="flex h-3 overflow-hidden rounded-full bg-inset" aria-hidden="true">
-                <span className="bg-emerald-700" style={{ width: bar(result.works) }} />
-                <span className="bg-amber-500" style={{ width: bar(result.almost) }} />
-                <span className="bg-red-700" style={{ width: bar(result.not) }} />
-              </div>
-              <p className="text-sm text-stone-600">{result.summary} Tap another answer to change your vote.</p>
+              <VoteBar works={result.works} almost={result.almost} not={result.not} />
+              <p className="text-sm text-stone-600">{result.summary}. Tap another answer to change your vote.</p>
             </>
           )}
         </div>
@@ -148,7 +150,7 @@ export default function VoteForm({ token, owner, closed, initialTally, defaultNa
             <Field label="Why?">
               <Textarea value={comment} onChange={(e) => setComment(e.target.value.slice(0, 280))} rows={2} placeholder="Love the color, swap the shoes" />
             </Field>
-            <Field label={`Your name, so ${owner} knows who said it`}>
+            <Field label={owner ? `Your name, so ${owner} knows who said it` : "Your name, so they know who said it"}>
               <Input value={name} onChange={(e) => setName(e.target.value.slice(0, 40))} autoComplete="given-name" placeholder="First name" />
             </Field>
             <div className="flex flex-wrap items-center gap-3">

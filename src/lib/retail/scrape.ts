@@ -271,8 +271,8 @@ export async function scrapeProduct(raw: string): Promise<ScrapedProduct> {
   throw new ScrapeError(
     sawPage ? "not_product" : "blocked",
     sawPage
-      ? "The page loaded but no product photo was found. Upload a screenshot instead."
-      : `${strategy.label ?? u.hostname} did not let the page load. Upload a screenshot instead.`
+      ? "We opened the page but couldn't find a product photo. Upload a screenshot instead."
+      : `${strategy.label ?? u.hostname} didn't let us in. Upload a screenshot instead.`
   );
 }
 

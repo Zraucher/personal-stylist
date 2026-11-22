@@ -4,8 +4,9 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { markBenchmark, recordAgreement } from "./scorecard-actions";
 import { Button, Card, Chip, ChipButton, ChipGroup, CheckTick, Field, Notice, SectionTitle, Textarea, type ChipTone } from "@/components/ui";
+import { CHECK_MARK, type CheckStatus } from "@/lib/verdict";
 
-type Status = "good" | "ok" | "caution" | "fail" | "unknown";
+type Status = CheckStatus;
 type Criterion = { status: Status; reason: string };
 
 export type ScorecardRow = {
@@ -36,31 +37,6 @@ const ROWS: Array<["palette" | "fabric" | "silhouette" | "vibe", string]> = [
   ["vibe", "Vibe"],
 ];
 
-// Symbol + word, so status never rests on colour alone.
-const SYMBOL: Record<Status, string> = {
-  good: "✓",
-  ok: "○",
-  caution: "◐",
-  fail: "✕",
-  unknown: "–",
-};
-
-const SYMBOL_CLASS: Record<Status, string> = {
-  good: "text-emerald-700",
-  ok: "text-stone-600",
-  caution: "text-amber-700",
-  fail: "text-red-700",
-  unknown: "text-stone-500",
-};
-
-const STATUS_WORD: Record<Status, string> = {
-  good: "good",
-  ok: "okay",
-  caution: "caution",
-  fail: "fails",
-  unknown: "not checked",
-};
-
 const VERDICT: Record<ScorecardRow["verdict"], { label: string; tone: ChipTone }> = {
   keep: { label: "✓ works on you", tone: "works" },
   cut: { label: "✕ not for you", tone: "not" },
@@ -68,10 +44,13 @@ const VERDICT: Record<ScorecardRow["verdict"], { label: string; tone: ChipTone }
 };
 
 const ERRORS: Record<string, string> = {
-  scoring_unavailable: "Scoring is off until an Anthropic API key is added to the project.",
-  rate_limited: "The reviewer is busy. Try again in a minute.",
-  could_not_score: "Could not read this photo. Retake it and try again.",
-  image_not_found: "The photo is missing. Re-upload it from the edit form.",
+  scoring_unavailable: "Reviews are off right now. Try again later.",
+  rate_limited: "We're busy right now. Try again in a minute.",
+  could_not_score: "We couldn't read this photo. Retake it and try again.",
+  image_not_found: "The photo is missing. Upload it again under Edit details.",
+  unauthorized: "You're signed out. Sign in again to save this.",
+  not_found: "That piece isn't here anymore. Go back to your closet.",
+  save_failed: "Couldn't save this review. Try again.",
 };
 
 export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswer, autoRun, nextHref }: Props) {
@@ -106,9 +85,9 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
         setCard(body.scorecard);
         setJustScored(true);
       }
-      else setError(ERRORS[body.error ?? ""] ?? "The review failed. Try again.");
+      else setError(ERRORS[body.error ?? ""] ?? "Couldn't review this piece. Try again.");
     } catch {
-      setError("The review failed. Check your connection and try again.");
+      setError("Couldn't review this piece. Check your connection and try again.");
     }
     setRunning(false);
   };
@@ -145,7 +124,7 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
         setError(r.error);
         return;
       }
-      setBenchSaved(polarity === "positive" ? "Saved as a proven look." : "Saved as a known failure.");
+      setBenchSaved(polarity === "positive" ? "Saved. This one always works." : "Saved. This one never works.");
       setBenchOpen(null);
       setBenchWhy("");
     });
@@ -156,7 +135,7 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
       <SectionTitle
         action={
           <Button type="button" variant={card ? "quiet" : "secondary"} size="sm" onClick={run} disabled={running} aria-busy={running || undefined}>
-            {running ? "Reviewing…" : card ? "Re-run" : "Review this piece"}
+            {running ? "Reviewing…" : card ? "Review again" : "Review this piece"}
           </Button>
         }
       >
@@ -166,8 +145,8 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
       {!card && !running && (
         <p className="text-sm text-stone-600">
           {hasImage
-            ? "Four checks against your palette, fabrics, shapes and vibe, then a keep or cut."
-            : "No photo yet, so a verdict would only be provisional. Add a photo first for a real review."}
+            ? "Four checks against your palette, fabrics, shapes and vibe, then a verdict."
+            : "No photo yet, so the best we can say is almost. Add a photo first for a real review."}
         </p>
       )}
       {running && (
@@ -181,7 +160,7 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
           <div role="status" aria-live="polite" className="flex flex-wrap items-start gap-x-3 gap-y-2">
             {justScored && card.verdict === "keep" ? (
               <span className="inline-flex shrink-0 items-center gap-1.5">
-                <CheckTick size={24} className="text-emerald-700" />
+                <CheckTick size={24} animate className="text-emerald-700" />
                 <Chip tone="works" size="md">
                   works on you
                 </Chip>
@@ -191,7 +170,8 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
                 {VERDICT[card.verdict].label}
               </Chip>
             )}
-            <p className="min-w-0 flex-1 text-sm leading-relaxed text-stone-700">{card.headline}</p>
+            {/* Older saved headlines start with "Keep:" and friends; the chip already says the verdict. */}
+            <p className="min-w-0 flex-1 text-sm leading-relaxed text-stone-700">{card.headline?.replace(/^(keep|cut|provisional):\s*/i, "")}</p>
           </div>
 
           <ul className="divide-y divide-line">
@@ -200,12 +180,12 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
               const st = c?.status ?? "unknown";
               return (
                 <li key={key} className="flex gap-3 py-2.5 text-sm">
-                  <span aria-hidden="true" className={"w-4 shrink-0 text-center font-semibold " + SYMBOL_CLASS[st]}>
-                    {SYMBOL[st]}
+                  <span aria-hidden="true" className={"w-4 shrink-0 text-center font-semibold " + CHECK_MARK[st].className}>
+                    {CHECK_MARK[st].glyph}
                   </span>
                   <span className="w-24 shrink-0">
                     <span className="block text-stone-500">{label}</span>
-                    <span className="block text-xs font-medium text-stone-700">{STATUS_WORD[st]}</span>
+                    <span className="block text-xs font-medium text-stone-700">{CHECK_MARK[st].word}</span>
                   </span>
                   <span className="text-stone-800">{c?.reason ?? "Not checked."}</span>
                 </li>
@@ -213,8 +193,8 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
             })}
             {card.tailoring_needed && (
               <li className="flex gap-3 py-2.5 text-sm">
-                <span aria-hidden="true" className={"w-4 shrink-0 text-center font-semibold " + SYMBOL_CLASS.caution}>
-                  {SYMBOL.caution}
+                <span aria-hidden="true" className={"w-4 shrink-0 text-center font-semibold " + CHECK_MARK.caution.className}>
+                  {CHECK_MARK.caution.glyph}
                 </span>
                 <span className="w-24 shrink-0">
                   <span className="block text-stone-500">Tailoring</span>
@@ -228,7 +208,7 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
           {card.verdict !== "provisional" && (
             <div className="space-y-2 border-t border-line pt-3">
               <p role="status" aria-live="polite" className="text-sm text-stone-500">
-                {answer ? (answer === "agree" ? "You agreed with this verdict." : "You disagreed. That is logged.") : "Do you agree?"}
+                {answer ? (answer === "agree" ? "You agreed with this verdict." : "You disagreed. We'll learn from it.") : "Do you agree?"}
               </p>
               <ChipGroup label="Do you agree with this verdict?">
                 <ChipButton selected={answer === "agree"} disabled={pending} onClick={() => answerNow(true)}>
@@ -240,11 +220,11 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
               </ChipGroup>
               {disagreeOpen && (
                 <div className="space-y-2">
-                  <Field label="What did it get wrong?" hint="Optional, but this is what teaches it.">
+                  <Field label="What did we get wrong?" hint="Optional, but it's how we learn.">
                     <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
                   </Field>
                   <Button type="button" size="sm" disabled={pending} onClick={() => answerNow(false, note)}>
-                    Log disagreement
+                    Send
                   </Button>
                 </div>
               )}
@@ -257,18 +237,18 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
 
       {hasImage && !nextHref && (
         <div className="space-y-2 border-t border-line pt-3">
-          <p className="text-sm text-stone-500">Teach it with this piece</p>
-          <ChipGroup label="Teach it with this piece">
+          <p className="text-sm text-stone-500">Teach us with this piece</p>
+          <ChipGroup label="Teach us with this piece">
             <ChipButton selected={benchOpen === "positive"} onClick={() => setBenchOpen((b) => (b === "positive" ? null : "positive"))}>
-              Proven look
+              Always works
             </ChipButton>
             <ChipButton selected={benchOpen === "negative"} onClick={() => setBenchOpen((b) => (b === "negative" ? null : "negative"))}>
-              Known failure
+              Never works
             </ChipButton>
           </ChipGroup>
           {benchOpen && (
             <div className="space-y-2">
-              <Field label={benchOpen === "positive" ? "Why does this work for you?" : "Why did this fail?"}>
+              <Field label={benchOpen === "positive" ? "Why does this work on you?" : "Why doesn't this work?"}>
                 <Textarea
                   value={benchWhy}
                   onChange={(e) => setBenchWhy(e.target.value)}

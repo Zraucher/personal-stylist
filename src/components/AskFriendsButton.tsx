@@ -78,7 +78,7 @@ export default function AskFriendsButton({ target, compact = false }: { target: 
       {done ? (
         <div className="space-y-2">
           <p role="status" aria-live="polite" className="font-semibold text-stone-900">
-            {done.copied ? "Link copied. Paste it in a text." : "Sent. Votes show up as friends answer."}
+            {done.copied ? "Link copied. Paste it in a text." : "Shared. Votes show up as friends answer."}
           </p>
           <Input readOnly value={done.url} onFocus={(e) => e.currentTarget.select()} aria-label="Share link" />
           <div className="flex flex-wrap items-center gap-2">

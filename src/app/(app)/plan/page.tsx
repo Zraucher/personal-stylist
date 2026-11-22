@@ -33,7 +33,7 @@ export default async function PlanPage() {
           Trips
         </SectionTitle>
         {!trips?.length ? (
-          <EmptyState title="Going somewhere?" body="Tell us where and when, and we build a look for every day and a packing list from your closet." />
+          <EmptyState title="going somewhere?" body="Tell us where and when, and we'll build a look for every day and a packing list from your closet." />
         ) : (
           <ListCard>
             {trips.map((t) => {

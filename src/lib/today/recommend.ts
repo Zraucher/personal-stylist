@@ -6,6 +6,7 @@ import { describeStyle, loadStyleContext } from "@/lib/profile/context";
 import { signedImageUrls } from "@/lib/closet/images";
 import { buildCandidates, OCCASIONS, outfitName, seasonFor, type Candidate, type ClosetPiece, type Occasion } from "./candidates";
 import { forecast, geocode, localDate, statedWeather, summarize, type HourWindow, type WeatherSummary } from "./weather";
+import { cleanHeadline } from "@/lib/verdict";
 
 const list = (xs: unknown): string[] => (Array.isArray(xs) ? xs.filter((x): x is string => typeof x === "string") : []);
 
@@ -258,7 +259,7 @@ export async function loadRecommendation(supabase: SupabaseClient, userId: strin
       outfitId: c.outfit_id,
       name: names.get(c.outfit_id) ?? "Outfit",
       why: c.why,
-      headline: c.headline,
+      headline: cleanHeadline(c.headline),
       overall: c.overall,
       items: (c.item_ids ?? [])
         .map((iid) => byId.get(iid))

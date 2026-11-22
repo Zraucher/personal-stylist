@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof AiError) {
       const map = { unavailable: [503, "scoring_unavailable"], rate_limited: [429, "rate_limited"], refused: [422, "could_not_score"], failed: [502, "scoring_failed"] } as const;
       const [status, error] = map[err.code];
-      return NextResponse.json({ error, detail: err.message }, { status });
+      return NextResponse.json({ error }, { status });
     }
     throw err;
   }
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     })
     .select("*")
     .single();
-  if (error || !saved) return NextResponse.json({ error: "save_failed", detail: error?.message }, { status: 500 });
+  if (error || !saved) return NextResponse.json({ error: "save_failed" }, { status: 500 });
 
   return NextResponse.json({ scorecard: saved });
 }

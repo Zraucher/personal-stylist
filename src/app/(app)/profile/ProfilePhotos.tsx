@@ -11,6 +11,16 @@ import { Card, Chip, ConfirmButton, Notice, SectionTitle } from "@/components/ui
 
 type Props = { urls: Record<string, string> };
 
+/** Faint figure outline for an empty slot. */
+function FigureOutline() {
+  return (
+    <svg viewBox="0 0 40 50" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-auto w-1/3 text-stone-300">
+      <circle cx="20" cy="13" r="6" />
+      <path d="M8 46v-9c0-6.5 5.4-11 12-11s12 4.5 12 11v9" />
+    </svg>
+  );
+}
+
 export default function ProfilePhotos({ urls }: Props) {
   const router = useRouter();
   const [active, setActive] = useState<string | null>(null);
@@ -30,12 +40,12 @@ export default function ProfilePhotos({ urls }: Props) {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Signed out. Reload and sign in again.");
+      if (!user) throw new Error("You're signed out. Sign in again to save this.");
       const { blob, type } = await compressImage(file);
       const ext = type === "image/png" ? "png" : type === "image/webp" ? "webp" : "jpg";
       const path = `${user.id}/profile/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage.from(CLOSET_BUCKET).upload(path, blob, { contentType: type, upsert: false });
-      if (upErr) throw new Error(upErr.message);
+      if (upErr) throw new Error("Couldn't upload that photo. Try again.");
       const r = await savePhotoSlot(slot, path);
       if (!r.ok) {
         await supabase.storage.from(CLOSET_BUCKET).remove([path]);
@@ -47,7 +57,7 @@ export default function ProfilePhotos({ urls }: Props) {
       });
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
+      setError(e instanceof Error ? e.message : "Couldn't upload that photo. Try again.");
     } finally {
       setBusy(null);
     }
@@ -92,7 +102,7 @@ export default function ProfilePhotos({ urls }: Props) {
     <Card as="section" className="space-y-3">
       <SectionTitle>Photos of you</SectionTitle>
       <p className="text-sm leading-relaxed text-stone-600">Private photos for future outfit mock-ups. A plain background and fitted clothes work best.</p>
-      <p className="hidden text-xs text-stone-500 [@media(pointer:fine)]:block">Click a tile to choose a photo, drop a file on it, or select it and paste.</p>
+      <p className="hidden text-xs text-stone-500 [@media(pointer:fine)]:block">Click a frame to choose a photo, drop a file on it, or select it and paste.</p>
       {error && <Notice tone="error">{error}</Notice>}
 
       <input
@@ -111,7 +121,7 @@ export default function ProfilePhotos({ urls }: Props) {
       <div className="space-y-5 pt-1">
         {PHOTO_GROUPS.map((g) => (
           <div key={g.title}>
-            <h3 className="mb-2 text-sm font-semibold">{g.title}</h3>
+            <h3 className="mb-2 font-display text-base font-bold">{g.title}</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {g.slots.map((s) => {
                 const url = src(s.id);
@@ -133,7 +143,7 @@ export default function ProfilePhotos({ urls }: Props) {
                         void upload(s.id, e.dataTransfer.files[0]);
                       }}
                       className={
-                        "relative aspect-[3/4] overflow-hidden rounded-thumb bg-inset transition-shadow duration-200 ease-soft " +
+                        "relative aspect-[4/5] overflow-hidden rounded-thumb bg-inset transition-shadow duration-200 ease-soft " +
                         (over === s.id ? "ring-2 ring-stone-900" : isActive ? "ring-[1.5px] ring-stone-900" : "ring-1 ring-inset ring-line")
                       }
                     >
@@ -154,12 +164,8 @@ export default function ProfilePhotos({ urls }: Props) {
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={url} alt={`${g.title} ${s.label}`} className="h-full w-full object-cover" />
                         ) : (
-                          <span className="flex h-full flex-col items-center justify-center gap-1.5 px-2 text-center text-xs font-medium text-stone-500">
-                            {busy !== s.id && (
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                                <path d="M12 5v14M5 12h14" />
-                              </svg>
-                            )}
+                          <span className="flex h-full flex-col items-center justify-center gap-2 px-2 text-center text-xs font-medium text-stone-500">
+                            {busy !== s.id && <FigureOutline />}
                             {busy === s.id ? "Uploading…" : "Add photo"}
                           </span>
                         )}
@@ -172,7 +178,7 @@ export default function ProfilePhotos({ urls }: Props) {
                       {url && busy !== s.id && (
                         <ConfirmButton
                           title="Remove this photo?"
-                          body="It is deleted from storage."
+                          body="This can't be undone."
                           confirmLabel="Remove"
                           onConfirm={() => void remove(s.id)}
                           variant="quiet"

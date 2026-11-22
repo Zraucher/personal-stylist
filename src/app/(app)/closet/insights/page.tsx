@@ -8,7 +8,7 @@ import { computeInsights, type InsightItem } from "@/lib/insights/compute";
 import { ROLE_LABEL } from "@/lib/plan/sequence";
 import ClosetSubnav from "../../ClosetSubnav";
 import { isoDaysAgo } from "@/lib/time";
-import { ButtonLink, Card, EmptyState, ListCard, ListRow, Notice, PageHeader, SectionTitle, Thumb } from "@/components/ui";
+import { ButtonLink, Card, EmptyState, ListCard, ListRow, Notice, PageHeader, SectionTitle, StatTile, Thumb } from "@/components/ui";
 
 export const metadata = { title: "Insights · valette" };
 
@@ -93,14 +93,15 @@ export default async function InsightsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Closet insights"
-        subtitle={
-          <>
-            {ins.active} {ins.active === 1 ? "piece" : "pieces"}, {Math.round(ins.usedShare * 100)}% worn in the last 90 days, {ins.wearsLast30}{" "}
-            {ins.wearsLast30 === 1 ? "wear" : "wears"} this month. What you wear, what it costs per wear, and what has been sitting.
-          </>
-        }
+        subtitle="What you wear, what it costs per wear, and what's been sitting."
       />
       <ClosetSubnav />
+
+      <div className="grid grid-cols-3 gap-3">
+        <StatTile value={ins.active} label={ins.active === 1 ? "piece" : "pieces"} />
+        <StatTile value={`${Math.round(ins.usedShare * 100)}%`} label="worn in 90 days" />
+        <StatTile value={ins.wearsLast30} label={ins.wearsLast30 === 1 ? "wear this month" : "wears this month"} />
+      </div>
 
       {totalWears === 0 && (
         <EmptyState
@@ -108,7 +109,7 @@ export default async function InsightsPage() {
           title="Insights grow as you log what you wear."
           body={
             <>
-              Insights grow as you log what you wear. Tap <b>wore it</b> on Today or your plan, or <b>Wore it today</b> on any piece.
+              Insights grow as you log what you wear. Tap <b>Wore it</b> on Today, on your plan, or on any piece.
             </>
           }
         />
@@ -118,7 +119,7 @@ export default async function InsightsPage() {
         <Section title="Sleeping in your closet" sub="Not worn in 60 days or more. Give one a turn this week, or let it go.">
           <ListCard>
             {ins.sleepers.map((s) => (
-              piece(s.id, undefined, s.days == null ? "Never logged as worn" : `${s.days} days since you wore it`)
+              piece(s.id, undefined, s.days == null ? "Not worn yet" : `${s.days} days since you wore it`)
             ))}
           </ListCard>
           <ButtonLink variant="primary" size="sm" href={`/outfits/new?items=${ins.sleepers[0].id}`} className="max-w-full">

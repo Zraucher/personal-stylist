@@ -1,6 +1,6 @@
-import { Skeleton } from "@/components/ui";
+import { OutfitCardSkeleton, Skeleton } from "@/components/ui";
 
-/** Route-level loading state for the app: a header-shaped bar and three card blocks. */
+/** Route-level loading state for the app: a header-shaped bar and outfit-card shapes. */
 export default function Loading() {
   return (
     <div className="space-y-6" aria-busy="true" aria-live="polite">
@@ -10,9 +10,8 @@ export default function Loading() {
         <Skeleton className="h-4 w-64 max-w-full rounded-full" />
       </div>
       <div className="space-y-3">
-        <Skeleton className="h-36" />
-        <Skeleton className="h-28" />
-        <Skeleton className="h-28" />
+        <OutfitCardSkeleton />
+        <OutfitCardSkeleton />
       </div>
     </div>
   );

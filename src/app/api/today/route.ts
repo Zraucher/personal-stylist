@@ -17,16 +17,17 @@ export async function POST(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "unauthorized", detail: "You're signed out. Sign in again to save this." }, { status: 401 });
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "bad_request", detail: "Pick where you're going and try again." }, { status: 400 });
 
   try {
     const id = await recommend(supabase, user.id, { kind: "today", ...parsed.data });
     const view = await loadRecommendation(supabase, user.id, id);
     return NextResponse.json({ recommendation: view });
   } catch (e) {
-    return NextResponse.json({ error: "failed", detail: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    console.error("today: recommend failed", e);
+    return NextResponse.json({ error: "failed", detail: "Couldn't pick outfits just now. Try again in a minute." }, { status: 500 });
   }
 }

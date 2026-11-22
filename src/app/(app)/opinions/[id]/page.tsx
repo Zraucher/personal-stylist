@@ -6,7 +6,7 @@ import { tally } from "@/lib/opinions/tally";
 import { siteOrigin, type OpinionSnapshot } from "@/lib/opinions/server";
 import OpinionControls from "./OpinionControls";
 import { stillOpen } from "@/lib/time";
-import { Card, Chip, EmptyState, ListCard, PageHeader, SectionTitle, Thumb, buttonClass, type ChipTone } from "@/components/ui";
+import { Card, Chip, EmptyState, ListCard, OutfitStrip, PageHeader, SectionTitle, VoteBar, buttonClass, type ChipTone, type StripItem } from "@/components/ui";
 
 const WORD: Record<string, { glyph: string; label: string; tone: ChipTone }> = {
   works: { glyph: "✓", label: "works on you", tone: "works" },
@@ -14,7 +14,7 @@ const WORD: Record<string, { glyph: string; label: string; tone: ChipTone }> = {
   not: { glyph: "✕", label: "not for you", tone: "not" },
 };
 
-export const metadata = { title: "Votes · valette" };
+export const metadata = { title: "Second opinion · valette" };
 
 export default async function OpinionDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -28,44 +28,36 @@ export default async function OpinionDetail({ params }: { params: Promise<{ id: 
   const urls = await signedImageUrls(supabase, (s.items ?? []).map((i) => i.image_path));
   const url = `${siteOrigin(await headers())}/o/${o.token}`;
   const open = stillOpen(o.closes_at as string);
-  const bar = (n: number) => `${t.total ? (n / t.total) * 100 : 0}%`;
+  // Snapshot pieces carry no closet id (the piece may be gone), so the strip doesn't link.
+  const strip: StripItem[] =
+    o.kind === "find"
+      ? [{ id: "find", name: s.title, url: s.image_url ?? null, product: true }]
+      : (s.items ?? []).map((it, i) => ({ id: String(i), name: it.name, url: it.image_path ? urls[it.image_path] ?? null : null, subcategory: it.subcategory, colors: it.colors }));
 
   return (
     <div className="space-y-6">
       <PageHeader back={{ href: "/opinions", label: "Second opinions" }} title={s.title} subtitle={o.question ? `“${o.question}”` : undefined} />
 
-      <Card as="section" aria-label="Votes so far" className="space-y-3">
-        <p className="font-display text-2xl font-extrabold leading-tight tracking-[-0.02em]">{t.summary}</p>
-        <div className="flex h-3 overflow-hidden rounded-full bg-inset" aria-hidden="true">
-          <span className="bg-emerald-700 transition-[width] duration-300 ease-soft" style={{ width: bar(t.works) }} />
-          <span className="bg-amber-500 transition-[width] duration-300 ease-soft" style={{ width: bar(t.almost) }} />
-          <span className="bg-red-700 transition-[width] duration-300 ease-soft" style={{ width: bar(t.not) }} />
-        </div>
-        <p className="text-sm text-stone-500 tabular-nums">
-          {t.works} works · {t.almost} almost · {t.not} not for you{open ? ` · open until ${new Date(o.closes_at as string).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}` : " · closed"}
-        </p>
-        <OpinionControls id={id} url={url} open={open} />
-      </Card>
-
-      {(s.items?.length ?? 0) > 0 && (
-        <ul className="flex gap-2 overflow-x-auto">
-          {s.items!.map((it, i) => (
-            <li key={i}>
-              <Thumb src={it.image_path ? urls[it.image_path] : null} alt={it.name} size="md" item={{ subcategory: it.subcategory, colors: it.colors }} />
-            </li>
-          ))}
-        </ul>
-      )}
+      {strip.length > 0 && <OutfitStrip items={strip} size="lg" link={false} />}
       {o.kind === "find" && s.url && (
         <a href={s.url} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "sm")}>
           Open the product page
         </a>
       )}
 
+      <Card as="section" aria-label="Votes so far" className="space-y-3">
+        <p className="font-display text-2xl font-extrabold leading-tight tracking-[-0.02em]">{t.summary}</p>
+        <VoteBar works={t.works} almost={t.almost} not={t.not} />
+        <p className="text-sm text-stone-500 tabular-nums">
+          {t.works} works · {t.almost} almost · {t.not} not for you{open ? ` · open until ${new Date(o.closes_at as string).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}` : " · closed"}
+        </p>
+        <OpinionControls id={id} url={url} open={open} />
+      </Card>
+
       <section className="space-y-3">
         <SectionTitle>What they said</SectionTitle>
         {!votes?.length ? (
-          <EmptyState compact title="No votes yet. Send the link to a friend or two." />
+          <EmptyState title="no votes yet" body="Send the link to a friend or two. Votes show up here as they answer." />
         ) : (
           <ListCard>
             {votes.map((v) => {

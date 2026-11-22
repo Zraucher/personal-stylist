@@ -33,7 +33,7 @@ export async function requestMagicLink(
   });
 
   if (inviteError) {
-    return { status: "error", message: "Could not check the invite list.", email };
+    return { status: "error", message: "We couldn't check your invite just now. Try again in a minute.", email };
   }
   if (!invited) {
     return { status: "not_invited", email };
@@ -49,7 +49,7 @@ export async function requestMagicLink(
   });
 
   if (error) {
-    return { status: "error", message: error.message, email };
+    return { status: "error", message: "We couldn't send your code. Wait a minute and try again.", email };
   }
 
   return { status: "sent", email };

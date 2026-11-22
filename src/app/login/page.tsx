@@ -5,7 +5,7 @@ import Link from "next/link";
 import { requestMagicLink, verifyCode, type LoginState } from "./actions";
 import Wordmark from "@/components/Wordmark";
 import WaitlistForm from "@/components/landing/WaitlistForm";
-import { Button, Card, Field, Input, Notice } from "@/components/ui";
+import { Button, Card, Chip, Field, Input, Notice } from "@/components/ui";
 
 const initial: LoginState = { status: "idle" };
 
@@ -27,6 +27,17 @@ function LoginFlow({ onRestart }: { onRestart: () => void }) {
         </Link>
         <h1 className="mt-4 font-display text-[28px] font-extrabold leading-[1.05] tracking-[-0.03em]">sign in</h1>
         <p className="mt-2 text-[15px] text-stone-600">Invite only for now. Enter your email and we&apos;ll send a sign-in code.</p>
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          <Chip tone="works">
+            <span aria-hidden="true">✓</span> works on you
+          </Chip>
+          <Chip tone="almost">
+            <span aria-hidden="true">◐</span> almost
+          </Chip>
+          <Chip tone="not">
+            <span aria-hidden="true">✕</span> not for you
+          </Chip>
+        </div>
 
         {state.status === "sent" ? (
           <Card className="mt-8 space-y-4">
@@ -46,8 +57,8 @@ function LoginFlow({ onRestart }: { onRestart: () => void }) {
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   maxLength={8}
-                  placeholder="Code"
-                  className="text-center text-lg tracking-widest"
+                  placeholder="6-digit code"
+                  className="text-center font-display text-2xl! tabular-nums tracking-[0.3em]"
                 />
               </Field>
               <Button type="submit" variant="primary" block disabled={codePending} aria-busy={codePending || undefined}>
