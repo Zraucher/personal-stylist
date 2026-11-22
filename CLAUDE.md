@@ -12,4 +12,4 @@ Personal stylist web app (Next.js 16 App Router, React 19, Tailwind v4, Supabase
 
 ## Engineering notes
 - Tests: `node --test scripts/test-*.mjs`.
-- Deploys go through the Vercel MCP with inline files + SHA refs; files must be LF (see memory "deploy-line-endings").
+- Deploys: GitHub (Zraucher/personal-stylist) is linked to the Vercel project. Pushing to `main` deploys production; other branches get preview URLs. Keep files LF.
