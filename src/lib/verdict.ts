@@ -11,7 +11,7 @@ export const VERDICT_LABEL: Record<Verdict, string> = {
 export const VERDICT_SHORT: Record<Verdict, string> = {
   keep: "✓ works",
   provisional: "◐ almost",
-  cut: "✕ not for you",
+  cut: "✕ not",
 };
 
 export const VERDICT_CLASS: Record<Verdict, string> = {

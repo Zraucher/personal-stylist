@@ -58,7 +58,7 @@ export default async function OpinionPage({ params }: Props) {
         </div>
 
         {isOwner && (
-          <Notice tone="warn">
+          <Notice tone="info">
             This is the page your friends see.{" "}
             <Link href={`/opinions/${o.id}`} className="font-semibold underline underline-offset-2">
               See your votes
@@ -73,7 +73,7 @@ export default async function OpinionPage({ params }: Props) {
               {(s.items ?? []).map((it, i) => (
                 <li key={i} className="space-y-1.5">
                   <Thumb src={o.images[i]} alt={it.name} item={{ subcategory: it.subcategory, colors: it.colors }} />
-                  <p className="truncate text-sm font-medium">{it.name}</p>
+                  <p className="line-clamp-2 text-sm font-medium">{it.name}</p>
                 </li>
               ))}
             </ul>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { closeOpinion, deleteOpinion } from "../actions";
 import { Button, ConfirmButton, buttonClass } from "@/components/ui";
 
@@ -9,6 +9,13 @@ export default function OpinionControls({ id, url, open }: { id: string; url: st
   const router = useRouter();
   const [pending, start] = useTransition();
   const [copied, setCopied] = useState(false);
+
+  // "Link copied" is a moment, not a state: the label goes back after two seconds.
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(t);
+  }, [copied]);
 
   const share = async () => {
     try {
@@ -36,9 +43,18 @@ export default function OpinionControls({ id, url, open }: { id: string; url: st
         See what friends see
       </a>
       {open && (
-        <Button type="button" variant="quiet" size="sm" disabled={pending} onClick={() => start(async () => void (await closeOpinion(id), router.refresh()))}>
+        <ConfirmButton
+          variant="quiet"
+          confirmTone="neutral"
+          disabled={pending}
+          title="Close voting?"
+          body="Friends won't be able to vote any more, and voting can't be reopened."
+          confirmLabel="Close voting"
+          cancelLabel="Keep it open"
+          onConfirm={() => start(async () => void (await closeOpinion(id), router.refresh()))}
+        >
           Close voting
-        </Button>
+        </ConfirmButton>
       )}
       <ConfirmButton
         disabled={pending}

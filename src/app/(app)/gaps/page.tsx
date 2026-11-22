@@ -19,7 +19,6 @@ export default async function GapsPage() {
 
   return (
     <div className="space-y-6">
-      <ClosetSubnav />
       <PageHeader
         title="Closet gaps"
         subtitle={
@@ -28,17 +27,23 @@ export default async function GapsPage() {
           </>
         }
       />
+      <ClosetSubnav />
 
       {worth.length === 0 ? (
         <EmptyState
           title="no big gaps right now"
           body={`No single piece adds ${MIN_ADDED} or more outfits right now. That usually means the closet is well rounded, or that most pieces still need warmth and dress-level tags.`}
+          action={
+            <ButtonLink href="/closet" variant="secondary">
+              Check your pieces&apos; tags
+            </ButtonLink>
+          }
         />
       ) : (
         <ol className="space-y-3">
           {worth.map((g, i) => (
             <Card as="li" key={g.piece.id} className="flex gap-4">
-              <Thumb size="md" alt={gapLabel(g)} item={{ category: g.piece.category, subcategory: g.piece.subcategory, colors: g.piece.colors }} />
+              <Thumb size="md" alt="" item={{ category: g.piece.category, subcategory: g.piece.subcategory, colors: g.piece.colors }} />
               <div className="min-w-0 flex-1 space-y-2">
                 <div className="space-y-1">
                   <p className="font-display text-lg font-bold leading-snug">
@@ -50,7 +55,7 @@ export default async function GapsPage() {
                   size="sm"
                   href={`/wishlist?add=${encodeURIComponent(g.piece.name ?? g.piece.subcategory ?? "piece")}&prefs=${encodeURIComponent(`Fills a closet gap: adds ${g.added} outfits.`)}`}
                 >
-                  Add to wishlist and find it
+                  Add to wishlist and find it<span className="sr-only">: {gapLabel(g)}</span>
                 </ButtonLink>
               </div>
             </Card>

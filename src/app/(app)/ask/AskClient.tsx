@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { RecommendationView } from "@/lib/today/recommend";
 import RecommendationCards from "../today/RecommendationCards";
-import { Button, Card, Field, Notice, Skeleton, Textarea } from "@/components/ui";
+import { Button, Card, ChipButton, ChipGroup, Field, Notice, Skeleton, Textarea } from "@/components/ui";
 
 const EXAMPLES = [
   "Rooftop dinner Friday, it'll be 95 at sunset, no dress",
@@ -45,27 +45,28 @@ export default function AskClient({ initial }: { initial: RecommendationView | n
         }}
         className="space-y-3"
       >
-        <Field label="Describe the day" srOnly>
+        <Field label="Describe the day" hint="Where, when, the weather, anything you won't wear.">
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                e.preventDefault();
+                void ask(text);
+              }
+            }}
             rows={3}
             maxLength={500}
-            placeholder="Describe the day: where, when, the weather, anything you won't wear"
+            placeholder="Rooftop dinner Friday, it'll be 95 at sunset"
           />
         </Field>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Examples">
+        <ChipGroup label="Examples">
           {EXAMPLES.map((ex) => (
-            <button
-              key={ex}
-              type="button"
-              onClick={() => setText(ex)}
-              className="tap inline-flex min-h-9 items-center rounded-full bg-card px-3.5 py-1.5 text-left text-[13px] leading-snug text-stone-600 ring-1 ring-inset ring-line-strong transition-colors duration-200 ease-soft hover:text-stone-900 hover:ring-stone-400"
-            >
+            <ChipButton key={ex} selected={text === ex} onClick={() => setText(ex)} className="h-auto py-1.5 text-left text-[13px] leading-snug">
               {ex}
-            </button>
+            </ChipButton>
           ))}
-        </div>
+        </ChipGroup>
         <Button type="submit" variant="primary" disabled={loading || text.trim().length < 3} aria-busy={loading}>
           {loading ? "Thinking…" : "Ask"}
         </Button>

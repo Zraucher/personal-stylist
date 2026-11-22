@@ -36,12 +36,21 @@ const ROWS: Array<["palette" | "fabric" | "silhouette" | "vibe", string]> = [
   ["vibe", "Vibe"],
 ];
 
-const DOT: Record<Status, string> = {
-  good: "bg-emerald-600",
-  ok: "bg-stone-400",
-  caution: "bg-amber-500",
-  fail: "bg-red-600",
-  unknown: "bg-stone-300",
+// Symbol + word, so status never rests on colour alone.
+const SYMBOL: Record<Status, string> = {
+  good: "✓",
+  ok: "○",
+  caution: "◐",
+  fail: "✕",
+  unknown: "–",
+};
+
+const SYMBOL_CLASS: Record<Status, string> = {
+  good: "text-emerald-700",
+  ok: "text-stone-600",
+  caution: "text-amber-700",
+  fail: "text-red-700",
+  unknown: "text-stone-500",
 };
 
 const STATUS_WORD: Record<Status, string> = {
@@ -170,16 +179,18 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
       {card && !running && (
         <div className="space-y-3">
           <div role="status" aria-live="polite" className="flex flex-wrap items-start gap-x-3 gap-y-2">
-            <Chip tone={VERDICT[card.verdict].tone} size="md" className="shrink-0">
-              {justScored && card.verdict === "keep" ? (
-                <>
-                  <CheckTick className="text-emerald-900" />
+            {justScored && card.verdict === "keep" ? (
+              <span className="inline-flex shrink-0 items-center gap-1.5">
+                <CheckTick size={24} className="text-emerald-700" />
+                <Chip tone="works" size="md">
                   works on you
-                </>
-              ) : (
-                VERDICT[card.verdict].label
-              )}
-            </Chip>
+                </Chip>
+              </span>
+            ) : (
+              <Chip tone={VERDICT[card.verdict].tone} size="md" className="shrink-0">
+                {VERDICT[card.verdict].label}
+              </Chip>
+            )}
             <p className="min-w-0 flex-1 text-sm leading-relaxed text-stone-700">{card.headline}</p>
           </div>
 
@@ -189,10 +200,12 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
               const st = c?.status ?? "unknown";
               return (
                 <li key={key} className="flex gap-3 py-2.5 text-sm">
-                  <span aria-hidden="true" className={"mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full " + DOT[st]} />
-                  <span className="w-20 shrink-0 text-stone-500">
-                    {label}
-                    <span className="sr-only">: {STATUS_WORD[st]}.</span>
+                  <span aria-hidden="true" className={"w-4 shrink-0 text-center font-semibold " + SYMBOL_CLASS[st]}>
+                    {SYMBOL[st]}
+                  </span>
+                  <span className="w-24 shrink-0">
+                    <span className="block text-stone-500">{label}</span>
+                    <span className="block text-xs font-medium text-stone-700">{STATUS_WORD[st]}</span>
                   </span>
                   <span className="text-stone-800">{c?.reason ?? "Not checked."}</span>
                 </li>
@@ -200,8 +213,13 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
             })}
             {card.tailoring_needed && (
               <li className="flex gap-3 py-2.5 text-sm">
-                <span aria-hidden="true" className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
-                <span className="w-20 shrink-0 text-stone-500">Tailoring</span>
+                <span aria-hidden="true" className={"w-4 shrink-0 text-center font-semibold " + SYMBOL_CLASS.caution}>
+                  {SYMBOL.caution}
+                </span>
+                <span className="w-24 shrink-0">
+                  <span className="block text-stone-500">Tailoring</span>
+                  <span className="block text-xs font-medium text-stone-700">needed</span>
+                </span>
                 <span className="text-stone-800">{card.tailoring_note ?? "Needs tailoring."}</span>
               </li>
             )}
@@ -216,14 +234,14 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
                 <ChipButton selected={answer === "agree"} disabled={pending} onClick={() => answerNow(true)}>
                   Agree
                 </ChipButton>
-                <ChipButton selected={answer === "disagree"} disabled={pending} aria-expanded={disagreeOpen} onClick={() => setDisagreeOpen((v) => !v)}>
+                <ChipButton selected={answer === "disagree"} disabled={pending} aria-pressed={undefined} aria-expanded={disagreeOpen} onClick={() => setDisagreeOpen((v) => !v)}>
                   Disagree
                 </ChipButton>
               </ChipGroup>
               {disagreeOpen && (
                 <div className="space-y-2">
                   <Field label="What did it get wrong?" hint="Optional, but this is what teaches it.">
-                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="What did it get wrong? (optional, but this is what teaches it)" />
+                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
                   </Field>
                   <Button type="button" size="sm" disabled={pending} onClick={() => answerNow(false, note)}>
                     Log disagreement
@@ -241,10 +259,10 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
         <div className="space-y-2 border-t border-line pt-3">
           <p className="text-sm text-stone-500">Teach it with this piece</p>
           <ChipGroup label="Teach it with this piece">
-            <ChipButton selected={benchOpen === "positive"} onClick={() => setBenchOpen("positive")}>
+            <ChipButton selected={benchOpen === "positive"} onClick={() => setBenchOpen((b) => (b === "positive" ? null : "positive"))}>
               Proven look
             </ChipButton>
-            <ChipButton selected={benchOpen === "negative"} onClick={() => setBenchOpen("negative")}>
+            <ChipButton selected={benchOpen === "negative"} onClick={() => setBenchOpen((b) => (b === "negative" ? null : "negative"))}>
               Known failure
             </ChipButton>
           </ChipGroup>
@@ -255,7 +273,7 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
                   value={benchWhy}
                   onChange={(e) => setBenchWhy(e.target.value)}
                   rows={2}
-                  placeholder={benchOpen === "positive" ? "Why does this work for you?" : "Why did this fail? (for example: passed every rule but felt wrong)"}
+                  placeholder={benchOpen === "positive" ? undefined : "For example: passed every rule but felt wrong"}
                 />
               </Field>
               <Button type="button" size="sm" disabled={pending} onClick={saveBenchmark}>

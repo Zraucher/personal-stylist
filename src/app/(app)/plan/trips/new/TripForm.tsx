@@ -1,13 +1,19 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createTripAction, type TripFormState } from "../actions";
 import { Button, Card, Checkbox, Field, Input, Notice } from "@/components/ui";
 
 const initial: TripFormState = {};
 
+// A radio that looks like a ChipButton: Night when chosen, outlined otherwise.
+const RADIO_CHIP =
+  "tap inline-flex min-h-9 cursor-pointer items-center rounded-full bg-card px-3.5 text-sm font-medium text-stone-700 ring-1 ring-inset ring-line-strong transition-colors duration-200 ease-soft hover:ring-stone-400 has-[:checked]:bg-stone-900 has-[:checked]:text-stone-50 has-[:checked]:ring-stone-900 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-stone-900";
+
 export default function TripForm({ today }: { today: string }) {
   const [state, action, pending] = useActionState(createTripAction, initial);
+  // Coming home can't be before leaving.
+  const [start, setStart] = useState(today);
   return (
     <Card as="form" action={action} className="space-y-4">
       <Field label="Where to?">
@@ -15,10 +21,10 @@ export default function TripForm({ today }: { today: string }) {
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Leave">
-          <Input name="start" type="date" required min={today} defaultValue={today} />
+          <Input name="start" type="date" required min={today} value={start} onChange={(e) => setStart(e.target.value || today)} />
         </Field>
         <Field label="Come home">
-          <Input name="end" type="date" required min={today} />
+          <Input name="end" type="date" required min={start} />
         </Field>
       </div>
       <fieldset>
@@ -29,10 +35,7 @@ export default function TripForm({ today }: { today: string }) {
             { v: "office", l: "Working" },
             { v: "active", l: "Golf or active" },
           ].map((o, i) => (
-            <label
-              key={o.v}
-              className="tap inline-flex min-h-9 cursor-pointer items-center rounded-full bg-card px-3.5 text-sm font-medium text-stone-700 ring-1 ring-inset ring-line-strong transition-colors duration-200 ease-soft hover:ring-stone-400 has-[:checked]:bg-stone-900 has-[:checked]:text-stone-50 has-[:checked]:ring-stone-900 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-stone-900"
-            >
+            <label key={o.v} className={RADIO_CHIP}>
               <input type="radio" name="daytime" value={o.v} defaultChecked={i === 0} className="sr-only" />
               {o.l}
             </label>

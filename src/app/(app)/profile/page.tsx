@@ -4,6 +4,7 @@ import { signedImageUrls } from "@/lib/closet/images";
 import {
   AccountCard,
   BrandsCard,
+  ProfileEditing,
   ColorCard,
   MeasurementsCard,
   StyleCard,
@@ -58,15 +59,7 @@ export default async function ProfilePage() {
         }
       />
 
-      <AccountCard
-        data={{
-          name: (profile?.name as string | null) ?? "",
-          email: (profile?.email as string) ?? "",
-          location: (profile?.location as string | null) ?? "",
-          presentation: (profile?.presentation as "womens" | "mens" | "both") ?? "both",
-        }}
-      />
-
+      <ProfileEditing>
       <ColorCard
         data={{
           season_label: (color?.season_label as string | null) ?? "",
@@ -110,7 +103,17 @@ export default async function ProfilePage() {
 
       <ProfilePhotos urls={photoUrls} />
 
+      <AccountCard
+        data={{
+          name: (profile?.name as string | null) ?? "",
+          email: (profile?.email as string) ?? "",
+          location: (profile?.location as string | null) ?? "",
+          presentation: (profile?.presentation as "womens" | "mens" | "both") ?? "both",
+        }}
+      />
+
       <AppCard />
+      </ProfileEditing>
 
       <form action="/auth/signout" method="post" className="sm:hidden">
         <Button type="submit" variant="secondary" block>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/closet/compress";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
@@ -8,6 +8,14 @@ import { Button, Card, Notice } from "@/components/ui";
 import ItemForm, { EMPTY_VALUES, applyTags, requestTags, type ItemFormValues } from "../ItemForm";
 
 type Phase = "pick" | "uploading" | "tagging" | "form";
+
+// A mouse or trackpad means no camera to open: show one "Choose a photo" button instead of two that do the same thing.
+const FINE = "(pointer: fine)";
+const subscribeFine = (cb: () => void) => {
+  const m = window.matchMedia(FINE);
+  m.addEventListener("change", cb);
+  return () => m.removeEventListener("change", cb);
+};
 
 export default function ItemCapture() {
   const [phase, setPhase] = useState<Phase>("pick");
@@ -18,6 +26,7 @@ export default function ItemCapture() {
   const [error, setError] = useState<string | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const libraryRef = useRef<HTMLInputElement>(null);
+  const finePointer = useSyncExternalStore(subscribeFine, () => window.matchMedia(FINE).matches, () => false);
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
@@ -55,6 +64,7 @@ export default function ItemCapture() {
   }
 
   const busy = phase !== "pick";
+  const busyLabel = phase === "uploading" ? "Uploading…" : phase === "tagging" ? "Reading photo…" : null;
 
   return (
     <div className="space-y-4">
@@ -69,14 +79,20 @@ export default function ItemCapture() {
             formality; you correct anything it gets wrong.
           </p>
         </div>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Button type="button" variant="primary" block disabled={busy} aria-busy={busy || undefined} onClick={() => cameraRef.current?.click()}>
-            {phase === "uploading" ? "Uploading…" : phase === "tagging" ? "Reading photo…" : "Take a photo"}
+        {finePointer ? (
+          <Button type="button" variant="primary" block disabled={busy} aria-busy={busy || undefined} onClick={() => libraryRef.current?.click()}>
+            {busyLabel ?? "Choose a photo"}
           </Button>
-          <Button type="button" variant="secondary" block disabled={busy} onClick={() => libraryRef.current?.click()}>
-            Choose from library
-          </Button>
-        </div>
+        ) : (
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button type="button" variant="primary" block disabled={busy} aria-busy={busy || undefined} onClick={() => cameraRef.current?.click()}>
+              {busyLabel ?? "Take a photo"}
+            </Button>
+            <Button type="button" variant="secondary" block disabled={busy} onClick={() => libraryRef.current?.click()}>
+              Choose from library
+            </Button>
+          </div>
+        )}
         <Button
           type="button"
           variant="quiet"
@@ -97,7 +113,7 @@ export default function ItemCapture() {
 
       {phase === "tagging" && (
         <p role="status" aria-live="polite" className="text-center text-sm text-stone-500">
-          Claude is looking at the photo. Ten seconds or so.
+          The tagger is reading the photo. Ten seconds or so.
         </p>
       )}
     </div>

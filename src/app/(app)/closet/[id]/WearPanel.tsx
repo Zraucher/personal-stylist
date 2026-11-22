@@ -25,25 +25,15 @@ export default function WearPanel({ itemId, wears, lastWorn, wornToday, price }:
     <Card as="section" aria-label="Wear log" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-display text-lg font-bold leading-snug">
+          <h2 className="font-display text-lg font-bold leading-snug">
             {wears ? `Worn ${wears} time${wears === 1 ? "" : "s"}` : "Not worn yet"}
             {cpw != null && <span className="font-sans text-base font-normal text-stone-500"> · {money(cpw)} per wear</span>}
-          </p>
+          </h2>
           <p className="text-sm text-stone-500">{lastWorn ? `Last worn ${new Date(`${lastWorn}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : "Tap below when you wear it."}</p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant={wornToday ? "secondary" : "primary"}
-          disabled={pending}
-          aria-busy={pending || undefined}
-          onClick={() => {
-            setJustMarked(!wornToday);
-            start(async () => void (wornToday ? await unmarkWorn(itemId) : await markWorn(itemId)));
-          }}
-        >
-          {wornToday ? (
-            <>
+        {wornToday ? (
+          <div className="flex items-center gap-1">
+            <p role="status" className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-900">
               {justMarked ? (
                 <CheckTick className="text-emerald-700" />
               ) : (
@@ -51,12 +41,38 @@ export default function WearPanel({ itemId, wears, lastWorn, wornToday, price }:
                   ✓
                 </span>
               )}
-              Worn today (undo)
-            </>
-          ) : (
-            "Wore it today"
-          )}
-        </Button>
+              Worn today
+            </p>
+            <Button
+              type="button"
+              variant="quiet"
+              size="sm"
+              disabled={pending}
+              aria-busy={pending || undefined}
+              aria-label="Undo worn today"
+              onClick={() => {
+                setJustMarked(false);
+                start(async () => void (await unmarkWorn(itemId)));
+              }}
+            >
+              Undo
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            variant="primary"
+            disabled={pending}
+            aria-busy={pending || undefined}
+            onClick={() => {
+              setJustMarked(true);
+              start(async () => void (await markWorn(itemId)));
+            }}
+          >
+            Wore it today
+          </Button>
+        )}
       </div>
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-32 space-y-1.5">

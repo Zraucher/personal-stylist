@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button, Card, SectionTitle } from "@/components/ui";
 
-export default function ShareCard() {
+export default function ShareCard({ alt }: { alt: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [v] = useState(() => Date.now());
@@ -45,7 +45,7 @@ export default function ShareCard() {
         Share image
       </SectionTitle>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="Palette card" className="mx-auto w-full max-w-xs rounded-thumb ring-1 ring-line" />
+      <img src={src} alt={alt} className="mx-auto w-full max-w-xs rounded-thumb ring-1 ring-line" />
       <p role="status" aria-live="polite" className="text-sm text-stone-600 empty:hidden">
         {msg}
       </p>

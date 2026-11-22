@@ -91,11 +91,9 @@ export default function ProfilePhotos({ urls }: Props) {
   return (
     <Card as="section" className="space-y-3">
       <SectionTitle>Photos of you</SectionTitle>
-      <p className="text-sm leading-relaxed text-stone-600">
-        Add photos from different angles and crops. We will use them later for outfit mock-ups. Plain background and fitted clothes
-        work best. They are private to your account, nothing is analyzed yet, and you can remove any photo here at any time.
-      </p>
-      <p className="text-xs text-stone-500">Tap a tile to choose a photo, drop a file on it, or select it and paste with Ctrl+V.</p>
+      <p className="text-sm leading-relaxed text-stone-600">Private photos for future outfit mock-ups. A plain background and fitted clothes work best.</p>
+      <p className="hidden text-xs text-stone-500 [@media(pointer:fine)]:block">Click a tile to choose a photo, drop a file on it, or select it and paste.</p>
+      {error && <Notice tone="error">{error}</Notice>}
 
       <input
         ref={fileRef}
@@ -193,7 +191,6 @@ export default function ProfilePhotos({ urls }: Props) {
           </div>
         ))}
       </div>
-      {error && <Notice tone="error">{error}</Notice>}
     </Card>
   );
 }

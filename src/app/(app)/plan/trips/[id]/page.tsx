@@ -29,7 +29,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
             <>
               {trip.title !== trip.destination ? `${trip.destination} · ` : ""}
               {fmt(trip.start)} to {fmt(trip.end)}
-              {lo != null && hi != null ? ` · feels ${lo}–${hi}°` : ""}
+              {lo != null && hi != null ? ` · feels ${lo}–${hi}°F` : ""}
             </>
           }
         />

@@ -1,33 +1,39 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import Link from "next/link";
 import { requestMagicLink, verifyCode, type LoginState } from "./actions";
 import Wordmark from "@/components/Wordmark";
+import WaitlistForm from "@/components/landing/WaitlistForm";
 import { Button, Card, Field, Input, Notice } from "@/components/ui";
 
 const initial: LoginState = { status: "idle" };
 
 export default function LoginPage() {
+  // Changing the key remounts the flow, which is how "Use a different email" resets both steps.
+  const [attempt, setAttempt] = useState(0);
+  return <LoginFlow key={attempt} onRestart={() => setAttempt((n) => n + 1)} />;
+}
+
+function LoginFlow({ onRestart }: { onRestart: () => void }) {
   const [state, formAction, pending] = useActionState(requestMagicLink, initial);
   const [codeState, codeAction, codePending] = useActionState(verifyCode, initial);
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-ground px-4 py-12 text-stone-900">
       <div className="w-full max-w-sm">
-        <h1 className="sr-only">valette</h1>
-        <Wordmark size={40} />
-        <p className="mt-3 font-display text-xl font-bold text-stone-900">Check it on you before you wear it.</p>
-        <p className="mt-2 text-sm text-stone-600">
-          Invite only for now. Enter your email and we&apos;ll send a sign-in code.
-        </p>
+        <Link href="/" aria-label="valette home" className="inline-block rounded-full">
+          <Wordmark size={40} />
+        </Link>
+        <h1 className="mt-4 font-display text-[28px] font-extrabold leading-[1.05] tracking-[-0.03em]">sign in</h1>
+        <p className="mt-2 text-[15px] text-stone-600">Invite only for now. Enter your email and we&apos;ll send a sign-in code.</p>
 
         {state.status === "sent" ? (
           <Card className="mt-8 space-y-4">
             <div role="status">
               <p className="font-display text-lg font-bold leading-snug">Check your email</p>
               <p className="mt-1 text-sm text-stone-600">
-                We sent a sign-in code to <span className="font-medium">{state.email}</span>.
-                Type it here. Stay on this page until you have it.
+                We sent a sign-in code to <span className="font-medium">{state.email}</span>. Type it here.
               </p>
             </div>
             <form action={codeAction} className="space-y-3">
@@ -36,6 +42,7 @@ export default function LoginPage() {
                 <Input
                   name="code"
                   required
+                  autoFocus
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   maxLength={8}
@@ -48,7 +55,20 @@ export default function LoginPage() {
               </Button>
               {codeState.message && <Notice tone="error">{codeState.message}</Notice>}
             </form>
+            <Button type="button" variant="quiet" size="sm" onClick={onRestart} className="-ml-3.5">
+              Use a different email
+            </Button>
           </Card>
+        ) : state.status === "not_invited" ? (
+          <div className="mt-8 space-y-4">
+            <Notice tone="warn">
+              <span className="font-medium">{state.email}</span> isn&apos;t on the invite list yet. Join the list and we&apos;ll email your invite.
+            </Notice>
+            <WaitlistForm source="login" defaultEmail={state.email} />
+            <Button type="button" variant="quiet" size="sm" onClick={onRestart} className="-ml-3.5">
+              Use a different email
+            </Button>
+          </div>
         ) : (
           <form action={formAction} className="mt-8 space-y-3">
             <Field label="Email" srOnly>
@@ -65,12 +85,6 @@ export default function LoginPage() {
             <Button type="submit" variant="primary" block disabled={pending} aria-busy={pending || undefined}>
               {pending ? "Sending…" : "Send sign-in code"}
             </Button>
-
-            {state.status === "not_invited" && (
-              <Notice tone="warn">
-                That email isn&apos;t on the invite list yet. Ask Zack to add it.
-              </Notice>
-            )}
             {state.status === "error" && <Notice tone="error">{state.message}</Notice>}
           </form>
         )}

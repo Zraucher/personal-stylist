@@ -18,6 +18,9 @@ type OutfitRow = {
   created_at: string;
 };
 
+/** The checks worth opening: cautions and fails. */
+const issues = (c: Composition) => c.checks.filter((x) => x.status === "caution" || x.status === "fail");
+
 type ItemRow = { id: string; name: string | null; image_path: string | null; category: string | null; subcategory: string | null; colors: Array<{ name: string; hex?: string }> | null };
 
 export default async function OutfitsPage() {
@@ -38,7 +41,6 @@ export default async function OutfitsPage() {
 
   return (
     <div className="space-y-6">
-      <ClosetSubnav />
       <PageHeader
         title="Outfits"
         subtitle={<>{outfits.length} saved. Each one is checked for counterbalance, contrast and palette.</>}
@@ -53,10 +55,11 @@ export default async function OutfitsPage() {
           </>
         }
       />
+      <ClosetSubnav />
 
       {outfits.length === 0 ? (
         <EmptyState
-          title="No outfits yet"
+          title="no outfits yet"
           body="Pick a top, a bottom and shoes from your closet and see how the combination reads."
           action={
             <ButtonLink href="/outfits/new" variant="secondary" size="sm">
@@ -70,7 +73,7 @@ export default async function OutfitsPage() {
             <Card as="li" key={o.id} className="space-y-3">
               <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                 {o.composition && <OverallChip overall={o.composition.overall} />}
-                <p className="min-w-0 truncate font-display text-lg font-bold leading-snug">{o.name ?? o.occasion ?? "Untitled outfit"}</p>
+                <h2 className="min-w-0 truncate font-display text-lg font-bold leading-snug">{o.name ?? o.occasion ?? "Untitled outfit"}</h2>
                 {o.name && o.occasion && <p className="truncate text-xs text-stone-500">{o.occasion}</p>}
               </div>
               <div className="-mx-4 flex gap-2 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
@@ -84,26 +87,28 @@ export default async function OutfitsPage() {
                   );
                 })}
               </div>
-              {o.composition && (
-                <details className="group text-sm">
-                  <summary className="tap flex cursor-pointer list-none items-center gap-1.5 text-stone-600 hover:text-stone-900 [&::-webkit-details-marker]:hidden">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 transition-transform duration-200 ease-soft group-open:rotate-90">
-                      <path d="m9 6 6 6-6 6" />
-                    </svg>
-                    {o.composition.headline}
-                  </summary>
-                  <ul className="mt-2 space-y-1 pl-5 text-stone-600">
-                    {o.composition.checks
-                      .filter((c) => c.status === "caution" || c.status === "fail")
-                      .map((c) => (
+              {o.composition &&
+                (issues(o.composition).length > 0 ? (
+                  <details className="group text-sm">
+                    <summary className="tap flex cursor-pointer list-none items-center gap-1.5 text-stone-600 hover:text-stone-900 [&::-webkit-details-marker]:hidden">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 transition-transform duration-200 ease-soft group-open:rotate-90">
+                        <path d="m9 6 6 6-6 6" />
+                      </svg>
+                      {o.composition.headline}
+                    </summary>
+                    <ul className="mt-2 space-y-1 pl-5 text-stone-600">
+                      {issues(o.composition).map((c) => (
                         <li key={c.id}>
                           <span className="font-medium text-stone-800">{c.label}.</span> {c.reason}
                           {c.fix && <span className="text-stone-500"> Try: {c.fix}</span>}
                         </li>
                       ))}
-                  </ul>
-                </details>
-              )}
+                    </ul>
+                  </details>
+                ) : (
+                  // Nothing to fix: the headline is plain text, not a disclosure that opens onto nothing.
+                  <p className="text-sm text-stone-600">{o.composition.headline}</p>
+                ))}
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
                 <AskFriendsButton target={{ kind: "outfit", outfitId: o.id }} compact />
                 <DeleteOutfitButton id={o.id} />

@@ -66,7 +66,7 @@ export function TopNav() {
             href={n.href}
             aria-current={on ? "page" : undefined}
             className={
-              "rounded-full px-3 py-1.5 transition-colors duration-200 ease-soft " +
+              "tap inline-flex min-h-9 items-center rounded-full px-3 transition-colors duration-200 ease-soft " +
               (on ? "bg-stone-900/[0.06] font-semibold text-stone-900" : "text-stone-600 hover:text-stone-900")
             }
           >
@@ -94,7 +94,7 @@ export function BottomTabs() {
               key={n.href}
               href={n.href}
               aria-current={on ? "page" : undefined}
-              className={"flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium " + (on ? "text-stone-900" : "text-stone-500")}
+              className={"flex h-14 flex-col items-center justify-center gap-0.5 text-xs font-medium " + (on ? "text-stone-900" : "text-stone-500")}
             >
               <span
                 className={

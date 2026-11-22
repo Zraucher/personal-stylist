@@ -435,7 +435,7 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
 
       {error && <Notice tone="error">{error}</Notice>}
 
-      <div className="sticky bottom-0 z-10 -mx-4 bg-ground/90 px-4 py-3 shadow-[0_-1px_0_var(--color-line)] backdrop-blur">
+      <div className="sticky bottom-[calc(3.5rem+max(env(safe-area-inset-bottom),6px))] z-10 -mx-4 bg-ground/90 px-4 py-3 shadow-[0_-1px_0_var(--color-line)] backdrop-blur sm:bottom-0">
         <Button type="button" variant={itemId ? "secondary" : "primary"} block onClick={submit} disabled={pending} aria-busy={pending || undefined}>
           {pending ? "Saving…" : itemId ? "Save changes" : "Add to closet"}
         </Button>
@@ -480,11 +480,11 @@ function Scale({
             type="button"
             onClick={() => onChange(value === n ? null : n)}
             aria-pressed={value === n}
+            aria-label={`${n}, ${labels[n]}`}
             className={
               "tap min-h-9 rounded-[10px] text-sm font-medium tabular-nums transition-colors duration-200 ease-soft " +
               (value === n ? "bg-stone-900 text-stone-50" : "text-stone-700 hover:bg-card")
             }
-            aria-label={labels[n]}
           >
             {n}
           </button>

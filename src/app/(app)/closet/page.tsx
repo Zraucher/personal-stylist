@@ -46,7 +46,6 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="space-y-6">
-      <ClosetSubnav />
       <PageHeader
         title="Closet"
         subtitle={
@@ -56,19 +55,13 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
           </>
         }
         actions={
-          <>
-            <ButtonLink href="/closet/review" size="sm">
-              Review
-            </ButtonLink>
-            <ButtonLink href="/closet/basics" size="sm">
-              Basics
-            </ButtonLink>
-            <ButtonLink href="/closet/new" variant="primary" size="sm">
-              Add item
-            </ButtonLink>
-          </>
+          // While the closet is empty the basics list below is the one green action.
+          <ButtonLink href="/closet/new" variant={all.length === 0 ? "secondary" : "primary"} size="sm">
+            Add item
+          </ButtonLink>
         }
       />
+      <ClosetSubnav />
 
       {all.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
@@ -77,8 +70,11 @@ export default async function ClosetPage({ searchParams }: { searchParams: Promi
               <Input type="search" name="q" defaultValue={q ?? ""} placeholder="Search by name, brand or color" />
             </Field>
           </form>
-          <ButtonLink href="/gaps" variant="quiet" size="sm">
-            What to buy next
+          <ButtonLink href="/closet/review" size="sm">
+            Review
+          </ButtonLink>
+          <ButtonLink href="/closet/basics" size="sm">
+            Basics
           </ButtonLink>
         </div>
       )}
@@ -142,7 +138,7 @@ function ItemCard({ item, url, verdict }: { item: ClosetItem; url?: string; verd
     >
       <Thumb
         src={url}
-        alt={item.name ?? ""}
+        alt=""
         item={item}
         size="fill"
         badge={

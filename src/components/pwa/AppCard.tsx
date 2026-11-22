@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Card, Checkbox } from "@/components/ui";
+import { Button, Card, Checkbox, SectionTitle } from "@/components/ui";
 
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Prefs = { morning: boolean; prices: boolean; votes: boolean };
@@ -121,14 +121,14 @@ export default function AppCard() {
   return (
     <Card as="section" className="space-y-4">
       <div className="space-y-2">
-        <h2 className="font-display text-lg font-bold leading-snug">The app</h2>
+        <SectionTitle>The app</SectionTitle>
         {standalone ? (
           <p className="text-sm text-stone-600">
             <span aria-hidden="true">✓ </span>Installed on this device.
           </p>
         ) : installEvt ? (
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="primary" size="sm" onClick={install}>
+            <Button type="button" variant="secondary" size="sm" onClick={install}>
               Add valette to your home screen
             </Button>
           </div>
@@ -155,7 +155,7 @@ export default function AppCard() {
                   Turn off on this device
                 </Button>
               ) : (
-                <Button type="button" variant={installEvt ? "secondary" : "primary"} size="sm" disabled={busy} aria-busy={busy || undefined} onClick={turnOn}>
+                <Button type="button" variant="secondary" size="sm" disabled={busy} aria-busy={busy || undefined} onClick={turnOn}>
                   {busy ? "Turning on…" : "Turn on notifications"}
                 </Button>
               )}

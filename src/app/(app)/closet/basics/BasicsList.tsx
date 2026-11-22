@@ -56,7 +56,7 @@ export default function BasicsList({ defaultTab, showTabs, owned: initialOwned }
               aria-pressed={tab === p}
               className={
                 "tap min-h-9 flex-1 rounded-full font-medium transition-colors duration-200 ease-soft " +
-                (tab === p ? "bg-card text-stone-900 shadow-active" : "text-stone-600 hover:text-stone-900")
+                (tab === p ? "bg-stone-900 font-semibold text-stone-50" : "text-stone-600 hover:text-stone-900")
               }
             >
               {p === "womens" ? "Women's" : "Men's"}
@@ -156,11 +156,11 @@ function BasicDetailsForm({ basic, onDone }: { basic: Basic; onDone: (savedBrand
           type="color"
           value={colorHex}
           onChange={(e) => setColorHex(e.target.value)}
-          aria-label="Color swatch"
+          aria-label={`Color swatch for your ${basic.name}`}
           className="size-11 shrink-0 cursor-pointer rounded-control border border-stone-400/70 bg-inset p-1"
         />
         <div className="w-32">
-          <Input value={colorName} onChange={(e) => setColorName(e.target.value)} placeholder="Color name" aria-label="Color name" />
+          <Input value={colorName} onChange={(e) => setColorName(e.target.value)} placeholder="Color name" aria-label={`Color name for your ${basic.name}`} />
         </div>
       </div>
       {error && <Notice tone="error">{error}</Notice>}

@@ -24,16 +24,69 @@ const STEPS = [
   { title: "Check before you go", body: "Pick where you're headed. Valette checks the weather and your closet and hands you three outfits that work on you." },
 ];
 
-const FEATURES = [
-  { name: "Today", body: "Three outfits every morning, matched to your colors, your plans and the actual forecast for the hours you're outside.", tone: "bg-sky-brand" },
-  { name: "Ask", body: "“Rooftop dinner Friday, 95 at sunset, no dress.” Say it the way you'd text a friend and get looks that fit.", tone: "bg-blush" },
-  { name: "Shop check", body: "Paste a product link or a screenshot. We read the photo, not the color name, and tell you if it works before you buy.", tone: "bg-amber-100" },
-  { name: "Closet gaps", body: "See the one piece that would unlock the most new outfits from what you already own, with the number to prove it.", tone: "bg-emerald-100" },
-  { name: "Second opinion", body: "Send a look or a find to friends. They vote works, almost or not in one tap, no account needed.", tone: "bg-sky-brand" },
-  { name: "Plan ahead", body: "Your whole week laid out against the forecast, and a packing list for every trip built from what you own.", tone: "bg-blush" },
-  { name: "Price watch", body: "Save a find and we check it every day. When the price drops, you'll know.", tone: "bg-amber-100" },
-  { name: "Closet insights", body: "Cost per wear, your real favorites, and the pieces that haven't seen daylight in months.", tone: "bg-emerald-100" },
+// The three features that lead get a small piece of real UI; the rest sit in a compact list.
+const MORE_FEATURES = [
+  { name: "Today", body: "Three outfits every morning, matched to your colors, your plans and the actual forecast for the hours you're outside." },
+  { name: "Ask", body: "“Rooftop dinner Friday, 95 at sunset, no dress.” Say it the way you'd text a friend and get looks that fit." },
+  { name: "Plan ahead", body: "Your whole week laid out against the forecast, and a packing list for every trip built from what you own." },
+  { name: "Price watch", body: "Save a find and we check it every day. When the price drops, you'll know." },
+  { name: "Closet insights", body: "Cost per wear, your real favorites, and the pieces that haven't seen daylight in months." },
 ];
+
+const VERDICTS = [
+  { glyph: "✓", word: "works on you", tone: "works" as const, body: "The colors, fabric and shape all suit you. Wear it with confidence." },
+  { glyph: "◐", word: "almost", tone: "almost" as const, body: "Close. We tell you the one change that turns it into a yes." },
+  { glyph: "✕", word: "not for you", tone: "not" as const, body: "It fights your coloring or your style, and we show you better options you already own." },
+];
+
+/** Verdict glyphs are decoration: screen readers hear the word only. */
+function VerdictLabel({ glyph, word }: { glyph: string; word: string }) {
+  return (
+    <>
+      <span aria-hidden="true">{glyph}</span> {word}
+    </>
+  );
+}
+
+function LeadFeatures() {
+  return (
+    <div className="mt-10 grid gap-8 md:grid-cols-3">
+      <article className="space-y-3">
+        <Card variant="inset" aria-hidden="true" className="space-y-2">
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <span className="font-semibold">Linen blazer, sage</span>
+            <span className="tabular-nums text-stone-600">$128</span>
+          </div>
+          <Chip tone="works">✓ works on you</Chip>
+          <p className="text-xs text-stone-600">Pairs with 9 things you own.</p>
+        </Card>
+        <h3 className="font-display text-xl font-bold">Shop check</h3>
+        <p className="leading-relaxed text-stone-600">Paste a product link or a screenshot. We read the photo, not the color name, and tell you if it works before you buy.</p>
+      </article>
+      <article className="space-y-3">
+        <Card variant="inset" aria-hidden="true" className="space-y-2">
+          <p className="text-sm font-semibold">4 friends voted</p>
+          <div className="flex h-2.5 overflow-hidden rounded-full bg-card">
+            <span className="w-3/4 bg-emerald-700" />
+            <span className="w-1/4 bg-amber-500" />
+          </div>
+          <p className="text-xs text-stone-600">“Love the color, swap the shoes.” Maya</p>
+        </Card>
+        <h3 className="font-display text-xl font-bold">Second opinion</h3>
+        <p className="leading-relaxed text-stone-600">Send a look or a find to friends. They vote works, almost or not in one tap, no account needed.</p>
+      </article>
+      <article className="space-y-3">
+        <Card variant="inset" aria-hidden="true" className="space-y-1">
+          <p className="font-display text-[32px] font-extrabold leading-none tracking-[-0.03em] tabular-nums">+11</p>
+          <p className="text-sm font-semibold">outfits from white sneakers</p>
+          <p className="text-xs text-stone-600">The one piece your closet is missing.</p>
+        </Card>
+        <h3 className="font-display text-xl font-bold">Closet gaps</h3>
+        <p className="leading-relaxed text-stone-600">See the one piece that would unlock the most new outfits from what you already own, with the number to prove it.</p>
+      </article>
+    </div>
+  );
+}
 
 const FAQ = [
   { q: "Do I need a professional color analysis?", a: "No. Valette starts from what you tell it and what you already wear, and you can refine your palette any time. If you've had a color analysis, add your season and it will use it." },
@@ -45,8 +98,9 @@ const FAQ = [
 
 function PhoneMock() {
   return (
-    <div className="mx-auto w-full max-w-[300px] rounded-[2.2rem] bg-stone-900 p-3 shadow-[0_24px_60px_rgba(29,27,43,0.25)]" aria-hidden="true">
-      <div className="space-y-3 rounded-[1.6rem] bg-ground p-4 text-stone-900">
+    // Ink, not stone-900: the bezel must stay dark when dark mode inverts the stone scale.
+    <div className="mx-auto w-full max-w-[300px] rounded-[2.2rem] bg-ink p-3 shadow-[0_24px_60px_rgba(29,27,43,0.25)] ring-1 ring-line-strong" aria-hidden="true">
+      <div className="space-y-3 rounded-[1.6rem] bg-ground p-4 text-stone-900 dark:bg-card">
         <div className="flex justify-between text-[11px] font-semibold text-stone-500">
           <span>today</span>
           <span>las vegas · 82°</span>
@@ -94,7 +148,7 @@ export default function Home() {
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-6 md:grid-cols-[1.15fr_1fr] md:pt-12">
           <div className="space-y-6">
             <p className="inline-flex items-center gap-2 rounded-full bg-blush px-3 py-1 text-sm font-semibold text-stone-800">
-              <span className="text-emerald-700"><CheckDisc size={14} /></span> early access, invite only
+              <span className="text-stone-900"><CheckDisc size={14} /></span> early access, invite only
             </p>
             <h1 className="font-display text-5xl font-extrabold leading-[0.95] sm:text-6xl lg:text-7xl">check it on you before you wear it.</h1>
             <p className="max-w-xl text-lg leading-relaxed text-stone-600">
@@ -110,14 +164,10 @@ export default function Home() {
         {/* Verdicts */}
         <section className="border-y border-line bg-card">
           <div className="mx-auto grid max-w-6xl gap-6 px-5 py-10 sm:grid-cols-3">
-            {[
-              { chip: "✓ works on you", tone: "works" as const, body: "The colors, fabric and shape all suit you. Wear it with confidence." },
-              { chip: "◐ almost", tone: "almost" as const, body: "Close. We tell you the one change that turns it into a yes." },
-              { chip: "✕ not for you", tone: "not" as const, body: "It fights your coloring or your style, and we show you better options you already own." },
-            ].map((v) => (
-              <div key={v.chip} className="space-y-2">
+            {VERDICTS.map((v) => (
+              <div key={v.word} className="space-y-2">
                 <Chip tone={v.tone} size="md">
-                  {v.chip}
+                  <VerdictLabel glyph={v.glyph} word={v.word} />
                 </Chip>
                 <p className="text-stone-600">{v.body}</p>
               </div>
@@ -140,20 +190,23 @@ export default function Home() {
         </section>
 
         {/* Stat band */}
-        <section className="bg-stone-900 text-stone-50">
+        {/* Ink and fixed Linen, not the stone scale (which inverts); raised in dark mode so the band still reads against the Night page. */}
+        <section className="bg-ink text-[#fbf7f2] dark:bg-raised">
           <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-20 md:grid-cols-2">
             <div className="space-y-4">
-              <p className="text-sm font-semibold uppercase tracking-wider text-stone-300">more from what you own</p>
+              <p className="text-sm font-semibold uppercase tracking-wider text-[#fbf7f2]/80">more from what you own</p>
               <p className="font-display text-6xl font-extrabold leading-[0.95] sm:text-7xl">
                 23 pieces
                 <br />= 30 outfits
               </p>
-              <p className="max-w-md text-lg text-stone-300">From one real closet, across five typical days. Most people own far more outfits than they wear. Valette finds them, checks each one against your colors, and rotates them so nothing gets forgotten.</p>
+              <p className="max-w-md text-lg text-[#fbf7f2]/80">From one real closet, across five typical days. Most people own far more outfits than they wear. Valette finds them, checks each one against your colors, and rotates them so nothing gets forgotten.</p>
             </div>
             <ul className="grid gap-3 text-lg">
               {["More outfits. Fewer second guesses.", "Only buy what works on you.", "Every skin tone, every gender, every budget."].map((t) => (
-                <li key={t} className="flex items-center gap-3 rounded-2xl bg-stone-50/10 px-5 py-4 font-semibold">
-                  <span className="text-emerald-700"><CheckDisc size={22} /></span>
+                <li key={t} className="flex items-center gap-3 rounded-2xl bg-[#fbf7f2]/10 px-5 py-4 font-semibold">
+                  <span aria-hidden="true" className="grid size-6 shrink-0 place-items-center rounded-full text-sm ring-[1.5px] ring-[#fbf7f2]/70">
+                    ✓
+                  </span>
                   {t}
                 </li>
               ))}
@@ -165,15 +218,15 @@ export default function Home() {
         <section className="mx-auto max-w-6xl px-5 py-20">
           <h2 className="font-display text-4xl font-extrabold sm:text-5xl">a stylist in your pocket</h2>
           <p className="mt-3 max-w-2xl text-lg text-stone-600">Everything starts with your colors, so every suggestion is made for you, not for a trend.</p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
-              <Card as="article" key={f.name} pad="lg" className="space-y-3">
-                <span aria-hidden="true" className={"block h-2 w-14 rounded-full " + f.tone} />
-                <h3 className="font-display text-xl font-bold">{f.name}</h3>
-                <p className="leading-relaxed text-stone-600">{f.body}</p>
-              </Card>
+          <LeadFeatures />
+          <ul className="mt-12 grid gap-x-10 border-t border-line-strong sm:grid-cols-2">
+            {MORE_FEATURES.map((f) => (
+              <li key={f.name} className="border-b border-line py-4">
+                <h3 className="font-display text-lg font-bold leading-snug">{f.name}</h3>
+                <p className="mt-1 leading-relaxed text-stone-600">{f.body}</p>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
 
         {/* FAQ */}
