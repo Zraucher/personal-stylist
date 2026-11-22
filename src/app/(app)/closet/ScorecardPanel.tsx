@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { markBenchmark, recordAgreement } from "./scorecard-actions";
+import { Button, Card, Chip, ChipButton, ChipGroup, CheckTick, Field, Notice, SectionTitle, Textarea, type ChipTone } from "@/components/ui";
 
 type Status = "good" | "ok" | "caution" | "fail" | "unknown";
 type Criterion = { status: Status; reason: string };
@@ -43,10 +44,18 @@ const DOT: Record<Status, string> = {
   unknown: "bg-stone-300",
 };
 
-const VERDICT: Record<ScorecardRow["verdict"], { label: string; cls: string }> = {
-  keep: { label: "✓ works on you", cls: "bg-emerald-700 text-white" },
-  cut: { label: "✕ not for you", cls: "bg-red-700 text-white" },
-  provisional: { label: "◐ almost", cls: "bg-amber-500 text-stone-900" },
+const STATUS_WORD: Record<Status, string> = {
+  good: "good",
+  ok: "okay",
+  caution: "caution",
+  fail: "fails",
+  unknown: "not checked",
+};
+
+const VERDICT: Record<ScorecardRow["verdict"], { label: string; tone: ChipTone }> = {
+  keep: { label: "✓ works on you", tone: "works" },
+  cut: { label: "✕ not for you", tone: "not" },
+  provisional: { label: "◐ almost", tone: "almost" },
 };
 
 const ERRORS: Record<string, string> = {
@@ -68,6 +77,8 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
   const [benchWhy, setBenchWhy] = useState("");
   const [benchSaved, setBenchSaved] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // True once a verdict lands from a run in this visit, so the check tick draws once.
+  const [justScored, setJustScored] = useState(false);
   const started = useRef(false);
 
   const run = async () => {
@@ -82,7 +93,10 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
         body: JSON.stringify({ itemId }),
       });
       const body = (await res.json().catch(() => ({}))) as { scorecard?: ScorecardRow; error?: string };
-      if (res.ok && body.scorecard) setCard(body.scorecard);
+      if (res.ok && body.scorecard) {
+        setCard(body.scorecard);
+        setJustScored(true);
+      }
       else setError(ERRORS[body.error ?? ""] ?? "The review failed. Try again.");
     } catch {
       setError("The review failed. Check your connection and try again.");
@@ -129,51 +143,64 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
   };
 
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-stone-500">Scorecard</h2>
-        <button
-          type="button"
-          onClick={run}
-          disabled={running}
-          className="text-sm text-stone-600 underline-offset-2 hover:underline disabled:opacity-60"
-        >
-          {running ? "Reviewing…" : card ? "Re-run" : "Review this piece"}
-        </button>
-      </div>
+    <Card as="section" aria-label="Scorecard" className="space-y-3">
+      <SectionTitle
+        action={
+          <Button type="button" variant={card ? "quiet" : "secondary"} size="sm" onClick={run} disabled={running} aria-busy={running || undefined}>
+            {running ? "Reviewing…" : card ? "Re-run" : "Review this piece"}
+          </Button>
+        }
+      >
+        Scorecard
+      </SectionTitle>
 
       {!card && !running && (
-        <p className="mt-2 text-sm text-stone-600">
+        <p className="text-sm text-stone-600">
           {hasImage
             ? "Four checks against your palette, fabrics, shapes and vibe, then a keep or cut."
             : "No photo yet, so a verdict would only be provisional. Add a photo first for a real review."}
         </p>
       )}
-      {running && <p className="mt-2 text-sm text-stone-500">Looking at the photo and your profile. Ten seconds or so.</p>}
+      {running && (
+        <p role="status" aria-live="polite" className="text-sm text-stone-500">
+          Looking at the photo and your profile. Ten seconds or so.
+        </p>
+      )}
 
       {card && !running && (
-        <div className="mt-3 space-y-3">
-          <div className="flex items-start gap-3">
-            <span className={"shrink-0 rounded-full px-3 py-1 text-sm font-medium " + VERDICT[card.verdict].cls}>
-              {VERDICT[card.verdict].label}
-            </span>
-            <p className="text-sm text-stone-700">{card.headline}</p>
+        <div className="space-y-3">
+          <div role="status" aria-live="polite" className="flex flex-wrap items-start gap-x-3 gap-y-2">
+            <Chip tone={VERDICT[card.verdict].tone} size="md" className="shrink-0">
+              {justScored && card.verdict === "keep" ? (
+                <>
+                  <CheckTick className="text-emerald-900" />
+                  works on you
+                </>
+              ) : (
+                VERDICT[card.verdict].label
+              )}
+            </Chip>
+            <p className="min-w-0 flex-1 text-sm leading-relaxed text-stone-700">{card.headline}</p>
           </div>
 
-          <ul className="divide-y divide-stone-100 rounded-lg border border-stone-100">
+          <ul className="divide-y divide-line">
             {ROWS.map(([key, label]) => {
               const c = card.scores[key];
+              const st = c?.status ?? "unknown";
               return (
-                <li key={key} className="flex gap-3 px-3 py-2 text-sm">
-                  <span className={"mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full " + DOT[c?.status ?? "unknown"]} />
-                  <span className="w-20 shrink-0 text-stone-500">{label}</span>
+                <li key={key} className="flex gap-3 py-2.5 text-sm">
+                  <span aria-hidden="true" className={"mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full " + DOT[st]} />
+                  <span className="w-20 shrink-0 text-stone-500">
+                    {label}
+                    <span className="sr-only">: {STATUS_WORD[st]}.</span>
+                  </span>
                   <span className="text-stone-800">{c?.reason ?? "Not checked."}</span>
                 </li>
               );
             })}
             {card.tailoring_needed && (
-              <li className="flex gap-3 px-3 py-2 text-sm">
-                <span className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+              <li className="flex gap-3 py-2.5 text-sm">
+                <span aria-hidden="true" className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
                 <span className="w-20 shrink-0 text-stone-500">Tailoring</span>
                 <span className="text-stone-800">{card.tailoring_note ?? "Needs tailoring."}</span>
               </li>
@@ -181,51 +208,26 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
           </ul>
 
           {card.verdict !== "provisional" && (
-            <div>
-              <p className="text-sm text-stone-500">
+            <div className="space-y-2 border-t border-line pt-3">
+              <p role="status" aria-live="polite" className="text-sm text-stone-500">
                 {answer ? (answer === "agree" ? "You agreed with this verdict." : "You disagreed. That is logged.") : "Do you agree?"}
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => answerNow(true)}
-                  className={
-                    "rounded-lg border px-3 py-1.5 text-sm " +
-                    (answer === "agree" ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white hover:border-stone-500")
-                  }
-                >
+              <ChipGroup label="Do you agree with this verdict?">
+                <ChipButton selected={answer === "agree"} disabled={pending} onClick={() => answerNow(true)}>
                   Agree
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => setDisagreeOpen((v) => !v)}
-                  className={
-                    "rounded-lg border px-3 py-1.5 text-sm " +
-                    (answer === "disagree" ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white hover:border-stone-500")
-                  }
-                >
+                </ChipButton>
+                <ChipButton selected={answer === "disagree"} disabled={pending} aria-expanded={disagreeOpen} onClick={() => setDisagreeOpen((v) => !v)}>
                   Disagree
-                </button>
-              </div>
+                </ChipButton>
+              </ChipGroup>
               {disagreeOpen && (
-                <div className="mt-2 space-y-2">
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    rows={2}
-                    placeholder="What did it get wrong? (optional, but this is what teaches it)"
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                  />
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => answerNow(false, note)}
-                    className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
-                  >
+                <div className="space-y-2">
+                  <Field label="What did it get wrong?" hint="Optional, but this is what teaches it.">
+                    <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="What did it get wrong? (optional, but this is what teaches it)" />
+                  </Field>
+                  <Button type="button" size="sm" disabled={pending} onClick={() => answerNow(false, note)}>
                     Log disagreement
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -233,41 +235,42 @@ export default function ScorecardPanel({ itemId, hasImage, initial, initialAnswe
         </div>
       )}
 
-      {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+      {error && <Notice tone="error">{error}</Notice>}
 
       {hasImage && !nextHref && (
-        <div className="mt-4 border-t border-stone-100 pt-3">
+        <div className="space-y-2 border-t border-line pt-3">
           <p className="text-sm text-stone-500">Teach it with this piece</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" onClick={() => setBenchOpen("positive")} className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:border-stone-500">
+          <ChipGroup label="Teach it with this piece">
+            <ChipButton selected={benchOpen === "positive"} onClick={() => setBenchOpen("positive")}>
               Proven look
-            </button>
-            <button type="button" onClick={() => setBenchOpen("negative")} className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm hover:border-stone-500">
+            </ChipButton>
+            <ChipButton selected={benchOpen === "negative"} onClick={() => setBenchOpen("negative")}>
               Known failure
-            </button>
-          </div>
+            </ChipButton>
+          </ChipGroup>
           {benchOpen && (
-            <div className="mt-2 space-y-2">
-              <textarea
-                value={benchWhy}
-                onChange={(e) => setBenchWhy(e.target.value)}
-                rows={2}
-                placeholder={benchOpen === "positive" ? "Why does this work for you?" : "Why did this fail? (for example: passed every rule but felt wrong)"}
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
-              <button
-                type="button"
-                disabled={pending}
-                onClick={saveBenchmark}
-                className="rounded-lg bg-stone-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
-              >
+            <div className="space-y-2">
+              <Field label={benchOpen === "positive" ? "Why does this work for you?" : "Why did this fail?"}>
+                <Textarea
+                  value={benchWhy}
+                  onChange={(e) => setBenchWhy(e.target.value)}
+                  rows={2}
+                  placeholder={benchOpen === "positive" ? "Why does this work for you?" : "Why did this fail? (for example: passed every rule but felt wrong)"}
+                />
+              </Field>
+              <Button type="button" size="sm" disabled={pending} onClick={saveBenchmark}>
                 Save
-              </button>
+              </Button>
             </div>
           )}
-          {benchSaved && <p className="mt-2 text-sm text-emerald-700">{benchSaved}</p>}
+          {benchSaved && (
+            <p role="status" aria-live="polite" className="text-sm text-stone-700">
+              <span aria-hidden="true">✓ </span>
+              {benchSaved}
+            </p>
+          )}
         </div>
       )}
-    </section>
+    </Card>
   );
 }

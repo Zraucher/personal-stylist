@@ -1,18 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Wordmark from "@/components/Wordmark";
+import { ButtonLink } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Privacy · valette" };
 
 // Plain-language summary of how the app handles data. Have it reviewed before a public launch.
 export default function PrivacyPage() {
   return (
-    <div className="min-h-dvh bg-stone-50 text-stone-900">
+    <div className="min-h-dvh bg-ground text-stone-900">
       <header className="mx-auto flex max-w-3xl items-center justify-between px-5 py-5">
-        <Link href="/" aria-label="valette home">
+        <Link href="/" aria-label="valette home" className="rounded-full">
           <Wordmark size={24} />
         </Link>
-        <Link href="/login" className="text-sm font-semibold text-stone-600 hover:text-stone-900">Sign in</Link>
+        <ButtonLink href="/login" variant="secondary" size="sm">
+          Sign in
+        </ButtonLink>
       </header>
       <main className="mx-auto max-w-3xl space-y-8 px-5 pb-20 pt-6 leading-relaxed">
         <div className="space-y-2">

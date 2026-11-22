@@ -1,20 +1,21 @@
 "use client";
 
 import { useTransition } from "react";
+import { ConfirmButton } from "@/components/ui";
 import { deleteOutfit } from "./actions";
 
 export default function DeleteOutfitButton({ id }: { id: string }) {
   const [pending, start] = useTransition();
   return (
-    <button
-      type="button"
+    <ConfirmButton
+      title="Delete this outfit?"
+      body="The pieces stay in your closet."
+      variant="danger"
+      size="sm"
       disabled={pending}
-      onClick={() => {
-        if (confirm("Delete this outfit? The pieces stay in your closet.")) start(async () => void (await deleteOutfit(id)));
-      }}
-      className="text-xs text-stone-500 hover:text-red-700 disabled:opacity-50"
+      onConfirm={() => start(async () => void (await deleteOutfit(id)))}
     >
-      {pending ? "Deleting" : "Delete"}
-    </button>
+      <span aria-live="polite">{pending ? "Deleting" : "Delete"}</span>
+    </ConfirmButton>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { BASICS, type Basic, type Presentation } from "@/lib/closet/basics";
 import { CATEGORIES, CATEGORY_LABELS } from "@/lib/closet/taxonomy";
 import { toggleBasic, updateBasicDetails } from "../actions";
+import { Button, Input, Notice, Swatch } from "@/components/ui";
 
 export type OwnedInfo = { brand: string | null };
 type Props = { defaultTab: Presentation; showTabs: boolean; owned: Record<string, OwnedInfo> };
@@ -46,13 +47,17 @@ export default function BasicsList({ defaultTab, showTabs, owned: initialOwned }
   return (
     <div className="space-y-4">
       {showTabs && (
-        <div className="flex gap-1 rounded-lg border border-stone-200 bg-white p-1 text-sm">
+        <div role="group" aria-label="Basics list" className="flex gap-1 rounded-full bg-inset p-1 text-sm">
           {(["womens", "mens"] as const).map((p) => (
             <button
               key={p}
               type="button"
               onClick={() => setTab(p)}
-              className={"flex-1 rounded-md py-1.5 " + (tab === p ? "bg-stone-900 text-white" : "text-stone-600 hover:bg-stone-100")}
+              aria-pressed={tab === p}
+              className={
+                "tap min-h-9 flex-1 rounded-full font-medium transition-colors duration-200 ease-soft " +
+                (tab === p ? "bg-card text-stone-900 shadow-active" : "text-stone-600 hover:text-stone-900")
+              }
             >
               {p === "womens" ? "Women's" : "Men's"}
             </button>
@@ -60,49 +65,47 @@ export default function BasicsList({ defaultTab, showTabs, owned: initialOwned }
         </div>
       )}
 
-      <p className="text-sm text-stone-500">
+      <p role="status" aria-live="polite" className="text-sm tabular-nums text-stone-500">
         {ownedHere} of {list.length} ticked
       </p>
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <Notice tone="error">{error}</Notice>}
 
       {groups.map(([category, items]) => (
-        <section key={category} className="rounded-xl border border-stone-200 bg-white">
-          <h2 className="border-b border-stone-100 px-4 py-2 text-sm font-medium text-stone-500">{CATEGORY_LABELS[category]}</h2>
-          <ul className="divide-y divide-stone-100">
+        <section key={category} aria-labelledby={`basics-${category}`} className="space-y-2">
+          <h2 id={`basics-${category}`} className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-700">
+            {CATEGORY_LABELS[category]}
+          </h2>
+          <ul className="divide-y divide-line overflow-hidden rounded-card bg-card ring-1 ring-line">
             {items.map((b) => {
               const info = owned[b.id];
               const on = !!info;
               return (
                 <li key={b.id}>
-                  <div className="flex items-center hover:bg-stone-50">
-                    <button
-                      type="button"
-                      onClick={() => toggle(b)}
-                      className="flex flex-1 items-center gap-3 px-4 py-3 text-left"
-                      aria-pressed={on}
-                    >
+                  <div className="flex items-center transition-colors duration-200 ease-soft hover:bg-inset/60">
+                    <button type="button" onClick={() => toggle(b)} className="flex min-h-12 flex-1 items-center gap-3 px-4 py-3 text-left" aria-pressed={on}>
                       <span
+                        aria-hidden="true"
                         className={
-                          "flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs " +
-                          (on ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white")
+                          "flex size-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] text-xs transition-colors duration-150 ease-soft " +
+                          (on ? "border-stone-900 bg-stone-900 text-stone-50" : "border-stone-400 bg-card")
                         }
                       >
                         {on ? "✓" : ""}
                       </span>
-                      <span className="flex-1 text-sm">
+                      <span className="min-w-0 flex-1 text-[15px]">
                         {b.name}
-                        {info?.brand && <span className="ml-2 text-stone-500">{info.brand}</span>}
+                        {info?.brand && <span className="ml-2 text-sm text-stone-500">{info.brand}</span>}
                       </span>
-                      <span className="flex gap-1">
+                      <span className="flex shrink-0 gap-1">
                         {b.colors.map((c, i) => (
-                          <span key={i} className="h-3 w-3 rounded-full border border-stone-300" style={{ background: c.hex ?? "transparent" }} />
+                          <Swatch key={i} hex={c.hex} name={c.name} />
                         ))}
                       </span>
                     </button>
                     {on && open !== b.id && !info.brand && (
-                      <button type="button" onClick={() => setOpen(b.id)} className="mr-4 shrink-0 text-xs text-amber-800 underline">
+                      <Button type="button" variant="quiet" size="sm" className="mr-2 shrink-0" onClick={() => setOpen(b.id)}>
                         Add brand &amp; color
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {on && open === b.id && (
@@ -145,37 +148,29 @@ function BasicDetailsForm({ basic, onDone }: { basic: Basic; onDone: (savedBrand
   };
 
   return (
-    <div className="space-y-2 border-t border-stone-100 bg-stone-50 px-4 py-3">
+    <div className="space-y-3 bg-inset/60 px-4 py-3">
       <p className="text-xs text-stone-500">What brand and color is yours? A photo can come later.</p>
       <div className="flex flex-wrap items-center gap-2">
-        <input
-          value={brand}
-          onChange={(e) => setBrand(e.target.value)}
-          placeholder="Brand (Nike, Uniqlo…)"
-          className="min-w-0 flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-        />
+        <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Brand (Nike, Uniqlo…)" aria-label={`Brand of your ${basic.name}`} className="min-w-0 flex-1" />
         <input
           type="color"
           value={colorHex}
           onChange={(e) => setColorHex(e.target.value)}
           aria-label="Color swatch"
-          className="h-9 w-9 shrink-0 cursor-pointer rounded border border-stone-300 bg-white p-0.5"
+          className="size-11 shrink-0 cursor-pointer rounded-control border border-stone-400/70 bg-inset p-1"
         />
-        <input
-          value={colorName}
-          onChange={(e) => setColorName(e.target.value)}
-          placeholder="Color name"
-          className="w-32 rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-        />
+        <div className="w-32">
+          <Input value={colorName} onChange={(e) => setColorName(e.target.value)} placeholder="Color name" aria-label="Color name" />
+        </div>
       </div>
-      {error && <p className="text-xs text-red-700">{error}</p>}
-      <div className="flex gap-3 text-sm">
-        <button type="button" onClick={save} disabled={pending} className="rounded-lg bg-stone-900 px-3 py-1.5 text-white disabled:opacity-60">
+      {error && <Notice tone="error">{error}</Notice>}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" size="sm" onClick={save} disabled={pending} aria-busy={pending || undefined}>
           {pending ? "Saving…" : "Save"}
-        </button>
-        <button type="button" onClick={() => onDone(null)} className="text-stone-500 underline">
+        </Button>
+        <Button type="button" variant="quiet" size="sm" onClick={() => onDone(null)}>
           Skip for now
-        </button>
+        </Button>
       </div>
     </div>
   );

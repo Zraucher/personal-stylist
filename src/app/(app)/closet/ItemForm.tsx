@@ -6,6 +6,7 @@ import { saveItem, setItemPhoto, type ItemInput } from "./actions";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/closet/compress";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
+import { Button, Card, Chip, ChipButton, ChipGroup, Field, Input, Notice, Select, Thumb } from "@/components/ui";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -258,12 +259,12 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
   const subs = SUBCATEGORIES[v.category] ?? [];
 
   return (
-    <div className={"relative space-y-6 " + (dragging ? "rounded-xl ring-2 ring-stone-900 ring-offset-8" : "")} {...dropProps}>
+    <div className={"relative space-y-4 " + (dragging ? "rounded-card ring-2 ring-stone-900 ring-offset-8 ring-offset-ground" : "")} {...dropProps}>
       {dragging && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center rounded-xl bg-stone-900/10 pt-10">
-          <span className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center rounded-card bg-stone-900/10 pt-10">
+          <Chip tone="overlay" size="md">
             Drop to {imagePath ? "replace the" : "add a"} photo
-          </span>
+          </Chip>
         </div>
       )}
       <input
@@ -271,105 +272,86 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
         type="file"
         accept="image/*"
         className="hidden"
+        tabIndex={-1}
+        aria-hidden="true"
         onChange={(e) => {
           void attachPhoto(e.target.files?.[0]);
           e.target.value = "";
         }}
       />
-      <div className="flex gap-4">
-        <button
-          type="button"
-          onClick={() => fileRef.current?.click()}
-          disabled={uploading}
-          title="Click, drop an image, or paste one"
-          className="relative block h-36 w-36 shrink-0 overflow-hidden rounded-xl border border-dashed border-stone-300 bg-white"
-        >
-          {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <span className="flex h-full flex-col items-center justify-center gap-1 px-2 text-center text-xs text-stone-400">
-              <span>No photo</span>
-              <span className="text-stone-500">Drop, paste or click to add</span>
-            </span>
-          )}
-          {(uploading || imageUrl) && (
-            <span className="absolute inset-x-0 bottom-0 bg-stone-900/70 py-1 text-center text-[11px] text-white">
-              {uploading ? "Uploading…" : "Replace"}
-            </span>
-          )}
-        </button>
-        <div className="flex-1 space-y-2">
-          <label className="block text-sm">
-            <span className="text-stone-500">Name</span>
-            <input
-              value={v.name}
-              onChange={(e) => set("name", e.target.value)}
-              placeholder="Olive linen camp-collar shirt"
-              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base outline-none focus:border-stone-900"
+      <Card className="flex gap-4">
+        <div className="w-28 shrink-0 space-y-1.5 sm:w-32">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            title="Click, drop an image, or paste one"
+            aria-label={imageUrl ? "Replace photo" : "Add photo"}
+            aria-busy={uploading || undefined}
+            className="block w-full rounded-thumb transition-transform duration-200 ease-soft active:scale-[0.98] disabled:opacity-70"
+          >
+            <Thumb
+              src={imageUrl}
+              alt=""
+              item={{ category: v.category, subcategory: v.subcategory, colors: v.colors }}
+              size="fill"
+              badge={
+                <Chip tone="overlay" className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                  {uploading ? "Uploading…" : imageUrl ? "Replace" : "Add photo"}
+                </Chip>
+              }
             />
-          </label>
-          {imagePath && (
-            <button
-              type="button"
-              onClick={retag}
-              disabled={retagging}
-              className="text-sm text-stone-600 underline-offset-2 hover:underline disabled:opacity-60"
-            >
-              {retagging ? "Reading photo…" : "Re-run auto tags"}
-            </button>
-          )}
-          {note && <p className="text-xs text-stone-500">{note}</p>}
+          </button>
+          {!imageUrl && <p className="text-center text-xs text-stone-500">Drop, paste or click to add</p>}
         </div>
-      </div>
+        <div className="min-w-0 flex-1 space-y-2">
+          <Field label="Name">
+            <Input value={v.name} onChange={(e) => set("name", e.target.value)} placeholder="Olive linen camp-collar shirt" />
+          </Field>
+          {imagePath && (
+            <Button type="button" variant="quiet" size="sm" className="-ml-3.5" onClick={retag} disabled={retagging} aria-busy={retagging || undefined}>
+              {retagging ? "Reading photo…" : "Re-run auto tags"}
+            </Button>
+          )}
+          {note && (
+            <p role="status" aria-live="polite" className="text-xs text-stone-500">
+              {note}
+            </p>
+          )}
+        </div>
+      </Card>
 
       <Section title="What it is">
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block text-sm">
-            <span className="text-stone-500">Category</span>
-            <select
-              value={v.category}
-              onChange={(e) => set("category", e.target.value as Category)}
-              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base"
-            >
+        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
+          <Field label="Category">
+            <Select value={v.category} onChange={(e) => set("category", e.target.value as Category)}>
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {CATEGORY_LABELS[c]}
                 </option>
               ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            <span className="text-stone-500">Type</span>
-            <input
-              list="subcategories"
-              value={v.subcategory}
-              onChange={(e) => set("subcategory", e.target.value)}
-              placeholder={subs[0] ?? ""}
-              className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base"
-            />
+            </Select>
+          </Field>
+          <Field label="Type">
+            <Input list="subcategories" value={v.subcategory} onChange={(e) => set("subcategory", e.target.value)} placeholder={subs[0] ?? ""} />
             <datalist id="subcategories">
               {subs.map((s) => (
                 <option key={s} value={s} />
               ))}
             </datalist>
-          </label>
-          <label className="block text-sm">
-            <span className="text-stone-500">Brand</span>
-            <input value={v.brand} onChange={(e) => set("brand", e.target.value)} className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base" />
-          </label>
-          <label className="block text-sm">
-            <span className="text-stone-500">Size</span>
-            <input value={v.size} onChange={(e) => set("size", e.target.value)} className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base" />
-          </label>
-          <label className="block text-sm">
-            <span className="text-stone-500">Material</span>
-            <input value={v.material} onChange={(e) => set("material", e.target.value)} placeholder="silk, linen, performance knit" className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base" />
-          </label>
-          <label className="block text-sm">
-            <span className="text-stone-500">Pattern</span>
-            <input value={v.pattern} onChange={(e) => set("pattern", e.target.value)} placeholder="solid, stripe, gingham" className="mt-1 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base" />
-          </label>
+          </Field>
+          <Field label="Brand">
+            <Input value={v.brand} onChange={(e) => set("brand", e.target.value)} />
+          </Field>
+          <Field label="Size">
+            <Input value={v.size} onChange={(e) => set("size", e.target.value)} />
+          </Field>
+          <Field label="Material">
+            <Input value={v.material} onChange={(e) => set("material", e.target.value)} placeholder="silk, linen, performance knit" />
+          </Field>
+          <Field label="Pattern">
+            <Input value={v.pattern} onChange={(e) => set("pattern", e.target.value)} placeholder="solid, stripe, gingham" />
+          </Field>
         </div>
       </Section>
 
@@ -381,84 +363,82 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
                 type="color"
                 value={c.hex ?? "#888888"}
                 onChange={(e) => set("colors", v.colors.map((x, j) => (j === i ? { ...x, hex: e.target.value } : x)))}
-                className="h-9 w-9 cursor-pointer rounded border border-stone-300 bg-white p-0.5"
-                aria-label="Swatch"
+                className="size-11 shrink-0 cursor-pointer rounded-control border border-stone-400/70 bg-inset p-1"
+                aria-label={`Swatch for color ${i + 1}`}
               />
-              <input
+              <Input
                 value={c.name}
                 onChange={(e) => set("colors", v.colors.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
                 placeholder="olive"
-                className="flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-base"
+                aria-label={`Name of color ${i + 1}`}
+                className="min-w-0 flex-1"
               />
-              <button type="button" onClick={() => set("colors", v.colors.filter((_, j) => j !== i))} className="px-2 text-stone-500 hover:text-stone-900" aria-label="Remove color">
-                ×
+              <button
+                type="button"
+                onClick={() => set("colors", v.colors.filter((_, j) => j !== i))}
+                className="tap inline-flex size-9 shrink-0 items-center justify-center rounded-full text-lg text-stone-500 transition-colors duration-200 ease-soft hover:bg-stone-900/[0.06] hover:text-stone-900"
+                aria-label={`Remove color ${c.name || i + 1}`}
+              >
+                <span aria-hidden="true">×</span>
               </button>
             </div>
           ))}
           {v.colors.length < 6 && (
-            <button type="button" onClick={() => set("colors", [...v.colors, { name: "", hex: "#888888" }])} className="text-sm text-stone-600 underline-offset-2 hover:underline">
-              + Add color
-            </button>
+            <Button type="button" variant="quiet" size="sm" className="-ml-3.5" onClick={() => set("colors", [...v.colors, { name: "", hex: "#888888" }])}>
+              <span aria-hidden="true">+</span> Add color
+            </Button>
           )}
         </div>
       </Section>
 
       <Section title="Construction" hint="Visible details. These are what your dislikes list checks against.">
-        <div className="flex flex-wrap gap-2">
+        <ChipGroup label="Construction details">
           {CONSTRUCTION.map((c) => (
-            <Chip key={c} active={v.construction.includes(c)} onClick={() => toggleIn("construction", c)}>
+            <ChipButton key={c} selected={v.construction.includes(c)} onClick={() => toggleIn("construction", c)}>
               {c}
-            </Chip>
+            </ChipButton>
           ))}
-        </div>
+        </ChipGroup>
       </Section>
 
       <Section title="When to wear it">
-        <div className="space-y-3">
+        <div className="space-y-4">
           <Scale label="Formality" value={v.formality} labels={FORMALITY_LABELS} onChange={(n) => set("formality", n)} />
           <Scale label="Warmth" value={v.warmth} labels={WARMTH_LABELS} onChange={(n) => set("warmth", n)} />
-          <div>
-            <span className="text-sm text-stone-500">Seasons</span>
-            <div className="mt-1 flex flex-wrap gap-2">
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium text-stone-700">Seasons</p>
+            <ChipGroup label="Seasons">
               {SEASONS.map((s) => (
-                <Chip key={s} active={v.seasons.includes(s)} onClick={() => toggleIn("seasons", s)}>
+                <ChipButton key={s} selected={v.seasons.includes(s)} onClick={() => toggleIn("seasons", s)}>
                   {s}
-                </Chip>
+                </ChipButton>
               ))}
-            </div>
+            </ChipGroup>
           </div>
         </div>
       </Section>
 
       <Section title="Status">
-        <div className="flex flex-wrap gap-2">
+        <ChipGroup label="Status">
           {STATUSES.map((s) => (
-            <Chip key={s} active={v.status === s} onClick={() => set("status", s)}>
+            <ChipButton key={s} selected={v.status === s} onClick={() => set("status", s)}>
               {STATUS_LABELS[s]}
-            </Chip>
+            </ChipButton>
           ))}
-        </div>
+        </ChipGroup>
         {v.status === "tailoring" && (
-          <input
-            value={v.tailoring_note}
-            onChange={(e) => set("tailoring_note", e.target.value)}
-            placeholder="What needs doing"
-            className="mt-3 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base"
-          />
+          <Field label="What needs doing" srOnly className="mt-3">
+            <Input value={v.tailoring_note} onChange={(e) => set("tailoring_note", e.target.value)} placeholder="What needs doing" />
+          </Field>
         )}
       </Section>
 
-      {error && <p className="text-sm text-red-700">{error}</p>}
+      {error && <Notice tone="error">{error}</Notice>}
 
-      <div className="sticky bottom-0 -mx-4 border-t border-stone-200 bg-stone-50/95 px-4 py-3 backdrop-blur">
-        <button
-          type="button"
-          onClick={submit}
-          disabled={pending}
-          className="w-full rounded-lg bg-stone-900 px-3 py-2.5 text-base font-medium text-white disabled:opacity-60"
-        >
+      <div className="sticky bottom-0 z-10 -mx-4 bg-ground/90 px-4 py-3 shadow-[0_-1px_0_var(--color-line)] backdrop-blur">
+        <Button type="button" variant={itemId ? "secondary" : "primary"} block onClick={submit} disabled={pending} aria-busy={pending || undefined}>
           {pending ? "Saving…" : itemId ? "Save changes" : "Add to closet"}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -466,26 +446,13 @@ export default function ItemForm({ initial, itemId, imagePath: initialPath, imag
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-4">
-      <h2 className="text-sm font-medium text-stone-500">{title}</h2>
-      {hint && <p className="mt-0.5 text-xs text-stone-400">{hint}</p>}
-      <div className="mt-3">{children}</div>
-    </section>
-  );
-}
-
-function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={
-        "rounded-full border px-3 py-1 text-sm transition " +
-        (active ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white text-stone-700 hover:border-stone-500")
-      }
-    >
-      {children}
-    </button>
+    <Card as="section" className="space-y-3">
+      <div>
+        <h2 className="font-display text-lg font-bold leading-snug">{title}</h2>
+        {hint && <p className="mt-0.5 text-xs text-stone-500">{hint}</p>}
+      </div>
+      <div>{children}</div>
+    </Card>
   );
 }
 
@@ -501,20 +468,21 @@ function Scale({
   onChange: (n: number | null) => void;
 }) {
   return (
-    <div>
+    <div className="space-y-1.5">
       <div className="flex items-baseline justify-between">
-        <span className="text-sm text-stone-500">{label}</span>
-        <span className="text-xs text-stone-400">{value ? labels[value] : "Not set"}</span>
+        <span className="text-sm font-medium text-stone-700">{label}</span>
+        <span className="text-xs text-stone-500">{value ? labels[value] : "Not set"}</span>
       </div>
-      <div className="mt-1 grid grid-cols-5 gap-1">
+      <div role="group" aria-label={label} className="grid grid-cols-5 gap-1 rounded-control bg-inset p-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}
             type="button"
             onClick={() => onChange(value === n ? null : n)}
+            aria-pressed={value === n}
             className={
-              "rounded-lg border py-2 text-sm " +
-              (value === n ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white text-stone-700 hover:border-stone-500")
+              "tap min-h-9 rounded-[10px] text-sm font-medium tabular-nums transition-colors duration-200 ease-soft " +
+              (value === n ? "bg-stone-900 text-stone-50" : "text-stone-700 hover:bg-card")
             }
             aria-label={labels[n]}
           >

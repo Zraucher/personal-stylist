@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/closet/compress";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
 import { deleteHaul, deleteHaulItem, setHaulItemStatus } from "../actions";
-import { verdictClass, verdictLabel } from "@/lib/verdict";
+import { verdictLabel } from "@/lib/verdict";
+import { Button, Card, Chip, ChipButton, ConfirmButton, EmptyState, Field, Notice, Swatch, Textarea, Thumb, buttonClass, type ChipTone } from "@/components/ui";
 
 export type HaulItemView = {
   id: string;
@@ -28,6 +29,8 @@ export type HaulItemView = {
 
 type Job = { key: string; label: string; state: "waiting" | "working" | "error"; error?: string };
 
+const VERDICT_TONE: Record<string, ChipTone> = { keep: "works", provisional: "almost", cut: "not" };
+
 const DOT: Record<string, string> = { good: "bg-emerald-600", ok: "bg-emerald-400", caution: "bg-amber-500", fail: "bg-red-600", unknown: "bg-stone-300" };
 
 export default function HaulReview({ haulId, initial }: { haulId: string; initial: HaulItemView[] }) {
@@ -35,7 +38,6 @@ export default function HaulReview({ haulId, initial }: { haulId: string; initia
   const [urls, setUrls] = useState("");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const running = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -147,35 +149,41 @@ export default function HaulReview({ haulId, initial }: { haulId: string; initia
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <section
-        className="space-y-3 rounded-xl border border-stone-200 bg-white p-4"
+        className="space-y-3 rounded-card bg-card p-4 ring-1 ring-line sm:p-5"
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           e.preventDefault();
           addFiles(e.dataTransfer.files);
         }}
       >
-        <textarea
-          value={urls}
-          onChange={(e) => setUrls(e.target.value)}
-          rows={3}
-          placeholder="Paste product links, one per line"
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-base outline-none focus:border-stone-900"
-        />
+        <Field label="Product links" srOnly>
+          <Textarea value={urls} onChange={(e) => setUrls(e.target.value)} rows={3} placeholder="Paste product links, one per line" />
+        </Field>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" onClick={addUrls} className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white">
+          <Button type="button" variant="primary" onClick={addUrls}>
             Review links
-          </button>
-          <button type="button" onClick={() => fileRef.current?.click()} className="rounded-lg border border-stone-300 px-4 py-2 text-sm hover:border-stone-500">
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => fileRef.current?.click()}>
             Upload screenshots
-          </button>
+          </Button>
           <span className="text-xs text-stone-500">or drop or paste screenshots here</span>
-          <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }} />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              addFiles(e.target.files);
+              e.target.value = "";
+            }}
+          />
         </div>
-        {error && <p className="text-sm text-red-700">{error}</p>}
+        {error && <Notice tone="error">{error}</Notice>}
         {jobs.length > 0 && (
-          <ul className="space-y-1 text-sm">
+          <ul role="status" aria-live="polite" className="space-y-1 text-sm">
             {jobs.map((j) => (
               <li key={j.key} className={j.state === "error" ? "text-red-700" : "text-stone-600"}>
                 {j.state === "working" ? "Reviewing" : j.state === "waiting" ? "Waiting" : "Failed"}: {j.label}
@@ -186,106 +194,97 @@ export default function HaulReview({ haulId, initial }: { haulId: string; initia
         )}
       </section>
 
-      {items.length === 0 && jobs.length === 0 && (
-        <p className="rounded-xl border border-dashed border-stone-300 bg-white p-6 text-center text-sm text-stone-600">Nothing reviewed yet.</p>
-      )}
+      {items.length === 0 && jobs.length === 0 && <EmptyState compact title="Nothing reviewed yet." />}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {items.map((it) => (
-          <article key={it.id} className="overflow-hidden rounded-xl border border-stone-200 bg-white">
-            <div className="relative aspect-[4/3] bg-stone-100">
-              {it.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={it.imageUrl} alt={it.name} className="h-full w-full object-contain" referrerPolicy="no-referrer" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-stone-400">No photo</div>
-              )}
-              {it.verdict && <span className={"absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold " + verdictClass(it.verdict)}>{verdictLabel(it.verdict)}</span>}
-            </div>
-            <div className="space-y-2 p-3">
-              <div>
-                <p className="font-medium leading-tight">{it.name}</p>
-                <p className="text-xs text-stone-500">
-                  {[it.brand, it.price != null ? (it.currency && it.currency !== "USD" ? `${it.currency} ${it.price.toFixed(2)}` : `$${it.price.toFixed(2)}`) : null, it.stated ? `listed as ${it.stated}` : null].filter(Boolean).join(" · ")}
-                </p>
+          <Card as="article" key={it.id} className="space-y-3">
+            <div className="flex gap-3">
+              <div className="w-24 shrink-0 sm:w-28">
+                <Thumb src={it.imageUrl} alt={it.name} product />
               </div>
-              {it.headline && <p className="text-sm">{it.headline}</p>}
-              {it.scores && (
-                <ul className="space-y-1 text-xs text-stone-600">
-                  {["palette", "fabric", "silhouette", "vibe"].map((k) =>
-                    it.scores?.[k] ? (
-                      <li key={k} className="flex gap-2">
-                        <span className={"mt-1 h-2 w-2 shrink-0 rounded-full " + (DOT[it.scores[k].status] ?? DOT.unknown)} />
-                        <span>
-                          <b className="font-medium capitalize">{k}:</b> {it.scores[k].reason}
-                        </span>
-                      </li>
-                    ) : null
-                  )}
-                </ul>
-              )}
-              {it.colors.length > 0 && (
-                <div className="flex flex-wrap items-center gap-1 text-xs text-stone-500">
-                  Photo reads:
-                  {it.colors.map((c, i) => (
-                    <span key={i} className="flex items-center gap-1">
-                      <span className="h-3 w-3 rounded-full border border-stone-300" style={{ background: c.hex ?? "transparent" }} />
-                      {c.name}
-                    </span>
-                  ))}
+              <div className="min-w-0 flex-1 space-y-2">
+                {it.verdict && <Chip tone={VERDICT_TONE[it.verdict] ?? "neutral"}>{verdictLabel(it.verdict)}</Chip>}
+                <div>
+                  <p className="font-display text-lg font-bold leading-snug">{it.name}</p>
+                  <p className="text-xs tabular-nums text-stone-500">
+                    {[it.brand, it.price != null ? (it.currency && it.currency !== "USD" ? `${it.currency} ${it.price.toFixed(2)}` : `$${it.price.toFixed(2)}`) : null, it.stated ? `listed as ${it.stated}` : null].filter(Boolean).join(" · ")}
+                  </p>
                 </div>
-              )}
-              {it.tailoring && <p className="text-xs text-amber-800">Tailoring: {it.tailoring}</p>}
-              <div className="flex flex-wrap gap-2 pt-1 text-xs">
-                {it.status === "purchased" ? (
-                  <span className="rounded-full bg-emerald-100 px-2 py-1 text-emerald-900">
-                    Bought{it.closetId && <> · <Link href={`/closet/${it.closetId}`} className="underline">in closet</Link></>}
-                  </span>
-                ) : (
-                  <button type="button" onClick={() => mark(it.id, "purchased")} className="rounded-full border border-stone-300 px-2.5 py-1 hover:border-stone-500">
-                    Bought it
-                  </button>
-                )}
-                {it.status !== "returned" && it.status !== "purchased" && (
-                  <button type="button" onClick={() => mark(it.id, "passed")} className={"rounded-full border px-2.5 py-1 " + (it.status === "passed" ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 hover:border-stone-500")}>
-                    Passed
-                  </button>
-                )}
-                {it.status === "purchased" && (
-                  <button type="button" onClick={() => mark(it.id, "returned")} className="rounded-full border border-stone-300 px-2.5 py-1 hover:border-stone-500">
-                    Returned
-                  </button>
-                )}
-                {it.url && (
-                  <a href={it.url} target="_blank" rel="noreferrer" className="rounded-full border border-stone-300 px-2.5 py-1 hover:border-stone-500">
-                    Product page
-                  </a>
-                )}
-                <button type="button" onClick={() => remove(it.id)} className="ml-auto text-stone-400 hover:text-red-700">
-                  Delete
-                </button>
+                {it.headline && <p className="text-sm">{it.headline}</p>}
               </div>
             </div>
-          </article>
+            {it.scores && (
+              <ul className="space-y-1 text-xs text-stone-600">
+                {["palette", "fabric", "silhouette", "vibe"].map((k) =>
+                  it.scores?.[k] ? (
+                    <li key={k} className="flex gap-2">
+                      <span aria-hidden="true" className={"mt-1 size-2 shrink-0 rounded-full " + (DOT[it.scores[k].status] ?? DOT.unknown)} />
+                      <span>
+                        <b className="font-medium capitalize">{k}:</b> {it.scores[k].reason}
+                      </span>
+                    </li>
+                  ) : null
+                )}
+              </ul>
+            )}
+            {it.colors.length > 0 && (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-stone-500">
+                Photo reads:
+                {it.colors.map((c, i) => (
+                  <span key={i} className="inline-flex items-center gap-1">
+                    <Swatch hex={c.hex} name={c.name} className="size-3" />
+                    {c.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {it.tailoring && <p className="text-xs text-amber-800">Tailoring: {it.tailoring}</p>}
+            <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
+              {it.status === "purchased" ? (
+                <Chip tone="neutral" size="md">
+                  Bought
+                  {it.closetId && (
+                    <>
+                      {" · "}
+                      <Link href={`/closet/${it.closetId}`} className="underline underline-offset-2">
+                        in closet
+                      </Link>
+                    </>
+                  )}
+                </Chip>
+              ) : (
+                <Button type="button" size="sm" onClick={() => mark(it.id, "purchased")}>
+                  Bought it
+                </Button>
+              )}
+              {it.status !== "returned" && it.status !== "purchased" && (
+                <ChipButton selected={it.status === "passed"} onClick={() => mark(it.id, "passed")}>
+                  Passed
+                </ChipButton>
+              )}
+              {it.status === "purchased" && (
+                <Button type="button" size="sm" onClick={() => mark(it.id, "returned")}>
+                  Returned
+                </Button>
+              )}
+              {it.url && (
+                <a href={it.url} target="_blank" rel="noreferrer" className={buttonClass("quiet", "sm")}>
+                  Product page
+                </a>
+              )}
+              <Button type="button" variant="danger" size="sm" onClick={() => remove(it.id)} className="ml-auto">
+                Delete
+              </Button>
+            </div>
+          </Card>
         ))}
       </div>
 
-      <div className="pt-2 text-right text-sm">
-        {confirmDelete ? (
-          <span className="inline-flex items-center gap-2">
-            Delete this haul and its photos?
-            <button type="button" onClick={() => deleteHaul(haulId)} className="rounded-lg bg-red-700 px-3 py-1 text-white">
-              Delete
-            </button>
-            <button type="button" onClick={() => setConfirmDelete(false)} className="text-stone-500 underline">
-              Keep
-            </button>
-          </span>
-        ) : (
-          <button type="button" onClick={() => setConfirmDelete(true)} className="text-stone-500 hover:text-red-700">
-            Delete haul
-          </button>
-        )}
+      <div className="flex justify-end pt-2">
+        <ConfirmButton title="Delete this haul and its photos?" confirmLabel="Delete" cancelLabel="Keep" onConfirm={() => void deleteHaul(haulId)}>
+          Delete haul
+        </ConfirmButton>
       </div>
     </div>
   );

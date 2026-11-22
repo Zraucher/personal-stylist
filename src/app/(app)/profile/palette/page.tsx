@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { resolveColor } from "@/lib/scorecard/rules";
 import ShareCard from "./ShareCard";
+import { ButtonLink, Card, Chip, EmptyState, PageHeader, SectionTitle, Swatch } from "@/components/ui";
 
 export default async function PalettePage() {
   const supabase = await createClient();
@@ -15,45 +16,62 @@ export default async function PalettePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Palette card</h1>
-          <p className="text-sm text-stone-500">{(color?.season_label as string | null) ?? "Your best colors and the ones to use with care."}</p>
-        </div>
-        <Link href="/profile" className="text-sm text-stone-600 hover:text-stone-900">
-          Edit colors
-        </Link>
-      </div>
+      <PageHeader
+        title="Palette card"
+        back={{ href: "/profile", label: "Profile" }}
+        subtitle={(color?.season_label as string | null) ?? "Your best colors and the ones to use with care."}
+        actions={
+          <ButtonLink href="/profile" variant="quiet" size="sm">
+            Edit colors
+          </ButtonLink>
+        }
+      />
 
       {best.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-600">
-          No best colors yet. Add them under Color on the <Link href="/profile" className="underline">Profile</Link> page.
-        </p>
+        <EmptyState
+          compact
+          title="No best colors yet"
+          body={
+            <>
+              No best colors yet. Add them under Color on the{" "}
+              <Link href="/profile" className="font-semibold underline underline-offset-2">
+                Profile
+              </Link>{" "}
+              page.
+            </>
+          }
+        />
       ) : (
         <>
-          <section className="rounded-xl border border-stone-200 bg-white p-4">
-            <h2 className="text-sm font-medium text-stone-500">Best colors</h2>
-            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+          <Card as="section" className="space-y-3">
+            <SectionTitle>Best colors</SectionTitle>
+            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {best.map((c) => (
-                <div key={c.name} className="overflow-hidden rounded-lg border border-stone-200">
-                  <div className="h-16" style={{ background: c.hex ?? "repeating-linear-gradient(45deg,#eee,#eee 6px,#fff 6px,#fff 12px)" }} />
-                  <p className="truncate px-2 py-1 text-xs">{c.name}</p>
-                </div>
+                <li key={c.name} className="overflow-hidden rounded-thumb bg-card ring-1 ring-line">
+                  <div
+                    aria-hidden="true"
+                    className="h-16 shadow-[inset_0_-1px_0_var(--color-line)]"
+                    style={{ background: c.hex ?? "repeating-linear-gradient(45deg,var(--color-inset),var(--color-inset) 6px,var(--color-card) 6px,var(--color-card) 12px)" }}
+                  />
+                  <p className="truncate px-2 py-1.5 text-xs font-medium">{c.name}</p>
+                </li>
               ))}
-            </div>
-          </section>
+            </ul>
+          </Card>
           {avoid.length > 0 && (
-            <section className="rounded-xl border border-stone-200 bg-white p-4">
-              <h2 className="text-sm font-medium text-stone-500">Use with care</h2>
-              <ul className="mt-2 flex flex-wrap gap-2 text-sm">
+            <Card as="section" className="space-y-3">
+              <SectionTitle>Use with care</SectionTitle>
+              <ul className="flex flex-wrap gap-2 text-sm">
                 {avoid.map((c) => (
-                  <li key={c.name} className="flex items-center gap-1.5 rounded-full border border-stone-200 px-2.5 py-1">
-                    {c.hex && <span className="h-3 w-3 rounded-full border border-stone-300" style={{ background: c.hex }} />}
-                    {c.name}
+                  <li key={c.name}>
+                    <Chip tone="outline" size="md">
+                      {c.hex && <Swatch hex={c.hex} />}
+                      {c.name}
+                    </Chip>
                   </li>
                 ))}
               </ul>
-            </section>
+            </Card>
           )}
           <ShareCard />
         </>

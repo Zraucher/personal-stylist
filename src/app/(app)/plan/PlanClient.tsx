@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import type { PlanDayView, WeekView } from "@/lib/plan/server";
 import { OCCASIONS } from "@/lib/today/candidates";
 import AskFriendsButton from "@/components/AskFriendsButton";
+import { Button, ButtonLink, Card, CheckTick, Chip, ConfirmButton, Notice, Select, Thumb } from "@/components/ui";
 
 const dayLabel = (date: string, today: string) => {
   const d = new Date(`${date}T12:00:00`);
@@ -47,27 +48,36 @@ export default function PlanClient({ initial }: { initial: WeekView }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" disabled={!!busy || thin} onClick={() => call("fill", { action: "fill" })} className="rounded-full bg-emerald-700 px-5 py-2 font-semibold text-white disabled:opacity-60">
+        <Button type="button" variant="primary" disabled={!!busy || thin} aria-busy={busy === "fill"} onClick={() => call("fill", { action: "fill" })}>
           {busy === "fill" ? "Planning…" : planned ? "Fill the open days" : "Plan my week"}
-        </button>
+        </Button>
         {planned > 0 && (
-          <button
-            type="button"
+          <ConfirmButton
+            confirmTone="neutral"
+            variant="secondary"
+            size="md"
             disabled={!!busy}
-            onClick={() => confirm("Replan every day you haven't worn yet?") && call("replan", { action: "fill", replan: true })}
-            className="rounded-full border-[1.5px] border-stone-900 px-4 py-1.5 text-sm font-semibold disabled:opacity-60"
+            title="Replan every day you haven't worn yet?"
+            confirmLabel="Replan all"
+            onConfirm={() => call("replan", { action: "fill", replan: true })}
           >
             {busy === "replan" ? "Replanning…" : "Replan all"}
-          </button>
+          </ConfirmButton>
         )}
-        <span className="text-sm text-stone-500">{planned} of 7 days planned{week.place ? ` · ${week.place}` : ""}</span>
+        <span role="status" aria-live="polite" className="text-sm text-stone-500 tabular-nums">
+          {planned} of 7 days planned{week.place ? ` · ${week.place}` : ""}
+        </span>
       </div>
       {thin && (
-        <p className="rounded-xl bg-amber-100 p-3 text-sm">
-          The planner needs at least a few tops, bottoms and shoes. <Link href="/closet/basics" className="font-semibold underline">Tick your basics</Link> to get started.
-        </p>
+        <Notice tone="warn">
+          The planner needs at least a few tops, bottoms and shoes.{" "}
+          <Link href="/closet/basics" className="font-semibold underline underline-offset-2">
+            Tick your basics
+          </Link>{" "}
+          to get started.
+        </Notice>
       )}
-      {message && <p className="rounded-xl bg-white p-3 text-sm text-stone-700 ring-1 ring-stone-200">{message}</p>}
+      {message && <Notice tone="info">{message}</Notice>}
 
       <ol className="space-y-3">
         {week.days.map((d) => (
@@ -83,10 +93,10 @@ function DayCard({ d, today, busy, call }: { d: PlanDayView; today: string; busy
   const isToday = d.date === today;
   const k = (a: string) => `${a}-${d.date}`;
   return (
-    <li className={"rounded-2xl border bg-white p-4 " + (d.worn ? "border-emerald-700" : "border-stone-200")}>
+    <Card as="li" variant={isToday ? "active" : "surface"} className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-display text-lg font-bold leading-tight">
+        <div className="min-w-0">
+          <p className="font-display text-lg font-bold leading-snug">
             {dayLabel(d.date, today)} <span className="text-sm font-normal text-stone-500">{shortDate(d.date)}</span>
           </p>
           <p className="text-sm text-stone-500">
@@ -95,74 +105,70 @@ function DayCard({ d, today, busy, call }: { d: PlanDayView; today: string; busy
             {w.uvMax >= 8 ? " · strong sun" : ""}
           </p>
         </div>
-        <select
-          aria-label={`Occasion for ${dayLabel(d.date, today)}`}
-          value={d.occasion}
-          disabled={!!busy || d.worn}
-          onChange={(e) => call(k("occ"), { action: "occasion", date: d.date, occasion: e.target.value })}
-          className="rounded-full border border-stone-300 bg-white px-3 py-1 text-sm"
-        >
-          {OCCASIONS.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <div className="w-40 shrink-0">
+          <Select
+            aria-label={`Occasion for ${dayLabel(d.date, today)}`}
+            value={d.occasion}
+            disabled={!!busy || d.worn}
+            onChange={(e) => call(k("occ"), { action: "occasion", date: d.date, occasion: e.target.value })}
+          >
+            {OCCASIONS.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       {d.outfit ? (
-        <div className="mt-3 space-y-2">
+        <div className="space-y-2">
           <p className="font-semibold">{d.outfit.name}</p>
-          <div className="flex gap-2 overflow-x-auto">
+          <ul className="flex gap-2 overflow-x-auto">
             {d.outfit.items.map((it) => (
-              <Link key={it.id} href={`/closet/${it.id}`} className="w-16 shrink-0" title={it.name}>
-                <div className="aspect-square overflow-hidden rounded-lg bg-stone-100">
-                  {it.url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={it.url} alt={it.name} className="h-full w-full object-cover" loading="lazy" />
-                  ) : (
-                    <div className="flex h-full flex-col items-center justify-center gap-1 px-1 text-center">
-                      <span className="h-4 w-4 rounded-full border border-stone-300" style={{ background: it.colors[0]?.hex ?? "#d6d3d1" }} />
-                      <span className="text-[9px] leading-tight text-stone-500">{it.subcategory ?? "piece"}</span>
-                    </div>
-                  )}
-                </div>
-              </Link>
+              <li key={it.id}>
+                <Link href={`/closet/${it.id}`} title={it.name} className="block rounded-[10px]">
+                  <Thumb src={it.url} alt={it.name} size="sm" item={{ subcategory: it.subcategory, colors: it.colors }} />
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
           {d.outfit.headline && <p className="text-xs text-stone-500">{d.outfit.headline}</p>}
-          <div className="flex flex-wrap items-center gap-2 pt-1 text-sm">
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             {d.worn ? (
-              <span className="rounded-full bg-emerald-700 px-3 py-1 text-xs font-semibold text-white">✓ wore it</span>
+              <Chip tone="works">
+                <CheckTick size={14} className="-ml-1 text-emerald-700" />
+                wore it
+              </Chip>
             ) : (
               <>
                 {d.date <= today && (
-                  <button type="button" disabled={!!busy} onClick={() => call(k("wore"), { action: "wore", date: d.date })} className="rounded-full bg-emerald-700 px-3 py-1 font-semibold text-white disabled:opacity-60">
-                    {busy === k("wore") ? "Saving…" : "wore it"}
-                  </button>
+                  <Button type="button" variant="secondary" size="sm" disabled={!!busy} aria-busy={busy === k("wore")} onClick={() => call(k("wore"), { action: "wore", date: d.date })}>
+                    {busy === k("wore") ? "Saving…" : "Wore it"}
+                  </Button>
                 )}
-                <button type="button" disabled={!!busy} onClick={() => call(k("swap"), { action: "swap", date: d.date })} className="rounded-full border border-stone-300 px-3 py-1 disabled:opacity-60">
+                <Button type="button" variant="quiet" size="sm" disabled={!!busy} aria-busy={busy === k("swap")} onClick={() => call(k("swap"), { action: "swap", date: d.date })}>
                   {busy === k("swap") ? "Finding another…" : "Swap"}
-                </button>
-                <Link href={`/outfits/new?items=${d.outfit.items.map((i) => i.id).join(",")}`} className="rounded-full border border-stone-300 px-3 py-1">
+                </Button>
+                <ButtonLink href={`/outfits/new?items=${d.outfit.items.map((i) => i.id).join(",")}`} variant="quiet" size="sm">
                   Edit
-                </Link>
-                <button type="button" disabled={!!busy} onClick={() => call(k("clear"), { action: "clear", date: d.date })} className="px-1 text-stone-500 underline-offset-2 hover:underline disabled:opacity-60">
+                </ButtonLink>
+                <Button type="button" variant="quiet" size="sm" disabled={!!busy} aria-busy={busy === k("clear")} onClick={() => call(k("clear"), { action: "clear", date: d.date })}>
                   Clear
-                </button>
+                </Button>
               </>
             )}
             {isToday || d.date > today ? <AskFriendsButton target={{ kind: "outfit", outfitId: d.outfit.id }} compact /> : null}
           </div>
         </div>
       ) : (
-        <div className="mt-3 flex items-center gap-3 text-sm text-stone-500">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-stone-500">
           <span>Nothing planned.</span>
-          <button type="button" disabled={!!busy} onClick={() => call(k("swap"), { action: "occasion", date: d.date, occasion: d.occasion })} className="font-semibold text-stone-900 underline disabled:opacity-60">
+          <Button type="button" variant="secondary" size="sm" disabled={!!busy} aria-busy={busy === k("swap")} onClick={() => call(k("swap"), { action: "occasion", date: d.date, occasion: d.occasion })}>
             {busy === k("swap") ? "Planning…" : "Plan this day"}
-          </button>
+          </Button>
         </div>
       )}
-    </li>
+    </Card>
   );
 }

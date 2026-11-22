@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { loadRecommendation } from "@/lib/today/recommend";
+import { PageHeader } from "@/components/ui";
 import AskClient from "./AskClient";
 
 export default async function AskPage() {
@@ -18,11 +19,8 @@ export default async function AskPage() {
   const initial = latest ? await loadRecommendation(supabase, user!.id, latest.id as string) : null;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Ask</h1>
-        <p className="text-sm text-stone-500">For days that are not routine. Say it the way you would to a friend.</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader title="Ask" subtitle="For days that are not routine. Say it the way you would to a friend." />
       <AskClient initial={initial} />
     </div>
   );

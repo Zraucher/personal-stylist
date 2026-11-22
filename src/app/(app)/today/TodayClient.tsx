@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { OCCASIONS, type Occasion } from "@/lib/today/candidates";
 import type { RecommendationView } from "@/lib/today/recommend";
-import Link from "next/link";
+import { Button, ButtonLink, Card, Checkbox, ChipButton, ChipGroup, EmptyState, Notice, Skeleton } from "@/components/ui";
 import RecommendationCards from "./RecommendationCards";
 
 type Hour = "morning" | "midday" | "evening";
@@ -38,57 +38,63 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
     }
   };
 
-  const chip = (on: boolean) =>
-    "rounded-full border px-3 py-1.5 text-sm " + (on ? "border-stone-900 bg-stone-900 text-white" : "border-stone-300 bg-white text-stone-700 hover:border-stone-500");
-
   return (
     <div className="space-y-6">
-      <section className="space-y-4 rounded-xl border border-stone-200 bg-white p-4">
-        <div>
-          <p className="text-sm text-stone-500">Where are you going?</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+      <Card as="section" variant="inset" aria-label="Today's plans" className="space-y-4">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-stone-700">Where are you going?</p>
+          <ChipGroup label="Where are you going?">
             {OCCASIONS.map((o) => (
-              <button key={o.id} type="button" onClick={() => setOccasion(o.id)} className={chip(occasion === o.id)}>
+              <ChipButton key={o.id} selected={occasion === o.id} onClick={() => setOccasion(o.id)}>
                 {o.label}
-              </button>
+              </ChipButton>
             ))}
-          </div>
+          </ChipGroup>
         </div>
-        <div>
-          <p className="text-sm text-stone-500">When will you be outside?</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-stone-700">When will you be outside?</p>
+          <ChipGroup label="When will you be outside?">
             {(["morning", "midday", "evening"] as Hour[]).map((h) => (
-              <button key={h} type="button" onClick={() => toggleHour(h)} className={chip(hours.includes(h))}>
+              <ChipButton key={h} selected={hours.includes(h)} onClick={() => toggleHour(h)}>
                 {h[0].toUpperCase() + h.slice(1)}
-              </button>
+              </ChipButton>
             ))}
-          </div>
+          </ChipGroup>
         </div>
-        <div className="flex flex-wrap gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={indoorCold} onChange={(e) => setIndoorCold(e.target.checked)} /> Indoor air will be cold
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={tomorrow} onChange={(e) => setTomorrow(e.target.checked)} /> Plan for tomorrow
-          </label>
+        <div className="flex flex-wrap gap-x-5 gap-y-1">
+          <Checkbox label="Indoor air will be cold" checked={indoorCold} onChange={(e) => setIndoorCold(e.target.checked)} />
+          <Checkbox label="Plan for tomorrow" checked={tomorrow} onChange={(e) => setTomorrow(e.target.checked)} />
         </div>
-        <button type="button" onClick={run} disabled={loading} className="w-full rounded-full bg-emerald-700 px-5 py-2.5 font-bold text-white disabled:opacity-60 sm:w-auto">
+        <Button type="button" variant="primary" onClick={run} disabled={loading} aria-busy={loading} className="w-full sm:w-auto">
           {loading ? "Picking outfits…" : rec ? "Pick again" : "Pick three outfits"}
-        </button>
-        {error && <p className="text-sm text-red-700">{error}</p>}
-      </section>
+        </Button>
+        {error && <Notice tone="error">{error}</Notice>}
+      </Card>
 
-      {rec ? (
+      {loading ? (
+        <div role="status" aria-live="polite" className="space-y-3">
+          <span className="sr-only">Picking outfits…</span>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-72" />
+          ))}
+        </div>
+      ) : rec ? (
         <RecommendationCards key={rec.id} rec={rec} />
       ) : closetSize < 8 ? (
-        <div className="space-y-2 rounded-xl border border-dashed border-stone-300 bg-white p-4 text-sm">
-          <p className="font-medium">Your closet has {closetSize} {closetSize === 1 ? "piece" : "pieces"} so far.</p>
-          <p className="text-stone-600">Outfits need a top, a bottom and shoes at least. Tick the basics you own; it takes a minute.</p>
-          <div className="flex flex-wrap gap-2 pt-1">
-            <Link href="/closet/basics" className="rounded-lg bg-stone-900 px-3 py-1.5 text-white">Tick your basics</Link>
-            <Link href="/closet/new" className="rounded-lg border border-stone-300 px-3 py-1.5">Add a piece</Link>
-          </div>
-        </div>
+        <EmptyState
+          title={`Your closet has ${closetSize} ${closetSize === 1 ? "piece" : "pieces"} so far.`}
+          body="Outfits need a top, a bottom and shoes at least. Tick the basics you own; it takes a minute."
+          action={
+            <>
+              <ButtonLink href="/closet/basics" variant="secondary" size="sm">
+                Tick your basics
+              </ButtonLink>
+              <ButtonLink href="/closet/new" variant="quiet" size="sm">
+                Add a piece
+              </ButtonLink>
+            </>
+          }
+        />
       ) : (
         <p className="text-sm text-stone-500">Choose where you are going and get three outfits from your own closet, matched to the weather.</p>
       )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button, Card, SectionTitle } from "@/components/ui";
 
 export default function ShareCard() {
   const [msg, setMsg] = useState<string | null>(null);
@@ -33,16 +34,21 @@ export default function ShareCard() {
   };
 
   return (
-    <section className="space-y-3 rounded-xl border border-stone-200 bg-white p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-medium text-stone-500">Share image</h2>
-        <button type="button" onClick={share} disabled={busy} className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white disabled:opacity-60">
-          {busy ? "Preparing…" : "Share or save"}
-        </button>
-      </div>
+    <Card as="section" className="space-y-3">
+      <SectionTitle
+        action={
+          <Button type="button" variant="primary" size="sm" onClick={share} disabled={busy} aria-busy={busy || undefined}>
+            {busy ? "Preparing…" : "Share or save"}
+          </Button>
+        }
+      >
+        Share image
+      </SectionTitle>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="Palette card" className="mx-auto w-full max-w-xs rounded-lg border border-stone-200" />
-      {msg && <p className="text-sm text-stone-600">{msg}</p>}
-    </section>
+      <img src={src} alt="Palette card" className="mx-auto w-full max-w-xs rounded-thumb ring-1 ring-line" />
+      <p role="status" aria-live="polite" className="text-sm text-stone-600 empty:hidden">
+        {msg}
+      </p>
+    </Card>
   );
 }

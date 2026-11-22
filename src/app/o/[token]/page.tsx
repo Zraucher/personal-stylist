@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { loadPublicOpinion } from "@/lib/opinions/public";
 import { firstName } from "@/lib/opinions/tally";
 import VoteForm from "./VoteForm";
+import { Card, Notice, Thumb } from "@/components/ui";
 
 type Props = { params: Promise<{ token: string }> };
 
@@ -43,12 +44,12 @@ export default async function OpinionPage({ params }: Props) {
   const s = o.snapshot;
 
   return (
-    <div className="min-h-dvh bg-stone-50 text-stone-900">
+    <div className="min-h-dvh bg-ground text-stone-900">
       <header className="mx-auto flex max-w-xl items-center justify-between px-5 py-4">
-        <Link href="/" aria-label="valette home">
+        <Link href="/" aria-label="valette home" className="rounded-full">
           <Wordmark size={22} />
         </Link>
-        <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">second opinion</span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">second opinion</span>
       </header>
       <main className="mx-auto max-w-xl space-y-5 px-5 pb-16">
         <div className="space-y-2">
@@ -57,41 +58,31 @@ export default async function OpinionPage({ params }: Props) {
         </div>
 
         {isOwner && (
-          <p className="rounded-xl bg-amber-100 p-3 text-sm">
-            This is the page your friends see. <Link href={`/opinions/${o.id}`} className="font-semibold underline">See your votes</Link>
-          </p>
+          <Notice tone="warn">
+            This is the page your friends see.{" "}
+            <Link href={`/opinions/${o.id}`} className="font-semibold underline underline-offset-2">
+              See your votes
+            </Link>
+          </Notice>
         )}
 
-        <section className="space-y-3 rounded-2xl bg-white p-4">
-          <p className="font-display text-xl font-bold">{s.title}</p>
+        <Card as="section" className="space-y-3">
+          <h2 className="font-display text-xl font-bold leading-tight">{s.title}</h2>
           {o.kind === "outfit" ? (
             <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {(s.items ?? []).map((it, i) => (
-                <li key={i} className="space-y-1">
-                  <div className="aspect-square overflow-hidden rounded-xl bg-stone-100">
-                    {o.images[i] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={o.images[i]!} alt={it.name} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full flex-col items-center justify-center gap-2 p-2 text-center">
-                        <span className="flex gap-1">
-                          {it.colors.slice(0, 3).map((c, k) => (
-                            <span key={k} className="h-6 w-6 rounded-full border border-stone-300" style={{ background: c.hex ?? "#d6d3d1" }} />
-                          ))}
-                        </span>
-                        <span className="text-xs text-stone-500">{it.subcategory ?? "piece"}</span>
-                      </div>
-                    )}
-                  </div>
-                  <p className="truncate text-sm">{it.name}</p>
+                <li key={i} className="space-y-1.5">
+                  <Thumb src={o.images[i]} alt={it.name} item={{ subcategory: it.subcategory, colors: it.colors }} />
+                  <p className="truncate text-sm font-medium">{it.name}</p>
                 </li>
               ))}
             </ul>
           ) : (
             <div className="flex gap-4">
               {s.image_url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={s.image_url} alt={s.title} className="h-40 w-32 shrink-0 rounded-xl bg-stone-100 object-cover" referrerPolicy="no-referrer" />
+                <div className="w-32 shrink-0">
+                  <Thumb src={s.image_url} alt={s.title} product />
+                </div>
               )}
               <div className="space-y-1 text-sm">
                 {s.brand && <p className="font-semibold">{s.brand}</p>}
@@ -100,13 +91,13 @@ export default async function OpinionPage({ params }: Props) {
               </div>
             </div>
           )}
-        </section>
+        </Card>
 
         {!isOwner && <VoteForm token={token} owner={o.owner === "your friend" ? "them" : o.owner} closed={o.closed} initialTally={o.tally} defaultName={viewerName} />}
-        {isOwner && <p className="text-center text-sm text-stone-500">{o.tally.summary}</p>}
+        {isOwner && <p className="text-center text-sm text-stone-600">{o.tally.summary}</p>}
 
-        <p className="text-center text-xs text-stone-400">
-          Shared from valette, the stylist that checks it on you first. <Link href="/privacy" className="underline">Privacy</Link>
+        <p className="text-center text-xs text-stone-500">
+          Shared from valette, the stylist that checks it on you first. <Link href="/privacy" className="underline underline-offset-2">Privacy</Link>
         </p>
       </main>
     </div>

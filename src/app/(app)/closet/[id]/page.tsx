@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
@@ -8,6 +7,7 @@ import DeleteItemButton from "./DeleteItemButton";
 import ScorecardPanel, { type ScorecardRow } from "../ScorecardPanel";
 import WearPanel from "./WearPanel";
 import { localDate } from "@/lib/today/weather";
+import { Card, PageHeader } from "@/components/ui";
 
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -64,12 +64,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">{item.name ?? "Item"}</h1>
-        <Link href="/closet" className="text-sm text-stone-600 hover:text-stone-900">
-          Back to closet
-        </Link>
-      </div>
+      <PageHeader title={item.name ?? "Item"} back={{ href: "/closet", label: "Closet" }} />
 
       <ScorecardPanel itemId={item.id} hasImage={!!item.image_path} initial={scorecard} initialAnswer={answer} />
 
@@ -77,13 +72,13 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
       <ItemForm initial={initial} itemId={item.id} imagePath={item.image_path} imageUrl={item.image_path ? urls[item.image_path] ?? null : null} />
 
-      <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-4 text-sm">
-        <div className="text-stone-500">
+      <Card pad="sm" className="flex flex-wrap items-center justify-between gap-3 pl-4 text-sm">
+        <p className="text-stone-500">
           Added {new Date(item.created_at).toLocaleDateString()}
           {item.generic_id && " from the basics list"}
-        </div>
+        </p>
         <DeleteItemButton id={item.id} />
-      </div>
+      </Card>
     </div>
   );
 }

@@ -14,20 +14,25 @@ const LINKS = [
 export default function ClosetSubnav() {
   const path = usePathname() ?? "";
   return (
-    <nav aria-label="Closet" className="-mx-1 flex gap-1 overflow-x-auto pb-1 text-sm">
-      {LINKS.map((l) => {
-        const on = l.on(path);
-        return (
-          <Link
-            key={l.href}
-            href={l.href}
-            aria-current={on ? "page" : undefined}
-            className={"shrink-0 rounded-full px-3.5 py-1.5 font-semibold " + (on ? "bg-stone-900 text-stone-50" : "text-stone-600 hover:bg-stone-200/60 hover:text-stone-900")}
-          >
-            {l.label}
-          </Link>
-        );
-      })}
-    </nav>
+    <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <nav aria-label="Closet" className="inline-flex rounded-full bg-inset p-1 text-sm ring-1 ring-line">
+        {LINKS.map((l) => {
+          const on = l.on(path);
+          return (
+            <Link
+              key={l.href}
+              href={l.href}
+              aria-current={on ? "page" : undefined}
+              className={
+                "inline-flex shrink-0 items-center rounded-full px-3.5 py-1.5 transition-[background-color,color,box-shadow] duration-200 ease-soft " +
+                (on ? "bg-card font-semibold text-stone-900 shadow-[0_1px_2px_rgb(29_27_43/0.08)]" : "font-medium text-stone-500 hover:text-stone-900")
+              }
+            >
+              {l.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
   );
 }

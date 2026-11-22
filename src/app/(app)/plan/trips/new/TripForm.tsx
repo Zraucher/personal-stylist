@@ -2,59 +2,54 @@
 
 import { useActionState } from "react";
 import { createTripAction, type TripFormState } from "../actions";
+import { Button, Card, Checkbox, Field, Input, Notice } from "@/components/ui";
 
 const initial: TripFormState = {};
 
 export default function TripForm({ today }: { today: string }) {
   const [state, action, pending] = useActionState(createTripAction, initial);
-  const input = "mt-1 w-full rounded-xl border border-stone-300 bg-white px-3 py-2 text-base";
   return (
-    <form action={action} className="space-y-4 rounded-2xl border border-stone-200 bg-white p-4">
-      <label className="block text-sm">
-        <span className="font-medium">Where to?</span>
-        <input name="destination" required maxLength={120} placeholder="Scottsdale, AZ" className={input} />
-      </label>
+    <Card as="form" action={action} className="space-y-4">
+      <Field label="Where to?">
+        <Input name="destination" required maxLength={120} placeholder="Scottsdale, AZ" />
+      </Field>
       <div className="grid grid-cols-2 gap-3">
-        <label className="block text-sm">
-          <span className="font-medium">Leave</span>
-          <input name="start" type="date" required min={today} defaultValue={today} className={input} />
-        </label>
-        <label className="block text-sm">
-          <span className="font-medium">Come home</span>
-          <input name="end" type="date" required min={today} className={input} />
-        </label>
+        <Field label="Leave">
+          <Input name="start" type="date" required min={today} defaultValue={today} />
+        </Field>
+        <Field label="Come home">
+          <Input name="end" type="date" required min={today} />
+        </Field>
       </div>
-      <fieldset className="text-sm">
-        <legend className="font-medium">Most days you&apos;ll be</legend>
+      <fieldset>
+        <legend className="text-sm font-medium text-stone-700">Most days you&apos;ll be</legend>
         <div className="mt-2 flex flex-wrap gap-2">
           {[
             { v: "casual", l: "Out and about" },
             { v: "office", l: "Working" },
             { v: "active", l: "Golf or active" },
           ].map((o, i) => (
-            <label key={o.v} className="cursor-pointer rounded-full border border-stone-300 px-3 py-1.5 has-[:checked]:border-stone-900 has-[:checked]:bg-stone-900 has-[:checked]:text-stone-50">
+            <label
+              key={o.v}
+              className="tap inline-flex min-h-9 cursor-pointer items-center rounded-full bg-card px-3.5 text-sm font-medium text-stone-700 ring-1 ring-inset ring-line-strong transition-colors duration-200 ease-soft hover:ring-stone-400 has-[:checked]:bg-stone-900 has-[:checked]:text-stone-50 has-[:checked]:ring-stone-900 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-stone-900"
+            >
               <input type="radio" name="daytime" value={o.v} defaultChecked={i === 0} className="sr-only" />
               {o.l}
             </label>
           ))}
         </div>
       </fieldset>
-      <div className="space-y-2 text-sm">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" name="nights" defaultChecked className="h-4 w-4 accent-emerald-700" /> Dinners out most nights
-        </label>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" name="event" className="h-4 w-4 accent-emerald-700" /> One dressy event (wedding, show, big dinner)
-        </label>
+      <div className="flex flex-col items-start gap-1">
+        <Checkbox name="nights" defaultChecked label="Dinners out most nights" />
+        <Checkbox name="event" label="One dressy event (wedding, show, big dinner)" />
       </div>
-      <label className="block text-sm">
-        <span className="font-medium">Name it (optional)</span>
-        <input name="name" maxLength={80} placeholder="Val's birthday weekend" className={input} />
-      </label>
-      {state.error && <p className="text-sm text-red-700">{state.error}</p>}
-      <button type="submit" disabled={pending} className="w-full rounded-full bg-emerald-700 py-3 font-bold text-white disabled:opacity-60">
+      <Field label="Name it (optional)">
+        <Input name="name" maxLength={80} placeholder="Val's birthday weekend" />
+      </Field>
+      {state.error && <Notice tone="error">{state.error}</Notice>}
+      <Button type="submit" variant="primary" block disabled={pending} aria-busy={pending}>
         {pending ? "Building your looks…" : "Plan my looks and packing list"}
-      </button>
-    </form>
+      </Button>
+    </Card>
   );
 }

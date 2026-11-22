@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createHaul } from "./actions";
+import { Button, ButtonLink, Card, EmptyState, Field, Input, PageHeader } from "@/components/ui";
 
 export default async function HaulsPage() {
   const supabase = await createClient();
@@ -22,47 +23,56 @@ export default async function HaulsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Shop</h1>
-          <p className="text-sm text-stone-500">Review products before you buy. Every haul is saved.</p>
-        </div>
-        <div className="flex gap-2 text-sm">
-          <Link href="/wishlist" className="rounded-lg border border-stone-300 bg-white px-3 py-2 hover:border-stone-500">
-            Wishlist
-          </Link>
-          <Link href="/gaps" className="rounded-lg border border-stone-300 bg-white px-3 py-2 hover:border-stone-500">
-            Closet gaps
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Shop"
+        subtitle="Review products before you buy. Every haul is saved."
+        actions={
+          <>
+            <ButtonLink href="/wishlist" variant="secondary" size="sm">
+              Wishlist
+            </ButtonLink>
+            <ButtonLink href="/gaps" variant="quiet" size="sm">
+              Closet gaps
+            </ButtonLink>
+          </>
+        }
+      />
 
-      <form action={createHaul} className="flex flex-wrap gap-2 rounded-xl border border-stone-200 bg-white p-4">
-        <input name="retailer" placeholder="Store (optional)" maxLength={80} className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-base" />
-        <input name="notes" placeholder="What is it for? (optional)" maxLength={300} className="min-w-0 flex-1 rounded-lg border border-stone-300 px-3 py-2 text-base" />
-        <button type="submit" className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white">
+      <Card as="form" action={createHaul} className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Store (optional)">
+            <Input name="retailer" maxLength={80} />
+          </Field>
+          <Field label="What is it for? (optional)">
+            <Input name="notes" maxLength={300} />
+          </Field>
+        </div>
+        <Button type="submit" variant="primary">
           Start a haul review
-        </button>
-      </form>
+        </Button>
+      </Card>
 
       {(hauls ?? []).length === 0 ? (
-        <p className="rounded-xl border border-dashed border-stone-300 bg-white p-6 text-center text-sm text-stone-600">
-          No hauls yet. Start one, then paste product links or upload screenshots.
-        </p>
+        <EmptyState compact title="No hauls yet. Start one, then paste product links or upload screenshots." />
       ) : (
-        <ul className="divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white">
+        <ul className="divide-y divide-line rounded-card bg-card px-4 ring-1 ring-line">
           {(hauls ?? []).map((h) => {
             const c = counts.get(h.id as string) ?? { n: 0, keep: 0, cut: 0 };
             return (
               <li key={h.id as string}>
-                <Link href={`/hauls/${h.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-stone-50">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{(h.retailer as string) || "Haul"} · {(h.date as string) ?? ""}</p>
-                    {h.notes && <p className="truncate text-sm text-stone-500">{h.notes as string}</p>}
+                <Link href={`/hauls/${h.id}`} className="-mx-4 flex min-h-14 items-center gap-3 px-4 py-3 transition-colors duration-200 ease-soft hover:bg-inset/60 active:bg-inset">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-semibold">
+                      {(h.retailer as string) || "Haul"} · <span className="tabular-nums">{(h.date as string) ?? ""}</span>
+                    </p>
+                    {h.notes && <p className="truncate text-[13px] text-stone-600">{h.notes as string}</p>}
+                    <p className="text-[13px] tabular-nums text-stone-500">
+                      {c.n} {c.n === 1 ? "item" : "items"} · {c.keep} work on you · {c.cut} not for you
+                    </p>
                   </div>
-                  <p className="shrink-0 text-sm text-stone-500 tabular-nums">
-                    {c.n} {c.n === 1 ? "item" : "items"} · {c.keep} work on you · {c.cut} not for you
-                  </p>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-stone-500">
+                    <path d="m9 6 6 6-6 6" />
+                  </svg>
                 </Link>
               </li>
             );

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/closet/compress";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
+import { Button, Card, Notice } from "@/components/ui";
 import ItemForm, { EMPTY_VALUES, applyTags, requestTags, type ItemFormValues } from "../ItemForm";
 
 type Phase = "pick" | "uploading" | "tagging" | "form";
@@ -57,35 +58,30 @@ export default function ItemCapture() {
 
   return (
     <div className="space-y-4">
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
-      <input ref={libraryRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" tabIndex={-1} aria-hidden="true" onChange={(e) => handleFile(e.target.files?.[0])} />
+      <input ref={libraryRef} type="file" accept="image/*" className="hidden" tabIndex={-1} aria-hidden="true" onChange={(e) => handleFile(e.target.files?.[0])} />
 
-      <div className="rounded-xl border border-stone-200 bg-white p-5">
-        <p className="font-medium">Add a piece</p>
-        <p className="mt-1 text-sm text-stone-600">
-          Lay it flat or hang it against a plain wall in daylight. One garment per photo. The tagger reads color, construction and
-          formality; you correct anything it gets wrong.
-        </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => cameraRef.current?.click()}
-            className="rounded-lg bg-stone-900 px-3 py-3 text-base font-medium text-white disabled:opacity-60"
-          >
-            {phase === "uploading" ? "Uploading…" : phase === "tagging" ? "Reading photo…" : "Take a photo"}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => libraryRef.current?.click()}
-            className="rounded-lg border border-stone-300 bg-white px-3 py-3 text-base font-medium text-stone-900 disabled:opacity-60"
-          >
-            Choose from library
-          </button>
+      <Card pad="lg" className="space-y-4">
+        <div>
+          <h2 className="font-display text-lg font-bold leading-snug">Add a piece</h2>
+          <p className="mt-1 text-sm leading-relaxed text-stone-600">
+            Lay it flat or hang it against a plain wall in daylight. One garment per photo. The tagger reads color, construction and
+            formality; you correct anything it gets wrong.
+          </p>
         </div>
-        <button
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button type="button" variant="primary" block disabled={busy} aria-busy={busy || undefined} onClick={() => cameraRef.current?.click()}>
+            {phase === "uploading" ? "Uploading…" : phase === "tagging" ? "Reading photo…" : "Take a photo"}
+          </Button>
+          <Button type="button" variant="secondary" block disabled={busy} onClick={() => libraryRef.current?.click()}>
+            Choose from library
+          </Button>
+        </div>
+        <Button
           type="button"
+          variant="quiet"
+          size="sm"
+          className="-ml-3.5"
           disabled={busy}
           onClick={() => {
             setImagePath(null);
@@ -93,15 +89,16 @@ export default function ItemCapture() {
             setInitial(EMPTY_VALUES);
             setPhase("form");
           }}
-          className="mt-3 text-sm text-stone-600 underline-offset-2 hover:underline disabled:opacity-60"
         >
           Enter without a photo
-        </button>
-        {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-      </div>
+        </Button>
+        {error && <Notice tone="error">{error}</Notice>}
+      </Card>
 
       {phase === "tagging" && (
-        <p className="text-center text-sm text-stone-500">Claude is looking at the photo. Ten seconds or so.</p>
+        <p role="status" aria-live="polite" className="text-center text-sm text-stone-500">
+          Claude is looking at the photo. Ten seconds or so.
+        </p>
       )}
     </div>
   );

@@ -7,6 +7,7 @@ import { compressImage } from "@/lib/closet/compress";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
 import { PHOTO_GROUPS } from "@/lib/profile/photo-slots";
 import { removePhotoSlot, savePhotoSlot } from "./actions";
+import { Card, Chip, ConfirmButton, Notice, SectionTitle } from "@/components/ui";
 
 type Props = { urls: Record<string, string> };
 
@@ -53,7 +54,6 @@ export default function ProfilePhotos({ urls }: Props) {
   };
 
   const remove = async (slot: string) => {
-    if (!confirm("Remove this photo? It is deleted from storage.")) return;
     setBusy(slot);
     const r = await removePhotoSlot(slot);
     setBusy(null);
@@ -89,35 +89,37 @@ export default function ProfilePhotos({ urls }: Props) {
   const src = (slot: string) => local[slot] ?? urls[slot];
 
   return (
-    <section className="rounded-xl border border-stone-200 bg-white p-5">
-      <h2 className="text-sm font-medium text-stone-500">Photos of you</h2>
-      <p className="mt-1 text-sm text-stone-600">
+    <Card as="section" className="space-y-3">
+      <SectionTitle>Photos of you</SectionTitle>
+      <p className="text-sm leading-relaxed text-stone-600">
         Add photos from different angles and crops. We will use them later for outfit mock-ups. Plain background and fitted clothes
         work best. They are private to your account, nothing is analyzed yet, and you can remove any photo here at any time.
       </p>
-      <p className="mt-1 text-xs text-stone-400">Tap a tile to choose a photo, drop a file on it, or select it and paste with Ctrl+V.</p>
+      <p className="text-xs text-stone-500">Tap a tile to choose a photo, drop a file on it, or select it and paste with Ctrl+V.</p>
 
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
         className="hidden"
+        aria-hidden="true"
+        tabIndex={-1}
         onChange={(e) => {
           if (pickFor.current) void upload(pickFor.current, e.target.files?.[0]);
           e.target.value = "";
         }}
       />
 
-      <div className="mt-4 space-y-5">
+      <div className="space-y-5 pt-1">
         {PHOTO_GROUPS.map((g) => (
           <div key={g.title}>
-            <h3 className="mb-2 text-sm font-medium">{g.title}</h3>
+            <h3 className="mb-2 text-sm font-semibold">{g.title}</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {g.slots.map((s) => {
                 const url = src(s.id);
                 const isActive = active === s.id;
                 return (
-                  <div key={s.id} className="space-y-1">
+                  <div key={s.id} className="space-y-1.5">
                     <div
                       onDragOver={(e) => {
                         if (Array.from(e.dataTransfer.types).includes("Files")) {
@@ -133,8 +135,8 @@ export default function ProfilePhotos({ urls }: Props) {
                         void upload(s.id, e.dataTransfer.files[0]);
                       }}
                       className={
-                        "relative aspect-[3/4] overflow-hidden rounded-lg border bg-stone-50 " +
-                        (over === s.id ? "border-stone-900 ring-2 ring-stone-900 " : isActive ? "border-stone-900 " : "border-dashed border-stone-300 ")
+                        "relative aspect-[3/4] overflow-hidden rounded-thumb bg-inset transition-shadow duration-200 ease-soft " +
+                        (over === s.id ? "ring-2 ring-stone-900" : isActive ? "ring-[1.5px] ring-stone-900" : "ring-1 ring-inset ring-line")
                       }
                     >
                       <button
@@ -145,30 +147,42 @@ export default function ProfilePhotos({ urls }: Props) {
                           fileRef.current?.click();
                         }}
                         disabled={busy === s.id}
+                        aria-busy={busy === s.id || undefined}
+                        aria-label={url ? `Replace ${g.title} ${s.label} photo` : `Add ${g.title} ${s.label} photo`}
                         title={s.hint}
-                        className="block h-full w-full"
+                        className="block h-full w-full rounded-thumb"
                       >
                         {url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={url} alt={`${g.title} ${s.label}`} className="h-full w-full object-cover" />
                         ) : (
-                          <span className="flex h-full items-center justify-center px-2 text-center text-xs text-stone-400">
+                          <span className="flex h-full flex-col items-center justify-center gap-1.5 px-2 text-center text-xs font-medium text-stone-500">
+                            {busy !== s.id && (
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M12 5v14M5 12h14" />
+                              </svg>
+                            )}
                             {busy === s.id ? "Uploading…" : "Add photo"}
                           </span>
                         )}
                         {busy === s.id && url && (
-                          <span className="absolute inset-x-0 bottom-0 bg-stone-900/70 py-1 text-center text-[11px] text-white">Uploading…</span>
+                          <span className="absolute inset-x-0 bottom-2 flex justify-center">
+                            <Chip tone="overlay">Uploading…</Chip>
+                          </span>
                         )}
                       </button>
                       {url && busy !== s.id && (
-                        <button
-                          type="button"
-                          onClick={() => remove(s.id)}
-                          className="absolute right-1 top-1 rounded-full bg-stone-900/70 px-2 py-0.5 text-xs text-white hover:bg-stone-900"
-                          aria-label={`Remove ${s.label}`}
+                        <ConfirmButton
+                          title="Remove this photo?"
+                          body="It is deleted from storage."
+                          confirmLabel="Remove"
+                          onConfirm={() => void remove(s.id)}
+                          variant="quiet"
+                          className="absolute right-1.5 top-1.5 size-8 bg-ink/75! px-0! text-base! text-[#fbf7f2]! backdrop-blur-sm hover:bg-ink/90!"
                         >
-                          ×
-                        </button>
+                          <span aria-hidden="true">×</span>
+                          <span className="sr-only">Remove {s.label}</span>
+                        </ConfirmButton>
                       )}
                     </div>
                     <p className="text-xs text-stone-600">{s.label}</p>
@@ -179,7 +193,7 @@ export default function ProfilePhotos({ urls }: Props) {
           </div>
         ))}
       </div>
-      {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-    </section>
+      {error && <Notice tone="error">{error}</Notice>}
+    </Card>
   );
 }

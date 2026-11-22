@@ -16,7 +16,7 @@
   --color-stone-100: #f5eee6;
   --color-stone-200: #ece4d9;
   --color-stone-300: #dcd2c6;
-  --color-stone-400: #a9a0ae;
+  --color-stone-400: #8a8094; /* control borders only (3:1); not a text colour */
   --color-stone-500: #6b6577;
   --color-stone-600: #55505f;
   --color-stone-700: #3e3a4a;
@@ -24,6 +24,7 @@
   --color-stone-900: #1d1b2b;
 
   --color-emerald-100: #dff0e6;
+  --color-emerald-300: #a6dcbf;
   --color-emerald-400: #6fcf9f;
   --color-emerald-600: #3a8f69;
   --color-emerald-700: #2f7d5b;
@@ -46,6 +47,28 @@
 
   --color-blush: #f3d4cf;
   --color-sky-brand: #cfe0f0;
+
+  /* Surfaces and lines (design system v2, docs/DESIGN.md) */
+  --color-ground: #fbf7f2;
+  --color-card: #ffffff;
+  --color-raised: #ffffff;
+  --color-inset: #f5eee6;
+  --color-line: rgb(29 27 43 / 0.08);
+  --color-line-strong: rgb(29 27 43 / 0.16);
+  /* Never inverts: text on Marigold, Blush and Sky fills */
+  --color-ink: #1d1b2b;
+  /* Text on Go Green and Clay fills */
+  --color-on-accent: #ffffff;
+
+  --shadow-active: 0 1px 2px rgb(29 27 43 / 0.04), 0 6px 20px rgb(29 27 43 / 0.08);
+  --shadow-sheet: 0 16px 40px rgb(29 27 43 / 0.14);
+
+  --radius-control: 14px;
+  --radius-thumb: 12px;
+  --radius-card: 20px;
+  --radius-sheet: 28px;
+
+  --ease-soft: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @theme inline {
@@ -60,7 +83,7 @@
     --color-stone-100: #26243a;
     --color-stone-200: #34314a;
     --color-stone-300: #474360;
-    --color-stone-400: #7d7890;
+    --color-stone-400: #736d8c;
     --color-stone-500: #a9a3b8;
     --color-stone-600: #c4bfd0;
     --color-stone-700: #ddd8e4;
@@ -68,6 +91,7 @@
     --color-stone-900: #fbf7f2;
 
     --color-emerald-100: #1e3a2e;
+    --color-emerald-300: #3f8f69;
     --color-emerald-400: #4fae80;
     --color-emerald-600: #5fc290;
     --color-emerald-700: #6fcf9f;
@@ -90,15 +114,44 @@
 
     --color-blush: #4a3540;
     --color-sky-brand: #2c3a4e;
+
+    --color-ground: #1d1b2b;
+    --color-card: #252338;
+    --color-raised: #2d2a42;
+    --color-inset: #1a1827;
+    --color-line: rgb(251 247 242 / 0.08);
+    --color-line-strong: rgb(251 247 242 / 0.16);
+    --color-on-accent: #1d1b2b;
+    --shadow-active: inset 0 1px 0 rgb(251 247 242 / 0.06), 0 8px 24px rgb(0 0 0 / 0.35);
+    --shadow-sheet: inset 0 1px 0 rgb(251 247 242 / 0.06), 0 16px 40px rgb(0 0 0 / 0.5);
     color-scheme: dark;
   }
 }
 
 @layer base {
   body {
-    background: var(--color-stone-50);
+    background: var(--color-ground);
     color: var(--color-stone-900);
     font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Visible focus everywhere: Night outline (green stays reserved for verdicts). */
+  :focus-visible {
+    outline: 2px solid var(--color-stone-900);
+    outline-offset: 2px;
+  }
+  :where(input, textarea, select):focus-visible {
+    outline-offset: 1px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
   h1,
   h2 {
@@ -110,4 +163,25 @@
 @utility font-display {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
+}
+
+/* Minimum touch target: 24px everywhere, 44px on touch screens. */
+@utility tap {
+  min-height: 24px;
+  min-width: 24px;
+  @media (pointer: coarse) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* The signature moment: the check disc draws its tick when a verdict lands. */
+@keyframes tick-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.tick-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: tick-draw 300ms var(--ease-soft) both;
 }

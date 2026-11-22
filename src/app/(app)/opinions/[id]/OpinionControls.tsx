@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { closeOpinion, deleteOpinion } from "../actions";
+import { Button, ConfirmButton, buttonClass } from "@/components/ui";
 
 export default function OpinionControls({ id, url, open }: { id: string; url: string; open: boolean }) {
   const router = useRouter();
@@ -22,32 +23,36 @@ export default function OpinionControls({ id, url, open }: { id: string; url: st
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm">
+    <div className="flex flex-wrap items-center gap-2">
       {open && (
-        <button type="button" onClick={share} className="rounded-full bg-emerald-700 px-4 py-1.5 font-semibold text-white">
+        <Button type="button" variant="primary" size="sm" onClick={share}>
           {copied ? "Link copied" : "Share again"}
-        </button>
+        </Button>
       )}
-      <a href={url} className="rounded-full border-[1.5px] border-stone-900 px-4 py-1.5 font-semibold">See what friends see</a>
+      <span role="status" aria-live="polite" className="sr-only">
+        {copied ? "Link copied" : ""}
+      </span>
+      <a href={url} className={buttonClass("secondary", "sm")}>
+        See what friends see
+      </a>
       {open && (
-        <button type="button" disabled={pending} onClick={() => start(async () => void (await closeOpinion(id), router.refresh()))} className="text-stone-600 underline">
+        <Button type="button" variant="quiet" size="sm" disabled={pending} onClick={() => start(async () => void (await closeOpinion(id), router.refresh()))}>
           Close voting
-        </button>
+        </Button>
       )}
-      <button
-        type="button"
+      <ConfirmButton
         disabled={pending}
-        onClick={() => {
-          if (!confirm("Delete this ask and its votes? The link stops working.")) return;
+        title="Delete this ask and its votes?"
+        body="The link stops working."
+        onConfirm={() =>
           start(async () => {
             await deleteOpinion(id);
             router.push("/opinions");
-          });
-        }}
-        className="text-red-700 underline"
+          })
+        }
       >
         Delete
-      </button>
+      </ConfirmButton>
     </div>
   );
 }

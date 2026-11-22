@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { loadTrip } from "@/lib/plan/trip";
+import { PageHeader } from "@/components/ui";
 import TripClient from "./TripClient";
 
 export const metadata = { title: "Trip · valette" };
@@ -20,16 +20,20 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   const hi = temps.length ? Math.max(...temps.map((w) => w.feelsMax)) : null;
 
   return (
-    <div className="space-y-5">
-      <div>
-        <Link href="/plan" className="text-sm text-stone-500 hover:text-stone-900">← Plan</Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">{trip.title}</h1>
-        <p className="text-sm text-stone-500">
-          {trip.title !== trip.destination ? `${trip.destination} · ` : ""}
-          {fmt(trip.start)} to {fmt(trip.end)}
-          {lo != null && hi != null ? ` · feels ${lo}–${hi}°` : ""}
-        </p>
-        <p className="mt-1 text-xs text-stone-500">
+    <div className="space-y-6">
+      <div className="space-y-1.5">
+        <PageHeader
+          back={{ href: "/plan", label: "Plan" }}
+          title={trip.title}
+          subtitle={
+            <>
+              {trip.title !== trip.destination ? `${trip.destination} · ` : ""}
+              {fmt(trip.start)} to {fmt(trip.end)}
+              {lo != null && hi != null ? ` · feels ${lo}–${hi}°` : ""}
+            </>
+          }
+        />
+        <p className="text-xs text-stone-500">
           {trip.weatherSource === "forecast"
             ? "Weather from the live forecast."
             : trip.weatherSource === "typical"

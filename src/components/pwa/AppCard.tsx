@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button, Card, Checkbox } from "@/components/ui";
 
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Prefs = { morning: boolean; prices: boolean; votes: boolean };
@@ -118,16 +119,18 @@ export default function AppCard() {
   };
 
   return (
-    <section className="space-y-4 rounded-2xl border border-stone-200 bg-white p-4">
-      <div>
-        <h2 className="font-display text-lg font-bold">The app</h2>
+    <Card as="section" className="space-y-4">
+      <div className="space-y-2">
+        <h2 className="font-display text-lg font-bold leading-snug">The app</h2>
         {standalone ? (
-          <p className="text-sm text-stone-600">✓ Installed on this device.</p>
+          <p className="text-sm text-stone-600">
+            <span aria-hidden="true">✓ </span>Installed on this device.
+          </p>
         ) : installEvt ? (
-          <div className="mt-2 flex items-center gap-3">
-            <button type="button" onClick={install} className="rounded-full bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="primary" size="sm" onClick={install}>
               Add valette to your home screen
-            </button>
+            </Button>
           </div>
         ) : ios ? (
           <p className="text-sm text-stone-600">
@@ -138,7 +141,7 @@ export default function AppCard() {
         )}
       </div>
 
-      <div className="space-y-2 border-t border-stone-100 pt-4">
+      <div className="space-y-3 border-t border-line pt-4">
         <h3 className="font-semibold">Notifications</h3>
         {!push.supported ? (
           <p className="text-sm text-stone-600">{ios && !standalone ? "Add valette to your home screen first, then turn notifications on here." : "This browser doesn't support notifications."}</p>
@@ -146,18 +149,18 @@ export default function AppCard() {
           <p className="text-sm text-stone-600">Notifications are coming soon. In the meantime, new votes and price drops show at the top of Today.</p>
         ) : (
           <>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               {endpoint ? (
-                <button type="button" disabled={busy} onClick={turnOff} className="rounded-full border-[1.5px] border-stone-900 px-4 py-1.5 text-sm font-semibold disabled:opacity-60">
+                <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={turnOff}>
                   Turn off on this device
-                </button>
+                </Button>
               ) : (
-                <button type="button" disabled={busy} onClick={turnOn} className="rounded-full bg-emerald-700 px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-60">
+                <Button type="button" variant={installEvt ? "secondary" : "primary"} size="sm" disabled={busy} aria-busy={busy || undefined} onClick={turnOn}>
                   {busy ? "Turning on…" : "Turn on notifications"}
-                </button>
+                </Button>
               )}
             </div>
-            <div className="space-y-1.5 text-sm">
+            <div className="flex flex-col items-start gap-0.5">
               {(
                 [
                   ["morning", "Morning outfit, around 7am"],
@@ -165,16 +168,15 @@ export default function AppCard() {
                   ["prices", "Price drops on finds you watch"],
                 ] as Array<[keyof Prefs, string]>
               ).map(([k, label]) => (
-                <label key={k} className="flex items-center gap-2">
-                  <input type="checkbox" checked={prefs[k]} onChange={(e) => setPref(k, e.target.checked)} className="h-4 w-4 accent-emerald-700" />
-                  {label}
-                </label>
+                <Checkbox key={k} checked={prefs[k]} onChange={(e) => setPref(k, e.target.checked)} label={label} />
               ))}
             </div>
           </>
         )}
-        {note && <p className="text-sm text-stone-700">{note}</p>}
+        <p role="status" aria-live="polite" className="text-sm text-stone-700 empty:hidden">
+          {note}
+        </p>
       </div>
-    </section>
+    </Card>
   );
 }

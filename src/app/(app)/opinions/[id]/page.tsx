@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -7,11 +6,12 @@ import { tally } from "@/lib/opinions/tally";
 import { siteOrigin, type OpinionSnapshot } from "@/lib/opinions/server";
 import OpinionControls from "./OpinionControls";
 import { stillOpen } from "@/lib/time";
+import { Card, Chip, EmptyState, ListCard, PageHeader, SectionTitle, Thumb, buttonClass, type ChipTone } from "@/components/ui";
 
-const WORD: Record<string, { label: string; cls: string }> = {
-  works: { label: "✓ works on you", cls: "bg-emerald-700 text-white" },
-  almost: { label: "◐ almost", cls: "bg-amber-500 text-stone-900" },
-  not: { label: "✕ not for you", cls: "bg-red-700 text-white" },
+const WORD: Record<string, { glyph: string; label: string; tone: ChipTone }> = {
+  works: { glyph: "✓", label: "works on you", tone: "works" },
+  almost: { glyph: "◐", label: "almost", tone: "almost" },
+  not: { glyph: "✕", label: "not for you", tone: "not" },
 };
 
 export const metadata = { title: "Votes · valette" };
@@ -31,62 +31,60 @@ export default async function OpinionDetail({ params }: { params: Promise<{ id: 
   const bar = (n: number) => `${t.total ? (n / t.total) * 100 : 0}%`;
 
   return (
-    <div className="space-y-5">
-      <div>
-        <Link href="/opinions" className="text-sm text-stone-500 hover:text-stone-900">← Second opinions</Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">{s.title}</h1>
-        {o.question && <p className="text-stone-600">“{o.question}”</p>}
-      </div>
+    <div className="space-y-6">
+      <PageHeader back={{ href: "/opinions", label: "Second opinions" }} title={s.title} subtitle={o.question ? `“${o.question}”` : undefined} />
 
-      <section className="space-y-3 rounded-2xl border border-stone-200 bg-white p-4">
-        <p className="font-display text-2xl font-extrabold">{t.summary}</p>
-        <div className="flex h-3 overflow-hidden rounded-full bg-stone-100">
-          <span className="bg-emerald-700" style={{ width: bar(t.works) }} />
-          <span className="bg-amber-500" style={{ width: bar(t.almost) }} />
-          <span className="bg-red-700" style={{ width: bar(t.not) }} />
+      <Card as="section" aria-label="Votes so far" className="space-y-3">
+        <p className="font-display text-2xl font-extrabold leading-tight tracking-[-0.02em]">{t.summary}</p>
+        <div className="flex h-3 overflow-hidden rounded-full bg-inset" aria-hidden="true">
+          <span className="bg-emerald-700 transition-[width] duration-300 ease-soft" style={{ width: bar(t.works) }} />
+          <span className="bg-amber-500 transition-[width] duration-300 ease-soft" style={{ width: bar(t.almost) }} />
+          <span className="bg-red-700 transition-[width] duration-300 ease-soft" style={{ width: bar(t.not) }} />
         </div>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-stone-500 tabular-nums">
           {t.works} works · {t.almost} almost · {t.not} not for you{open ? ` · open until ${new Date(o.closes_at as string).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}` : " · closed"}
         </p>
         <OpinionControls id={id} url={url} open={open} />
-      </section>
+      </Card>
 
       {(s.items?.length ?? 0) > 0 && (
-        <div className="flex gap-2 overflow-x-auto">
+        <ul className="flex gap-2 overflow-x-auto">
           {s.items!.map((it, i) => (
-            <div key={i} className="w-20 shrink-0">
-              <div className="aspect-square overflow-hidden rounded-lg bg-stone-100">
-                {it.image_path && urls[it.image_path] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={urls[it.image_path]} alt={it.name} className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full items-center justify-center px-1 text-center text-[10px] text-stone-400">{it.name}</div>
-                )}
-              </div>
-            </div>
+            <li key={i}>
+              <Thumb src={it.image_path ? urls[it.image_path] : null} alt={it.name} size="md" item={{ subcategory: it.subcategory, colors: it.colors }} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
       {o.kind === "find" && s.url && (
-        <a href={s.url} target="_blank" rel="noopener noreferrer" className="inline-block text-sm font-semibold underline">Open the product page</a>
+        <a href={s.url} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "sm")}>
+          Open the product page
+        </a>
       )}
 
-      <section className="space-y-2">
-        <h2 className="font-display text-lg font-bold">What they said</h2>
+      <section className="space-y-3">
+        <SectionTitle>What they said</SectionTitle>
         {!votes?.length ? (
-          <p className="rounded-xl border border-dashed border-stone-300 bg-white p-4 text-sm text-stone-600">No votes yet. Send the link to a friend or two.</p>
+          <EmptyState compact title="No votes yet. Send the link to a friend or two." />
         ) : (
-          <ul className="space-y-2">
-            {votes.map((v) => (
-              <li key={v.id as string} className="rounded-xl border border-stone-200 bg-white p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium">{(v.voter_name as string | null) ?? "A friend"}</p>
-                  <span className={"rounded-full px-2.5 py-0.5 text-xs font-semibold " + (WORD[v.verdict as string]?.cls ?? "")}>{WORD[v.verdict as string]?.label}</span>
-                </div>
-                {v.comment && <p className="mt-1 text-sm text-stone-700">{v.comment as string}</p>}
-              </li>
-            ))}
-          </ul>
+          <ListCard>
+            {votes.map((v) => {
+              const word = WORD[v.verdict as string];
+              return (
+                <li key={v.id as string} className="space-y-1 py-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="min-w-0 truncate text-[15px] font-semibold">{(v.voter_name as string | null) ?? "A friend"}</p>
+                    {word && (
+                      <Chip tone={word.tone} className="shrink-0">
+                        <span aria-hidden="true">{word.glyph}</span> {word.label}
+                      </Chip>
+                    )}
+                  </div>
+                  {v.comment && <p className="text-sm leading-relaxed text-stone-700">{v.comment as string}</p>}
+                </li>
+              );
+            })}
+          </ListCard>
         )}
       </section>
     </div>

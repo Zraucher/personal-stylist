@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/ui";
 import WishlistClient, { type CandidateView, type WishView } from "./WishlistClient";
 
 export default async function WishlistPage({ searchParams }: { searchParams: Promise<{ add?: string; prefs?: string }> }) {
@@ -43,13 +43,11 @@ export default async function WishlistPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/hauls" className="text-sm text-stone-500 hover:text-stone-900">
-          ← Shop
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">Wishlist</h1>
-        <p className="text-sm text-stone-500">Pieces you want. Find options searches stores with your palette&apos;s color words and your loved brands, and shows what fits.</p>
-      </div>
+      <PageHeader
+        back={{ href: "/hauls", label: "Shop" }}
+        title="Wishlist"
+        subtitle="Pieces you want. Find options searches stores with your palette's color words and your loved brands, and shows what fits."
+      />
       <WishlistClient
         wishes={wishViews}
         candidates={candViews}

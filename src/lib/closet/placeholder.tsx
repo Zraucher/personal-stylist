@@ -79,14 +79,15 @@ function tintFor(colors: ItemColor[] | null | undefined): string {
     const hex = resolveColor(c);
     if (hex) return hex;
   }
-  return "#d6d3d1";
+  return "var(--color-stone-300)";
 }
 
 /** Pick a stroke that stays visible on both light and dark fills. */
 function strokeFor(hex: string): string {
+  if (!hex.startsWith("#")) return "rgb(29 27 43 / 0.35)";
   const n = parseInt(hex.slice(1), 16);
   const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return lum < 0.35 ? "#a8a29e" : "#78716c";
+  return lum < 0.35 ? "rgb(251 247 242 / 0.55)" : "rgb(29 27 43 / 0.45)";
 }
 
 export default function ItemPlaceholder({
@@ -94,18 +95,21 @@ export default function ItemPlaceholder({
   subcategory,
   colors,
   label,
+  compact = false,
 }: {
   category: string | null | undefined;
   subcategory: string | null | undefined;
   colors?: ItemColor[] | null;
   label?: string;
+  /** Small thumbnails: the silhouette only, no caption. */
+  compact?: boolean;
 }) {
   const kind = placeholderKind(category, subcategory);
   const fill = tintFor(colors);
   const stroke = strokeFor(fill);
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-stone-100">
-      <svg viewBox="0 0 100 100" className="h-3/5 w-3/5" role="img" aria-label={label ?? subcategory ?? category ?? "item"}>
+    <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-inset">
+      <svg viewBox="0 0 100 100" className={compact ? "h-[72%] w-[72%]" : "h-3/5 w-3/5"} role="img" aria-label={label ?? subcategory ?? category ?? "item"}>
         {kind === "glasses" ? (
           <g fill={fill} fillOpacity="0.85" stroke={stroke} strokeWidth="2.5" strokeLinejoin="round">
             <rect x="10" y="38" width="32" height="22" rx="7" />
@@ -124,7 +128,7 @@ export default function ItemPlaceholder({
           </g>
         )}
       </svg>
-      <span className="px-2 text-center text-[10px] uppercase tracking-wide text-stone-400">{label ?? subcategory ?? category ?? "item"}</span>
+      {!compact && <span className="px-2 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">{label ?? subcategory ?? category ?? "item"}</span>}
     </div>
   );
 }
