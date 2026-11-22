@@ -1,6 +1,6 @@
 # Valette design system: Second Look, v2
 
-The single source of truth for how Valette looks and behaves. Every screen and every future change follows this file. The brand guide artifact ("Valette Brand Books", Book B) mirrors it.
+The single source of truth for how Valette looks and behaves. Every screen and every future change follows this file. The brand guide artifact ("Valette Brand Book") mirrors it.
 
 Built from four audits on 2026-11-21: impeccable (hierarchy, type, states), high-end visual design (what reads as premium), redesign-existing-projects (consistency and a shared kit), and an accessibility review (WCAG 2.2 AA).
 
