@@ -1,16 +1,28 @@
 "use client";
 
-import { useState, useTransition, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { addBrand, deleteBrand, saveAccount, saveColor, saveMeasurements, saveStyle } from "./actions";
-import { Button, Card as UICard, Chip, Field, Input, Notice, SectionTitle, Select, Textarea, type ChipTone } from "@/components/ui";
+import { Button, Card as UICard, Chip, EmptyState, Field, Input, Notice, SectionTitle, Select, Swatch, Textarea, type ChipTone } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
 // Shared bits
 // ---------------------------------------------------------------------------
+
+/** Only one profile card edits at a time; the others' Edit buttons wait. */
+const EditingContext = createContext<{ editing: string | null; setEditing: (k: string | null) => void }>({ editing: null, setEditing: () => {} });
+
+export function ProfileEditing({ children }: { children: ReactNode }) {
+  const [editing, setEditing] = useState<string | null>(null);
+  return <EditingContext.Provider value={{ editing, setEditing }}>{children}</EditingContext.Provider>;
+}
+
 function Card({
+  id,
   title,
   editing,
+  locked,
+  saved,
   onEdit,
   onCancel,
   onSave,
@@ -19,8 +31,12 @@ function Card({
   view,
   children,
 }: {
+  id?: string;
   title: string;
   editing: boolean;
+  /** Another card is being edited. */
+  locked: boolean;
+  saved: boolean;
   onEdit: () => void;
   onCancel: () => void;
   onSave: () => void;
@@ -29,12 +45,22 @@ function Card({
   view: ReactNode;
   children: ReactNode;
 }) {
+  const editRef = useRef<HTMLButtonElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const was = useRef(editing);
+  // Focus follows the mode: into the first field on Edit, back to Edit on Save or Cancel.
+  useEffect(() => {
+    if (editing && !was.current) formRef.current?.querySelector<HTMLElement>("input, select, textarea")?.focus();
+    if (!editing && was.current) editRef.current?.focus();
+    was.current = editing;
+  }, [editing]);
+
   return (
-    <UICard as="section" className="space-y-3">
+    <UICard as="section" id={id} className="scroll-mt-20 space-y-3">
       <SectionTitle
         action={
           !editing && (
-            <Button type="button" variant="quiet" size="sm" onClick={onEdit} aria-label={`Edit ${title}`}>
+            <Button ref={editRef} type="button" variant="quiet" size="sm" onClick={onEdit} disabled={locked} aria-label={`Edit ${title}`} title={locked ? "Finish the card you're editing first" : undefined}>
               Edit
             </Button>
           )
@@ -43,7 +69,7 @@ function Card({
         {title}
       </SectionTitle>
       {editing ? (
-        <div className="space-y-4">
+        <div ref={formRef} className="space-y-4">
           {children}
           {error && <Notice tone="error">{error}</Notice>}
           <div className="flex flex-wrap items-center gap-2">
@@ -58,18 +84,25 @@ function Card({
       ) : (
         <div>{view}</div>
       )}
+      <p role="status" className="text-sm font-medium text-stone-700 empty:hidden">
+        {saved && !editing ? "✓ Saved" : ""}
+      </p>
     </UICard>
   );
 }
 
-function useEditor<T>(initial: T, save: (v: T) => Promise<{ ok: true } | { ok: false; error: string }>) {
+function useEditor<T>(key: string, initial: T, save: (v: T) => Promise<{ ok: true } | { ok: false; error: string }>) {
   const router = useRouter();
-  const [editing, setEditing] = useState(false);
+  const ctx = useContext(EditingContext);
+  const editing = ctx.editing === key;
   const [v, setV] = useState<T>(initial);
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
   return {
     editing,
+    locked: ctx.editing !== null && !editing,
+    saved,
     v,
     setV,
     error,
@@ -77,9 +110,10 @@ function useEditor<T>(initial: T, save: (v: T) => Promise<{ ok: true } | { ok: f
     edit: () => {
       setV(initial);
       setError(null);
-      setEditing(true);
+      setSaved(false);
+      ctx.setEditing(key);
     },
-    cancel: () => setEditing(false),
+    cancel: () => ctx.setEditing(null),
     save: () =>
       startTransition(async () => {
         setError(null);
@@ -88,7 +122,8 @@ function useEditor<T>(initial: T, save: (v: T) => Promise<{ ok: true } | { ok: f
           setError(r.error);
           return;
         }
-        setEditing(false);
+        setSaved(true);
+        ctx.setEditing(null);
         router.refresh();
       }),
   };
@@ -98,7 +133,7 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <>
       <dt className="text-stone-500">{label}</dt>
-      <dd>{children ?? <Empty />}</dd>
+      <dd className="min-w-0 break-words">{children ?? <Empty />}</dd>
     </>
   );
 }
@@ -170,7 +205,7 @@ function FabricInput({ label, value, onChange, placeholder }: { label: string; v
               aria-pressed={f.strength === "hard"}
               aria-label={`${f.name} as a hard rule`}
               className={
-                "tap inline-flex items-center rounded-full px-2 text-[11px] font-semibold transition-colors duration-200 ease-soft " +
+                "tap inline-flex items-center rounded-full px-2 text-xs font-semibold transition-colors duration-200 ease-soft " +
                 (f.strength === "hard" ? "bg-stone-900 text-stone-50" : "bg-inset text-stone-600 ring-1 ring-inset ring-line-strong")
               }
               title="Tap to switch between soft (a preference) and hard (a rule)"
@@ -209,11 +244,13 @@ const fabricText = (fs: Fabric[]) => (fs.length ? fs.map((f) => (f.strength === 
 export type AccountData = { name: string; email: string; location: string; presentation: "womens" | "mens" | "both" };
 
 export function AccountCard({ data }: { data: AccountData }) {
-  const e = useEditor({ name: data.name, location: data.location, presentation: data.presentation }, (v) => saveAccount(v));
+  const e = useEditor("account", { name: data.name, location: data.location, presentation: data.presentation }, (v) => saveAccount(v));
   return (
     <Card
       title="Account"
       editing={e.editing}
+      locked={e.locked}
+      saved={e.saved}
       onEdit={e.edit}
       onCancel={e.cancel}
       onSave={e.save}
@@ -272,17 +309,22 @@ const M_FIELDS: Array<[keyof MeasurementsData, string]> = [
 ];
 
 export function MeasurementsCard({ data }: { data: MeasurementsData }) {
-  const e = useEditor<MeasurementsData>(data, (v) => saveMeasurements(v));
+  const e = useEditor<MeasurementsData>("measurements", data, (v) => saveMeasurements(v));
   return (
     <Card
       title="Measurements (inches)"
       editing={e.editing}
+      locked={e.locked}
+      saved={e.saved}
       onEdit={e.edit}
       onCancel={e.cancel}
       onSave={e.save}
       pending={e.pending}
       error={e.error}
       view={
+        M_FIELDS.every(([k]) => data[k] == null) && !data.rise_target_in && !data.sizing_notes ? (
+          <EmptyState compact title="No measurements yet. Add them with Edit so fit checks know your size." />
+        ) : (
         <Dl>
           {M_FIELDS.map(([k, label]) => (
             <Row key={k} label={label}>
@@ -292,6 +334,7 @@ export function MeasurementsCard({ data }: { data: MeasurementsData }) {
           <Row label="Rise target">{data.rise_target_in || null}</Row>
           <Row label="Sizing notes">{data.sizing_notes || null}</Row>
         </Dl>
+        )
       }
     >
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -330,8 +373,25 @@ export type ColorData = {
   notes: string;
 };
 
-export function ColorCard({ data }: { data: ColorData }) {
-  const e = useEditor<ColorData>(data, (v) => saveColor(v));
+/** Colors as swatch chips, the way the palette page shows them. */
+function ColorChips({ names, hexes }: { names: string[]; hexes: Record<string, string | null> }) {
+  if (!names.length) return null;
+  return (
+    <ul className="flex flex-wrap gap-1.5">
+      {names.map((c) => (
+        <li key={c}>
+          <Chip tone="outline">
+            {hexes[c] && <Swatch hex={hexes[c]} className="size-3" />}
+            {c}
+          </Chip>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Record<string, string | null> }) {
+  const e = useEditor<ColorData>("color", data, (v) => saveColor(v));
   const field = (k: "season_label" | "undertone" | "depth" | "contrast", label: string, ph: string) => (
     <Field label={label}>
       <Input value={e.v[k]} onChange={(ev) => e.setV({ ...e.v, [k]: ev.target.value })} placeholder={ph} />
@@ -339,8 +399,11 @@ export function ColorCard({ data }: { data: ColorData }) {
   );
   return (
     <Card
+      id="color"
       title="Color"
       editing={e.editing}
+      locked={e.locked}
+      saved={e.saved}
       onEdit={e.edit}
       onCancel={e.cancel}
       onSave={e.save}
@@ -352,8 +415,8 @@ export function ColorCard({ data }: { data: ColorData }) {
           <Row label="Undertone">{data.undertone || null}</Row>
           <Row label="Depth">{data.depth || null}</Row>
           <Row label="Contrast">{data.contrast || null}</Row>
-          <Row label="Best colors">{list(data.best_colors)}</Row>
-          <Row label="Avoid">{list(data.avoid_colors)}</Row>
+          <Row label="Best colors">{data.best_colors.length ? <ColorChips names={data.best_colors} hexes={hexes} /> : null}</Row>
+          <Row label="Avoid">{data.avoid_colors.length ? <ColorChips names={data.avoid_colors} hexes={hexes} /> : null}</Row>
           <Row label="Notes">{data.notes || null}</Row>
         </Dl>
       }
@@ -393,7 +456,7 @@ export type StyleData = {
 };
 
 export function StyleCard({ data }: { data: StyleData }) {
-  const e = useEditor<StyleData>(data, (v) => saveStyle(v));
+  const e = useEditor<StyleData>("style", data, (v) => saveStyle(v));
   const tagField = (k: "loves" | "dislikes" | "silhouettes_preferred" | "silhouettes_avoid", label: string, ph: string) => (
     <div className="space-y-1.5">
       <p className="text-sm font-medium text-stone-700" aria-hidden="true">{label}</p>
@@ -404,6 +467,8 @@ export function StyleCard({ data }: { data: StyleData }) {
     <Card
       title="Style"
       editing={e.editing}
+      locked={e.locked}
+      saved={e.saved}
       onEdit={e.edit}
       onCancel={e.cancel}
       onSave={e.save}
@@ -459,7 +524,9 @@ export function BrandsCard({ brands }: { brands: BrandRow[] }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const add = () =>
+  const add = (ev: FormEvent) => {
+    ev.preventDefault();
+    if (!name.trim()) return;
     startTransition(async () => {
       setError(null);
       const r = await addBrand({ name, status, note });
@@ -471,6 +538,7 @@ export function BrandsCard({ brands }: { brands: BrandRow[] }) {
       setNote("");
       router.refresh();
     });
+  };
   const remove = (id: string) =>
     startTransition(async () => {
       const r = await deleteBrand(id);
@@ -505,7 +573,7 @@ export function BrandsCard({ brands }: { brands: BrandRow[] }) {
           ))}
         </ul>
       )}
-      <div className="flex flex-wrap items-end gap-2 border-t border-line pt-3">
+      <form onSubmit={add} aria-label="Add a brand" className="flex flex-wrap items-end gap-2 border-t border-line pt-3">
         <Field label="Brand" srOnly className="min-w-[10rem] flex-1">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Add a brand" />
         </Field>
@@ -519,10 +587,10 @@ export function BrandsCard({ brands }: { brands: BrandRow[] }) {
         <Field label="Note" srOnly className="min-w-[8rem] flex-1 sm:w-40 sm:flex-none">
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" />
         </Field>
-        <Button type="button" variant="secondary" onClick={add} disabled={pending || !name.trim()}>
+        <Button type="submit" variant="secondary" disabled={pending || !name.trim()}>
           Add
         </Button>
-      </div>
+      </form>
       {error && <Notice tone="error">{error}</Notice>}
     </UICard>
   );

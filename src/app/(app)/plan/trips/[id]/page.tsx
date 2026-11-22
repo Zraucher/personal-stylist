@@ -29,7 +29,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
             <>
               {trip.title !== trip.destination ? `${trip.destination} · ` : ""}
               {fmt(trip.start)} to {fmt(trip.end)}
-              {lo != null && hi != null ? ` · feels ${lo}–${hi}°` : ""}
+              {lo != null && hi != null ? ` · feels ${lo}–${hi}°F` : ""}
             </>
           }
         />
@@ -37,8 +37,8 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
           {trip.weatherSource === "forecast"
             ? "Weather from the live forecast."
             : trip.weatherSource === "typical"
-              ? "Weather based on the same dates last year. Swap looks closer to the trip if the forecast changes."
-              : "No weather found for this place, so looks assume a mild day."}
+              ? "Weather based on the same dates last year. Tap Try another closer to the trip if the forecast changes."
+              : "We couldn't find weather for this place, so the looks plan for a mild day."}
         </p>
       </div>
       <TripClient trip={trip} />

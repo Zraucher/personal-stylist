@@ -48,7 +48,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     scorecard = (latest as ScorecardRow | null) ?? null;
     // Older cards that stalled on "no color recorded" are scored again, now that the
     // color is read from the photo.
-    if (scorecard && scorecard.headline?.includes("no color recorded")) scorecard = null;
+    if (scorecard && /no color recorded/i.test(scorecard.headline ?? "")) scorecard = null;
     url = next.image_path ? urls[next.image_path] : undefined;
   }
 
@@ -62,7 +62,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         subtitle={
           <>
             {reviewed} reviewed, {agreed} agreed
-            {reviewed > 0 && ` (${Math.round((agreed / reviewed) * 100)}%)`}. Goal: agree with 8 of {GOAL}.
+            {reviewed > 0 && ` (${Math.round((agreed / reviewed) * 100)}%)`}. The goal is agreeing with 8 of {GOAL}.
           </>
         }
       />
@@ -80,11 +80,14 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
 
       {next ? (
         <>
-          <Card variant="active" pad="sm" className="space-y-3">
-            <Thumb src={url} alt={next.name ?? ""} item={next} size="fill" className="mx-auto max-w-xs" />
-            <div className="flex items-center justify-between gap-3 pl-1">
-              <p className="min-w-0 truncate font-display text-lg font-bold leading-snug">{next.name ?? "Untitled"}</p>
-              <ButtonLink href={skipHref} variant="quiet" size="sm">
+          {/* Photo beside the name, so the verdict and Agree / Disagree stay on screen at 375 px. */}
+          <Card variant="active" pad="sm" className="flex items-center gap-4">
+            <div className="w-28 shrink-0 sm:w-40">
+              <Thumb src={url} alt="" item={next} size="fill" />
+            </div>
+            <div className="min-w-0 flex-1 space-y-2">
+              <h2 className="font-display text-lg font-bold leading-snug">{next.name ?? "Untitled"}</h2>
+              <ButtonLink href={skipHref} variant="quiet" size="sm" className="-ml-3.5">
                 Skip
               </ButtonLink>
             </div>
@@ -105,7 +108,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           body={
             <>
               {reviewed >= GOAL
-                ? `You agreed with ${agreed} of ${reviewed}. Disagreements are saved as feedback for the next tuning pass.`
+                ? `You agreed with ${agreed} of ${reviewed}. We'll learn from the ones you disagreed with.`
                 : "Photograph more pieces to keep reviewing."}
               {noPhoto > 0 && ` ${noPhoto} ${noPhoto === 1 ? "piece has" : "pieces have"} no photo yet.`}
             </>

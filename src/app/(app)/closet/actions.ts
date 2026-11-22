@@ -17,7 +17,7 @@ const nullableText = (max: number) =>
     .transform((v) => (v === "" ? null : v));
 
 const ItemInput = z.object({
-  name: z.string().trim().min(1, "Give it a name").max(120),
+  name: z.string().trim().min(1, "Give it a name.").max(120),
   category: z.enum(CATEGORIES),
   subcategory: nullableText(60),
   colors: z
@@ -51,7 +51,7 @@ type SaveResult = { id: string } | { error: string };
 export async function saveItem(raw: ItemInput, id?: string): Promise<SaveResult> {
   const parsed = ItemInput.safeParse(raw);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Check the form" };
+    return { error: parsed.error.issues[0]?.message ?? "Check the details and try again." };
   }
   const input = parsed.data;
 
@@ -59,10 +59,10 @@ export async function saveItem(raw: ItemInput, id?: string): Promise<SaveResult>
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
 
   if (input.image_path && !input.image_path.startsWith(`${user.id}/`)) {
-    return { error: "Image does not belong to you" };
+    return { error: "That photo isn't from your account. Upload it again." };
   }
 
   const row = {
@@ -73,7 +73,7 @@ export async function saveItem(raw: ItemInput, id?: string): Promise<SaveResult>
 
   if (id) {
     const { error } = await supabase.from("closet_items").update(row).eq("id", id).eq("user_id", user.id);
-    if (error) return { error: error.message };
+    if (error) return { error: "Couldn't save this piece. Try again." };
     revalidatePath("/closet");
     revalidatePath(`/closet/${id}`);
     return { id };
@@ -84,7 +84,7 @@ export async function saveItem(raw: ItemInput, id?: string): Promise<SaveResult>
     .insert({ ...row, user_id: user.id })
     .select("id")
     .single();
-  if (error || !data) return { error: error?.message ?? "Could not save" };
+  if (error || !data) return { error: "Couldn't save this piece. Try again." };
   revalidatePath("/closet");
   return { id: data.id as string };
 }
@@ -95,18 +95,18 @@ export async function setItemPhoto(id: string, path: string): Promise<{ ok: true
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
-  if (!path.startsWith(`${user.id}/`)) return { error: "Image does not belong to you" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
+  if (!path.startsWith(`${user.id}/`)) return { error: "That photo isn't from your account. Upload it again." };
 
   const { data: item } = await supabase.from("closet_items").select("image_path").eq("id", id).eq("user_id", user.id).maybeSingle();
-  if (!item) return { error: "Item not found" };
+  if (!item) return { error: "That piece isn't here anymore. Go back to your closet." };
 
   const { error } = await supabase
     .from("closet_items")
     .update({ image_path: path, source_image_url: null, source_page_url: null, updated_at: new Date().toISOString() })
     .eq("id", id)
     .eq("user_id", user.id);
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't save this piece. Try again." };
 
   if (item.image_path && item.image_path !== path) {
     await supabase.storage.from(CLOSET_BUCKET).remove([item.image_path as string]);
@@ -133,13 +133,13 @@ export async function updateBasicDetails(
 ): Promise<{ error?: string }> {
   const parsed = BasicDetails.safeParse(raw);
   if (!parsed.success) return { error: "Check the brand and color." };
-  if (!findBasic(genericId)) return { error: "Unknown basic" };
+  if (!findBasic(genericId)) return { error: "That basic isn't on the list anymore. Reload the page." };
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
 
   const { brand, colorName, colorHex } = parsed.data;
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -147,7 +147,7 @@ export async function updateBasicDetails(
   if (colorName) patch.colors = [{ name: colorName, ...(colorHex ? { hex: colorHex } : {}) }];
 
   const { error } = await supabase.from("closet_items").update(patch).eq("user_id", user.id).eq("generic_id", genericId);
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't save the photo. Try again." };
   revalidatePath("/closet");
   revalidatePath("/closet/basics");
   return {};
@@ -182,13 +182,13 @@ export async function deleteItem(id: string): Promise<void> {
  */
 export async function toggleBasic(genericId: string, owned: boolean): Promise<{ error?: string }> {
   const basic = findBasic(genericId);
-  if (!basic) return { error: "Unknown basic" };
+  if (!basic) return { error: "That basic isn't on the list anymore. Reload the page." };
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
 
   if (owned) {
     const { data: existing } = await supabase
@@ -217,7 +217,7 @@ export async function toggleBasic(genericId: string, owned: boolean): Promise<{ 
         seasons: basic.seasons,
         status: "available",
       });
-      if (error) return { error: error.message };
+      if (error) return { error: "Couldn't save this piece. Try again." };
     }
   } else {
     const { data: rows } = await supabase

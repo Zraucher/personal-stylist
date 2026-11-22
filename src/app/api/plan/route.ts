@@ -30,11 +30,11 @@ export async function POST(request: NextRequest) {
   try {
     const s = await loadWeekState(supabase, user.id);
     let message: string | null = null;
-    if (b.action !== "view" && b.action !== "fill" && !s.dates.includes(b.date)) return NextResponse.json({ error: "That day is outside this week." }, { status: 400 });
+    if (b.action !== "view" && b.action !== "fill" && !s.dates.includes(b.date)) return NextResponse.json({ error: "That day is outside this week. Reload Plan and try again." }, { status: 400 });
 
     if (b.action === "fill") {
       const n = await fillWeek(supabase, user.id, s, { replan: b.replan });
-      if (!n) message = s.closet.length < 6 ? "Add a few more pieces and the planner can fill your week." : "Nothing new to plan. Swap a day to try another look.";
+      if (!n) message = s.closet.length < 6 ? "Plans need a few tops, bottoms and shoes. Add a few more pieces and we'll fill your week." : "Nothing new to plan. Tap Try another on a day for a different look.";
     } else if (b.action === "swap" || b.action === "occasion") {
       const i = s.dates.indexOf(b.date);
       const plan = s.plans.get(b.date);
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       const pick = planSequence(days, { fixed })[i];
       if (pick < 0 && b.action === "swap") message = "That's the only outfit your closet makes for this day.";
       else await savePlanDay(supabase, user.id, s, b.date, occasion, pick >= 0 ? cands[pick] : null);
-      if (pick < 0 && b.action === "occasion") message = "Nothing in the closet fits that occasion and weather yet.";
+      if (pick < 0 && b.action === "occasion") message = "Nothing in your closet fits that occasion and weather yet.";
     } else if (b.action === "clear") {
       const plan = s.plans.get(b.date);
       if (plan) {
@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
     } else if (b.action === "wore") {
       const plan = s.plans.get(b.date);
       const o = plan?.outfit_id ? s.outfits.get(plan.outfit_id) : undefined;
-      if (!plan || !o) return NextResponse.json({ error: "Nothing planned that day." }, { status: 400 });
+      if (!plan || !o) return NextResponse.json({ error: "Nothing's planned that day. Plan it first." }, { status: 400 });
       if (plan.worn) return NextResponse.json({ week: await weekView(supabase, s), message: null });
-      if (b.date > s.today) return NextResponse.json({ error: "You can mark it worn on the day." }, { status: 400 });
+      if (b.date > s.today) return NextResponse.json({ error: "You can tap Wore it on the day itself." }, { status: 400 });
       await recordWear(supabase, user.id, o.item_ids, b.date, { outfitId: o.id, affinity: 0.5 });
       await supabase.from("plans").update({ worn: true, updated_at: new Date().toISOString() }).eq("id", plan.id).eq("user_id", user.id);
       s.plans.set(b.date, { ...plan, worn: true });

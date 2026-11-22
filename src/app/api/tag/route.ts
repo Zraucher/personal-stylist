@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     if (err instanceof AiError) {
       const map = { unavailable: [503, "tagging_unavailable"], rate_limited: [429, "rate_limited"], refused: [422, "could_not_tag"], failed: [502, "tagging_failed"] } as const;
       const [status, error] = map[err.code];
-      return NextResponse.json({ error, detail: err.message }, { status });
+      return NextResponse.json({ error }, { status });
     }
     throw err;
   }

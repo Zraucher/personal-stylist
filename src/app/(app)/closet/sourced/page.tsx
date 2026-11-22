@@ -25,9 +25,9 @@ export default async function SourcedPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Sourced photos"
+        title="Photos we found"
         back={{ href: "/closet", label: "Closet" }}
-        subtitle="Product photos found online for pieces without a photo. Check the color and style match what you own. A photo you accept is copied into your private closet."
+        subtitle="Product photos we found online for pieces without a photo. Check the color and style match yours. Photos you use are copied into your private closet."
       />
       {items.length === 0 ? (
         <EmptyState

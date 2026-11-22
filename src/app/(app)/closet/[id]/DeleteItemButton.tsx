@@ -8,13 +8,13 @@ export default function DeleteItemButton({ id }: { id: string }) {
   const [pending, startTransition] = useTransition();
   return (
     <ConfirmButton
-      title="Remove this item?"
-      body="Remove this item and its photo? If it just left your closet, set the status to Gone instead."
-      confirmLabel="Remove"
+      title="Delete this piece?"
+      body="Its photo goes too. If it just left your closet, mark it Gone instead. This can't be undone."
+      confirmLabel="Delete"
       disabled={pending}
       onConfirm={() => startTransition(() => deleteItem(id))}
     >
-      <span aria-live="polite">{pending ? "Removing…" : "Remove"}</span>
+      <span aria-live="polite">{pending ? "Deleting…" : "Delete"}</span>
     </ConfirmButton>
   );
 }

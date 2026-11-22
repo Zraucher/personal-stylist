@@ -20,21 +20,24 @@ const Input = z.object({
  */
 export async function respondToOutfit(raw: z.input<typeof Input>): Promise<{ ok: true } | { ok: false; error: string }> {
   const p = Input.safeParse(raw);
-  if (!p.success) return { ok: false, error: "Check the feedback." };
+  if (!p.success) return { ok: false, error: "Couldn't save that. Try again." };
   const { recommendationId, outfitId, type, note } = p.data;
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Signed out" };
+  if (!user) return { ok: false, error: "You're signed out. Sign in again to save this." };
 
   const { data: outfit } = await supabase.from("outfits").select("id, name, item_ids, composition_notes").eq("id", outfitId).eq("user_id", user.id).maybeSingle();
-  if (!outfit) return { ok: false, error: "Outfit not found" };
+  if (!outfit) return { ok: false, error: "That outfit isn't in your closet anymore." };
   const itemIds = (outfit.item_ids as string[]) ?? [];
 
   const { error } = await supabase.from("feedback").insert({ user_id: user.id, target: "outfit", target_id: outfitId, type, note: note || null });
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error("respondToOutfit: feedback insert failed", error.message);
+    return { ok: false, error: "Couldn't save that. Try again." };
+  }
 
   if (type === "wore") {
     const { data: prof } = await supabase.from("profiles").select("timezone").eq("id", user.id).maybeSingle();

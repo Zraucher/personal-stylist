@@ -30,12 +30,12 @@ export async function POST(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "unauthorized", detail: "You're signed out. Sign in again to save this." }, { status: 401 });
   const parsed = Body.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "bad_request", detail: "Couldn't search for that wish. Refresh the page and try again." }, { status: 400 });
 
   const { data: wish } = await supabase.from("wishlist").select("*").eq("id", parsed.data.wishlistId).eq("user_id", user.id).maybeSingle();
-  if (!wish) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (!wish) return NextResponse.json({ error: "not_found", detail: "That wish isn't here anymore. Refresh the page." }, { status: 404 });
 
   const ctx = await loadStyleContext(supabase, user.id);
   const what = ((wish.title as string | null) || (wish.category as string)).replace(/^tier \d\s*/i, "");
@@ -102,6 +102,6 @@ export async function POST(request: NextRequest) {
     queries,
     provider,
     found: hits.length,
-    note: hits.length === 0 ? "The search returned no product pages. Try adding a color or brand to the entry." : saved.length === 0 ? "Product pages were found but none could be read. Scrapling or Firecrawl will reach more stores." : null,
+    note: hits.length === 0 ? "We didn't find any product pages. Add a color or brand to the wish and try again." : saved.length === 0 ? "We found stores but couldn't read their pages. Try a different color or brand." : null,
   });
 }

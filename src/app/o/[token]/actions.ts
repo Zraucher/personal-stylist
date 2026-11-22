@@ -34,7 +34,7 @@ export async function castVote(raw: z.input<typeof Input>): Promise<VoteResult> 
 
   const admin = createAdminClient();
   const { data: o } = await admin.from("second_opinions").select("id, user_id, closes_at, snapshot, notified_at").eq("token", token).maybeSingle();
-  if (!o) return { ok: false, error: "This link has expired." };
+  if (!o) return { ok: false, error: "This link doesn't work anymore. Ask your friend for a new one." };
   if (Date.parse(o.closes_at as string) <= Date.now()) return { ok: false, error: "Voting on this one has closed." };
 
   // The person who asked can preview the page but not vote on their own look.
@@ -63,12 +63,12 @@ export async function castVote(raw: z.input<typeof Input>): Promise<VoteResult> 
       admin.from("opinion_votes").select("id", { count: "exact", head: true }).eq("opinion_id", o.id).eq("ip_hash", ipHash).gt("created_at", new Date(Date.now() - 3600_000).toISOString()),
     ]);
     if ((count ?? 0) >= MAX_VOTES) return { ok: false, error: "This one has plenty of votes already." };
-    if ((recent ?? 0) >= NEW_VOTES_PER_NETWORK_PER_HOUR) return { ok: false, error: "Lots of votes from this network already. Try again later." };
+    if ((recent ?? 0) >= NEW_VOTES_PER_NETWORK_PER_HOUR) return { ok: false, error: "Lots of votes from this Wi-Fi already. Try again later." };
   }
   const { error } = await admin
     .from("opinion_votes")
     .upsert({ opinion_id: o.id, voter_key: key, voter_name: name, verdict, comment, ip_hash: ipHash, created_at: new Date().toISOString() }, { onConflict: "opinion_id,voter_key" });
-  if (error) return { ok: false, error: error.message.includes("vote cap") ? "This one has plenty of votes already." : "Could not save your vote. Try again." };
+  if (error) return { ok: false, error: error.message.includes("vote cap") ? "This one has plenty of votes already." : "Couldn't save your vote. Try again." };
 
   const { data: votes } = await admin.from("opinion_votes").select("verdict").eq("opinion_id", o.id);
   const t = tally(votes ?? []);

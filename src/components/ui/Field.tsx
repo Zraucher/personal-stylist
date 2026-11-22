@@ -3,7 +3,7 @@ import { cx } from "./cx";
 
 /** Input styling: 44px tall, 16px text (no iOS zoom), visible 3:1 border. */
 export const fieldClass =
-  "block w-full min-h-11 rounded-control border border-stone-400/70 bg-inset px-3.5 py-2.5 text-base text-stone-900 placeholder:text-stone-500 transition-colors duration-200 ease-soft focus-visible:border-stone-900 disabled:opacity-60 aria-[invalid=true]:border-red-700";
+  "block w-full min-h-11 rounded-control border border-stone-400 bg-inset px-3.5 py-2.5 text-base text-stone-900 placeholder:text-stone-500 transition-colors duration-200 ease-soft focus-visible:border-stone-900 disabled:opacity-60 aria-[invalid=true]:border-red-700";
 
 export function Input({ className, ...rest }: ComponentProps<"input">) {
   return <input className={cx(fieldClass, className)} {...rest} />;
@@ -41,7 +41,7 @@ export function Field({ label, hint, error, srOnly = false, className, children 
 export function Checkbox({ label, className, ...rest }: Omit<ComponentProps<"input">, "type"> & { label: ReactNode }) {
   return (
     <label className={cx("tap inline-flex cursor-pointer items-center gap-2.5 text-sm", className)}>
-      <input type="checkbox" className="size-[18px] accent-emerald-700" {...rest} />
+      <input type="checkbox" className="size-[18px] accent-stone-900" {...rest} />
       {label}
     </label>
   );

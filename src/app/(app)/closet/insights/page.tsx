@@ -91,17 +91,16 @@ export default async function InsightsPage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        title="Closet insights"
+        subtitle="What you wear, what it costs per wear, and what's been sitting."
+      />
       <ClosetSubnav />
-      <PageHeader title="Closet insights" subtitle="What you actually wear, what it costs per wear, and what has been sitting." />
 
       <div className="grid grid-cols-3 gap-3">
-        {[
-          { n: String(ins.active), label: "pieces" },
-          { n: `${Math.round(ins.usedShare * 100)}%`, label: "worn in 90 days" },
-          { n: String(ins.wearsLast30), label: "wears this month" },
-        ].map((s) => (
-          <StatTile key={s.label} value={s.n} label={s.label} className="px-3 sm:px-4" />
-        ))}
+        <StatTile value={ins.active} label={ins.active === 1 ? "piece" : "pieces"} />
+        <StatTile value={`${Math.round(ins.usedShare * 100)}%`} label="worn in 90 days" />
+        <StatTile value={ins.wearsLast30} label={ins.wearsLast30 === 1 ? "wear this month" : "wears this month"} />
       </div>
 
       {totalWears === 0 && (
@@ -110,7 +109,7 @@ export default async function InsightsPage() {
           title="Insights grow as you log what you wear."
           body={
             <>
-              Insights grow as you log what you wear. Tap <b>wore it</b> on Today or your plan, or <b>Wore it today</b> on any piece.
+              Insights grow as you log what you wear. Tap <b>Wore it</b> on Today, on your plan, or on any piece.
             </>
           }
         />
@@ -120,11 +119,11 @@ export default async function InsightsPage() {
         <Section title="Sleeping in your closet" sub="Not worn in 60 days or more. Give one a turn this week, or let it go.">
           <ListCard>
             {ins.sleepers.map((s) => (
-              piece(s.id, undefined, s.days == null ? "Never logged as worn" : `${s.days} days since you wore it`)
+              piece(s.id, undefined, s.days == null ? "Not worn yet" : `${s.days} days since you wore it`)
             ))}
           </ListCard>
-          <ButtonLink variant="primary" size="sm" href={`/outfits/new?items=${ins.sleepers[0].id}`}>
-            Build an outfit around the first one
+          <ButtonLink variant="primary" size="sm" href={`/outfits/new?items=${ins.sleepers[0].id}`} className="max-w-full">
+            <span className="truncate">Build an outfit around {byId.get(ins.sleepers[0].id)?.name ?? "the first one"}</span>
           </ButtonLink>
         </Section>
       )}
@@ -171,13 +170,14 @@ export default async function InsightsPage() {
             <p className="text-sm text-stone-500">How your closet sits against your best colors.</p>
           </div>
           <div
-            className="flex h-4 overflow-hidden rounded-full bg-inset ring-1 ring-inset ring-line"
+            className="flex h-4 gap-0.5 overflow-hidden rounded-full bg-inset ring-1 ring-inset ring-line"
             role="img"
             aria-label={`${ins.palette.in} in palette, ${ins.palette.near} close, ${ins.palette.off} off palette, ${ins.palette.unknown} unknown`}
           >
-            <span className="bg-emerald-700" style={{ width: `${(ins.palette.in / palTotal) * 100}%` }} />
-            <span className="bg-emerald-300" style={{ width: `${(ins.palette.near / palTotal) * 100}%` }} />
-            <span className="bg-red-600" style={{ width: `${(ins.palette.off / palTotal) * 100}%` }} />
+            {/* A 2 px gap shows the track between segments, so adjacent fills never rely on their own contrast. */}
+            {ins.palette.in > 0 && <span className="bg-emerald-700" style={{ width: `${(ins.palette.in / palTotal) * 100}%` }} />}
+            {ins.palette.near > 0 && <span className="bg-emerald-300" style={{ width: `${(ins.palette.near / palTotal) * 100}%` }} />}
+            {ins.palette.off > 0 && <span className="bg-red-600" style={{ width: `${(ins.palette.off / palTotal) * 100}%` }} />}
           </div>
           <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm tabular-nums">
             <li className="flex items-center gap-2">

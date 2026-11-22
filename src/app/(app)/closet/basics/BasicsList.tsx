@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { BASICS, type Basic, type Presentation } from "@/lib/closet/basics";
 import { CATEGORIES, CATEGORY_LABELS } from "@/lib/closet/taxonomy";
 import { toggleBasic, updateBasicDetails } from "../actions";
-import { Button, Input, Notice, Swatch } from "@/components/ui";
+import { Button, Input, Notice, Segmented, Swatch } from "@/components/ui";
 
 export type OwnedInfo = { brand: string | null };
 type Props = { defaultTab: Presentation; showTabs: boolean; owned: Record<string, OwnedInfo> };
@@ -47,22 +47,16 @@ export default function BasicsList({ defaultTab, showTabs, owned: initialOwned }
   return (
     <div className="space-y-4">
       {showTabs && (
-        <div role="group" aria-label="Basics list" className="flex gap-1 rounded-full bg-inset p-1 text-sm">
-          {(["womens", "mens"] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setTab(p)}
-              aria-pressed={tab === p}
-              className={
-                "tap min-h-9 flex-1 rounded-full font-medium transition-colors duration-200 ease-soft " +
-                (tab === p ? "bg-card text-stone-900 shadow-active" : "text-stone-600 hover:text-stone-900")
-              }
-            >
-              {p === "womens" ? "Women's" : "Men's"}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label="Basics list"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "womens", label: "Women's" },
+            { value: "mens", label: "Men's" },
+          ]}
+          className="w-full [&>button]:flex-1 [&>button]:justify-center"
+        />
       )}
 
       <p role="status" aria-live="polite" className="text-sm tabular-nums text-stone-500">
@@ -72,8 +66,8 @@ export default function BasicsList({ defaultTab, showTabs, owned: initialOwned }
 
       {groups.map(([category, items]) => (
         <section key={category} aria-labelledby={`basics-${category}`} className="space-y-2">
-          <h2 id={`basics-${category}`} className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-700">
-            {CATEGORY_LABELS[category]}
+          <h2 id={`basics-${category}`} className="px-1 font-display text-lg font-bold leading-snug">
+            {CATEGORY_LABELS[category]} <span className="font-sans text-sm font-normal tabular-nums text-stone-500">{items.length}</span>
           </h2>
           <ul className="divide-y divide-line overflow-hidden rounded-card bg-card ring-1 ring-line">
             {items.map((b) => {
@@ -156,11 +150,11 @@ function BasicDetailsForm({ basic, onDone }: { basic: Basic; onDone: (savedBrand
           type="color"
           value={colorHex}
           onChange={(e) => setColorHex(e.target.value)}
-          aria-label="Color swatch"
+          aria-label={`Color swatch for your ${basic.name}`}
           className="size-11 shrink-0 cursor-pointer rounded-control border border-stone-400/70 bg-inset p-1"
         />
         <div className="w-32">
-          <Input value={colorName} onChange={(e) => setColorName(e.target.value)} placeholder="Color name" aria-label="Color name" />
+          <Input value={colorName} onChange={(e) => setColorName(e.target.value)} placeholder="Color name" aria-label={`Color name for your ${basic.name}`} />
         </div>
       </div>
       {error && <Notice tone="error">{error}</Notice>}

@@ -41,10 +41,10 @@ export default async function NewOutfitPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Build an outfit" back={{ href: "/outfits", label: "Back to outfits" }} />
+      <PageHeader title="Build an outfit" back={{ href: "/outfits", label: "Outfits" }} />
       {groups.length === 0 ? (
         <EmptyState
-          title="Your closet is empty"
+          title="your closet is empty"
           body={
             <>
               Add pieces on the <Link href="/closet/basics" className="font-semibold underline underline-offset-2">basics list</Link> or <Link href="/closet/new" className="font-semibold underline underline-offset-2">photograph a few</Link>, then come back.

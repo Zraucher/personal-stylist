@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "unauthorized", detail: "You're signed out. Sign in again to save this." }, { status: 401 });
 
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "bad_request", detail: "Describe the day in a few words." }, { status: 400 });
@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json({ recommendation: await loadRecommendation(supabase, user.id, id) });
   } catch (e) {
-    return NextResponse.json({ error: "failed", detail: e instanceof Error ? e.message : String(e) }, { status: 500 });
+    console.error("ask: recommend failed", e);
+    return NextResponse.json({ error: "failed", detail: "Couldn't find looks for that. Add a detail or two and try again." }, { status: 500 });
   }
 }

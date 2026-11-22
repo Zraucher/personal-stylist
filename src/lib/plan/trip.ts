@@ -64,17 +64,17 @@ export async function createTrip(supabase: SupabaseClient, userId: string, input
     })
     .select("id")
     .single();
-  if (error || !data) return { error: "Could not save the trip." };
+  if (error || !data) return { error: "Couldn't save the trip. Try again." };
   return { id: data.id as string };
 }
 
 /** Try a different look for one slot, keeping the rest of the trip as is. */
 export async function swapTripLook(supabase: SupabaseClient, userId: string, tripId: string, key: string): Promise<{ error?: string }> {
   const { data: t } = await supabase.from("trips").select("looks").eq("id", tripId).eq("user_id", userId).maybeSingle();
-  if (!t) return { error: "Trip not found." };
+  if (!t) return { error: "That trip isn't here anymore. Go back to Plan to see your trips." };
   const looks = (t.looks as StoredLook[]) ?? [];
   const i = looks.findIndex((l) => l.key === key);
-  if (i < 0) return { error: "Look not found." };
+  if (i < 0) return { error: "That look isn't here anymore. Reload the trip and try again." };
   const [ctx, closet] = await Promise.all([loadStyleContext(supabase, userId), loadCloset(supabase, userId)]);
   const weatherByDate = new Map(looks.map((l) => [l.date, l.weather ?? statedWeather(l.date, null, ["morning", "midday", "evening"], null)]));
   const fixed = looks.map((l, k) => (k === i ? null : l.item_ids));

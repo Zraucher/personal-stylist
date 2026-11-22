@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cx } from "./cx";
 
@@ -20,6 +21,15 @@ export function Chip({ tone = "neutral", size = "sm", className, children }: { t
     <span className={cx("inline-flex items-center gap-1 rounded-full font-semibold leading-none", size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm", TONE[tone], className)}>
       {children}
     </span>
+  );
+}
+
+/** A chip that links somewhere (nudges like "2 new votes"). 44 px touch area on phones. */
+export function ChipLink({ tone = "warm", className, children, ...rest }: ComponentProps<typeof Link> & { tone?: ChipTone }) {
+  return (
+    <Link className={cx("tap inline-flex min-h-9 items-center gap-1 rounded-full px-3.5 text-sm font-semibold transition-opacity duration-200 ease-soft hover:opacity-85", TONE[tone], className)} {...rest}>
+      {children}
+    </Link>
   );
 }
 

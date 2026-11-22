@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       // Only news: the price is below where it was yesterday, and meaningfully below where it started.
       if (drop && before != null && price != null && price < before) {
         const list = drops.get(r.user_id as string) ?? [];
-        list.push(`${((r.name as string | null) ?? "A find").slice(0, 40)} is ${money(price)} (down ${drop.percent}%)`);
+        list.push(`${((r.name as string | null) ?? "A product").slice(0, 40)} is ${money(price)} (down ${drop.percent}%)`);
         drops.set(r.user_id as string, list);
       }
     }
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
       const today = localDate((prof?.timezone as string | null) ?? null);
       const { data: plan } = await admin.from("plans").select("outfit_id, weather, worn").eq("user_id", userId).eq("date", today).maybeSingle();
       let title = "What are you wearing today?";
-      let body = "Three outfits for today's weather are one tap away.";
+      let body = "Three outfits for today's weather are ready.";
       if (plan?.outfit_id && !plan.worn) {
         const { data: o } = await admin.from("outfits").select("name").eq("id", plan.outfit_id).maybeSingle();
         const w = plan.weather as { feelsMin?: number; feelsMax?: number; rainMax?: number; source?: string } | null;

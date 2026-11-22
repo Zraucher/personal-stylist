@@ -13,7 +13,8 @@ const SIZE = {
 
 /**
  * Every garment image in the app: a 4:5 frame on the inset surface with a hairline.
- * Own photos fill the frame; retailer photos (`product`) sit inside it; no photo shows the garment silhouette.
+ * Own photos fill the frame; retailer photos (`product`) sit inside a white well in both themes; no photo shows the garment silhouette.
+ * Pass alt="" when a visible caption already names the piece, so screen readers don't hear it twice.
  */
 export function Thumb({
   src,
@@ -33,7 +34,7 @@ export function Thumb({
   className?: string;
 }) {
   return (
-    <div className={cx("relative aspect-[4/5] shrink-0 overflow-hidden bg-inset", SIZE[size], className)}>
+    <div className={cx("relative aspect-[4/5] max-w-full shrink-0 overflow-hidden", product ? "bg-[#ffffff]" : "bg-inset", SIZE[size], className)}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -41,7 +42,7 @@ export function Thumb({
           alt={alt}
           loading="lazy"
           referrerPolicy={product ? "no-referrer" : undefined}
-          className={product ? "h-full w-full object-contain p-[6%] mix-blend-multiply dark:mix-blend-normal" : "h-full w-full object-cover"}
+          className={product ? "h-full w-full object-contain p-[6%] mix-blend-multiply" : "h-full w-full object-cover"}
         />
       ) : (
         <ItemPlaceholder category={item?.category} subcategory={item?.subcategory} colors={item?.colors} label={alt} compact={size !== "fill"} />

@@ -60,23 +60,40 @@ Verdict chips stay lowercase with symbol + word: `✓ works on you`, `◐ almost
 | Component | What it is |
 |---|---|
 | `Button` / `ButtonLink` | Pill. `primary` (Go Green, one per screen), `secondary` (Night outline), `quiet` (text with soft hover), `danger` (Clay text). Sizes `sm` (h-9) and `md` (h-11). Press: `active:scale-[0.98]`. `type` is required on `Button`. |
-| `Chip` | Static label. Tones: neutral, outline, works, almost, not, info, warm, overlay. |
+| `Chip` / `ChipLink` | Static label, or a nudge that links somewhere. Tones: neutral, outline, works, almost, not, info, warm, overlay. Wrap ✓ ◐ ✕ glyphs in `aria-hidden`. |
 | `ChipButton` | Toggle. Selected = Night fill (never green). Sets `aria-pressed`. |
 | `Card` | `surface` (hairline), `active` (raised + shadow), `warm` (blush), `inset`. `as` any element, including `form`. |
 | `PageHeader` | Eyebrow, title, subtitle, back link (chevron), actions slot. Every app page starts with it. |
 | `Field`, `Input`, `Select`, `Textarea` | 44 px, `rounded-control`, `bg-inset`, 16 px text (no iOS zoom), `border-stone-400`. Every input has a label (visible or `sr-only`). |
 | `EmptyState` | Warm blush panel, lowercase display line, one sentence, one action. No dashed borders. |
-| `Thumb` | Every garment image. 4:5 frame, `rounded-thumb`, `bg-inset`, hairline overlay. Own photos `object-cover`; retailer photos `object-contain` with padding. No photo = the garment silhouette (`ItemPlaceholder`), never text or dots. |
+| `Thumb` | Every garment image. 4:5 frame, `rounded-thumb`, `bg-inset`, hairline overlay. Own photos `object-cover`; retailer photos (`product`) `object-contain` in a white well in both themes. No photo = the garment silhouette (`ItemPlaceholder`), never text or dots. Pass `alt=""` when a visible caption already names the piece. |
 | `Notice` | Inline message: `info` (sky), `warn` (marigold), `error` (clay, `role="alert"`), `success` (`role="status"`). |
 | `ConfirmButton` | Replaces `confirm()`: a branded `<dialog>` with focus trap and Esc. |
 | `StatTile`, `ListRow` | Insights numbers (left-aligned) and grouped rows with chevrons. |
-| `CheckTick` | The signature: the check disc draws its tick in 300 ms when a verdict or "wore it" lands. Respects reduced motion. |
+| `CheckTick` | The signature: the check disc draws its tick in 300 ms when a verdict or "wore it" lands. Pass `animate` only when the person just acted; state loaded from the server shows the finished tick. Respects reduced motion. |
+| `OutfitStrip` | Every outfit, everywhere: pieces first, the same size on Today, Plan, Trips, Outfits and Second opinions. `lg` on cards (4 across, +N past four), `sm` in compact rows. |
+| `WeatherLine` | The feels-like high large in the display face, with low, rain, UV and wind as small meta. |
+| `VoteBar` | Every vote tally: works, almost, not for you, with 2 px gaps. |
+| `Segmented` | Two to four views (Looks / Packing list). Chosen = Night. Full tabs pattern when given panel ids. |
+| `OutfitCardSkeleton`, `GridSkeleton` | Loading states shaped like the real content. |
+| `CHECK_MARK` (`src/lib/verdict.ts`) | Every rule check: ✓ good, ○ okay, ◐ watch, ✕ no, – not checked. Glyph plus word, never colour alone. |
+
+## 5b. Words
+
+The full list lives in `docs/design-review-round2.md` ("Decisions that apply everywhere"). The short version:
+- The app speaks as "we". It never names the AI, its vendors or API keys.
+- Clothes you own are **pieces**; things in stores are **products**. Verdicts are only **works on you / almost / not for you** (short: works / almost / no).
+- **Wore it** (button), **wore it** (chip), **Worn 3 times** (count). **Swap a piece** opens the editor; **Try another** replaces the outfit.
+- **Second opinions**; one is "a second opinion"; responses are votes; the button is **Ask a friend**. The **Shop** tab holds hauls; the Wishlist keeps its name.
+- **Delete** destroys a record; **Remove** takes something off a list. The trigger and its dialog use the same word, and delete dialogs end with "This can't be undone."
+- Page titles use sentence case to match their tab. Empty states, verdicts and public display lines are lowercase. Use contractions.
+- Errors say what happened and what to do next. Never show raw server messages.
 
 ## 6. Shell
 
 - Header: sticky, `bg-ground/80` with blur, top safe area, 56 px tall, hairline shadow instead of a border. Sign out lives on Profile on phones.
 - Bottom tab bar: blur, home-indicator padding, 2 px rounded line icons (sun, calendar, hanger, bubble, bag, person), active tab = soft Night pill behind the icon plus a bold label.
-- Closet sub-menu: a segmented control on an inset track, quieter than the main nav.
+- Closet sub-menu: a segmented control on an inset track below the page header. The current page is a Night pill.
 - Skip link to `#main`; header nav labelled "Primary", tab bar "Main".
 
 ## 7. States

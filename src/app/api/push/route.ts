@@ -32,9 +32,9 @@ export async function POST(request: NextRequest) {
   const b = p.data;
 
   if (b.action === "subscribe") {
-    if (!pushConfigured()) return NextResponse.json({ error: "Notifications aren't set up yet." }, { status: 503 });
+    if (!pushConfigured()) return NextResponse.json({ error: "Notifications aren't available yet. Try again later." }, { status: 503 });
     const { count } = await supabase.from("push_subscriptions").select("id", { count: "exact", head: true }).eq("user_id", user.id);
-    if ((count ?? 0) >= 10) return NextResponse.json({ error: "Too many devices. Turn notifications off on an old one." }, { status: 400 });
+    if ((count ?? 0) >= 10) return NextResponse.json({ error: "Notifications are on for 10 devices. Turn them off on one you don't use." }, { status: 400 });
     // The endpoint is unique across users. Holding it proves control of the device, so a device
     // that changed hands moves to whoever is signed in now.
     await createAdminClient().from("push_subscriptions").delete().eq("endpoint", b.subscription.endpoint);
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       auth: b.subscription.keys.auth,
       prefs: { morning: true, prices: true, votes: true, ...(b.prefs ?? {}) },
     });
-    if (error) return NextResponse.json({ error: "Could not turn on notifications on this device." }, { status: 400 });
+    if (error) return NextResponse.json({ error: "Couldn't turn on notifications. Check that this browser allows them, then try again." }, { status: 400 });
     return NextResponse.json({ ok: true });
   }
   if (b.action === "unsubscribe") {
@@ -54,13 +54,13 @@ export async function POST(request: NextRequest) {
   }
   if (b.action === "prefs") {
     const { data: row } = await supabase.from("push_subscriptions").select("id, prefs").eq("endpoint", b.endpoint).eq("user_id", user.id).maybeSingle();
-    if (!row) return NextResponse.json({ error: "This device isn't subscribed." }, { status: 404 });
+    if (!row) return NextResponse.json({ error: "Notifications are off on this device. Turn them on first." }, { status: 404 });
     await supabase.from("push_subscriptions").update({ prefs: { ...(row.prefs as object), ...b.prefs } }).eq("id", row.id);
     return NextResponse.json({ ok: true });
   }
   // Test send: at most once a minute.
   const { data: recent } = await supabase.from("push_subscriptions").select("last_sent_at").eq("user_id", user.id).order("last_sent_at", { ascending: false, nullsFirst: false }).limit(1).maybeSingle();
   if (recent?.last_sent_at && Date.now() - Date.parse(recent.last_sent_at as string) < 60_000) return NextResponse.json({ ok: true, sent: 0 });
-  const sent = await pushToUser(user.id, "votes", { title: "valette is set up", body: "You'll get your morning outfit, price drops and friends' votes here.", url: "/today", tag: "test" });
+  const sent = await pushToUser(user.id, "votes", { title: "Notifications are on", body: "You'll get your morning outfit, price drops and friends' votes here.", url: "/today", tag: "test" });
   return NextResponse.json({ ok: sent > 0, sent });
 }

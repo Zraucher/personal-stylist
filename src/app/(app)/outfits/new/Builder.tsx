@@ -3,10 +3,9 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { checkOutfitAction, saveOutfit } from "../actions";
-import CompositionPanel from "../CompositionPanel";
+import CompositionPanel, { OverallChip, cleanHeadline } from "../CompositionPanel";
 import type { Composition } from "@/lib/outfit/composition";
-import ItemPlaceholder from "@/lib/closet/placeholder";
-import { Button, Card, Chip, Field, Input, Notice, Thumb } from "@/components/ui";
+import { Button, Card, Chip, Field, Input, Thumb } from "@/components/ui";
 
 export type PickItem = {
   id: string;
@@ -22,6 +21,8 @@ export type PickItem = {
 
 type Group = { key: string; label: string; items: PickItem[] };
 
+const LIMIT = 10;
+
 export default function Builder({ groups, initialPicked = [] }: { groups: Group[]; initialPicked?: string[] }) {
   const router = useRouter();
   const [picked, setPicked] = useState<string[]>(initialPicked);
@@ -30,6 +31,7 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
   const [name, setName] = useState("");
   const [occasion, setOccasion] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [limitHit, setLimitHit] = useState(false);
   const [saving, startSaving] = useTransition();
   const seq = useRef(0);
 
@@ -44,12 +46,24 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
       if (mine !== seq.current) return;
       setChecking(false);
       if (res.error) setError(res.error);
-      else setComposition(res.composition ?? null);
+      else {
+        setError(null);
+        setComposition(res.composition ?? null);
+      }
     }, 250);
     return () => clearTimeout(t);
   }, [picked]);
 
-  const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length >= 10 ? p : [...p, id]));
+  const toggle = (id: string) => {
+    if (picked.includes(id)) {
+      setLimitHit(false);
+      setPicked((p) => p.filter((x) => x !== id));
+    } else if (picked.length >= LIMIT) {
+      setLimitHit(true);
+    } else {
+      setPicked((p) => [...p, id]);
+    }
+  };
 
   const save = () => {
     setError(null);
@@ -60,50 +74,74 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
     });
   };
 
+  const status =
+    error ??
+    (limitHit
+      ? `${LIMIT} pieces is the limit. Remove one to add another.`
+      : picked.length === 0
+        ? "Tap pieces below to build an outfit."
+        : composition
+          ? cleanHeadline(composition.headline)
+          : "Checking the combination…");
+  const showVerdict = picked.length > 0 && composition !== null && !error && !limitHit;
+
   return (
     <div className="space-y-6">
+      {/* The tray stays small: picked pieces, one status line and Save. The full checks sit below the closet. */}
       <div className="sticky top-14 z-[5] space-y-3 rounded-card bg-ground/90 p-3 ring-1 ring-line backdrop-blur-md">
-        <div className="flex min-h-14 flex-wrap gap-2">
-          {picked.length === 0 && <p className="self-center text-sm text-stone-500">Tap pieces below to build an outfit.</p>}
-          {picked.map((id) => {
-            const i = byId.get(id);
-            if (!i) return null;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => toggle(id)}
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-card py-1 pl-1 pr-3 text-sm ring-1 ring-inset ring-line-strong transition-colors duration-200 ease-soft hover:ring-stone-400"
-                title="Remove"
-                aria-label={`Remove ${i.name}`}
-              >
-                <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-inset">
-                  {i.url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={i.url} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <ItemPlaceholder category={i.category} subcategory={i.subcategory} colors={i.swatches} label={i.name} compact />
-                  )}
-                </span>
-                <span className="max-w-32 truncate">{i.name}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="shrink-0 text-stone-500">
-                  <path d="M6 6l12 12M18 6 6 18" />
-                </svg>
-              </button>
-            );
-          })}
-        </div>
-        {picked.length > 0 && composition && (
-          <div aria-busy={checking} className={"transition-opacity duration-200 ease-soft " + (checking ? "opacity-60" : "")}>
-            <CompositionPanel composition={composition} />
+        {picked.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {picked.map((id) => {
+              const i = byId.get(id);
+              if (!i) return null;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => toggle(id)}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-[12px] bg-card py-1 pl-1 pr-3 text-sm ring-1 ring-inset ring-line-strong transition-colors duration-200 ease-soft hover:ring-stone-400"
+                  title="Remove"
+                  aria-label={`Remove ${i.name}`}
+                >
+                  <Thumb size="xs" src={i.url} alt="" item={{ category: i.category, subcategory: i.subcategory, colors: i.swatches }} className="rounded-[8px]" />
+                  <span className="max-w-32 truncate">{i.name}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" className="shrink-0 text-stone-500">
+                    <path d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </button>
+              );
+            })}
           </div>
         )}
+        <div className="flex flex-wrap items-center gap-2">
+          {showVerdict && composition && (
+            <span aria-busy={checking} className={"transition-opacity duration-200 ease-soft " + (checking ? "opacity-60" : "")}>
+              <OverallChip overall={composition.overall} />
+            </span>
+          )}
+          <p role="status" aria-live="polite" className={"min-w-0 flex-1 text-sm " + (error ? "font-medium text-red-700" : "text-stone-700")}>
+            {status}
+            {showVerdict && picked.length >= 2 && (
+              <>
+                {" "}
+                <a href="#outfit-checks" className="font-medium text-stone-600 underline underline-offset-2 hover:text-stone-900">
+                  See checks
+                </a>
+              </>
+            )}
+          </p>
+          {picked.length >= 2 && (
+            <Button type="button" variant="primary" size="sm" onClick={save} disabled={saving} aria-busy={saving || undefined}>
+              {saving ? "Saving…" : "Save outfit"}
+            </Button>
+          )}
+        </div>
       </div>
 
       {groups.map((g) => (
         <section key={g.key} className="space-y-3">
-          <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-            {g.label} <span className="tabular-nums">{g.items.length}</span>
+          <h2 className="font-display text-lg font-bold leading-snug">
+            {g.label} <span className="font-sans text-sm font-normal tabular-nums text-stone-500">{g.items.length}</span>
           </h2>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
             {g.items.map((i) => {
@@ -112,7 +150,7 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
                 <button key={i.id} type="button" onClick={() => toggle(i.id)} aria-pressed={on} className="group min-w-0 space-y-1.5 rounded-thumb text-left">
                   <Thumb
                     src={i.url}
-                    alt={i.name}
+                    alt=""
                     item={{ category: i.category, subcategory: i.subcategory, colors: i.swatches }}
                     className={"transition-shadow duration-200 ease-soft " + (on ? "ring-2 ring-stone-900 ring-offset-2 ring-offset-ground" : "group-hover:opacity-90")}
                     badge={
@@ -125,8 +163,9 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
                           </span>
                         )}
                         {i.verdict === "cut" && (
-                          <Chip tone="not" className="absolute right-1 top-1 px-1.5 py-0.5 text-[11px]">
-                            <span aria-hidden="true">✕</span> not for you
+                          <Chip tone="not" className="absolute right-1.5 top-1.5">
+                            <span aria-hidden="true">✕</span>
+                            <span className="sr-only">not for you</span>
                           </Chip>
                         )}
                       </>
@@ -141,20 +180,17 @@ export default function Builder({ groups, initialPicked = [] }: { groups: Group[
       ))}
 
       {picked.length >= 2 && (
-        <Card className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+        <section id="outfit-checks" aria-label="Checks and details" className="scroll-mt-48 space-y-3">
+          {composition && <CompositionPanel composition={composition} />}
+          <Card className="grid gap-3 sm:grid-cols-2">
             <Field label="Name (optional)">
               <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
             </Field>
             <Field label="Occasion (optional)">
               <Input value={occasion} onChange={(e) => setOccasion(e.target.value)} maxLength={80} placeholder="Dinner, office, travel day" />
             </Field>
-          </div>
-          {error && <Notice tone="error">{error}</Notice>}
-          <Button type="button" variant="primary" onClick={save} disabled={saving} aria-busy={saving}>
-            {saving ? "Saving" : "Save outfit"}
-          </Button>
-        </Card>
+          </Card>
+        </section>
       )}
     </div>
   );

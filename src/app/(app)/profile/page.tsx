@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { Button, ButtonLink, PageHeader } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { signedImageUrls } from "@/lib/closet/images";
+import { resolveColor } from "@/lib/scorecard/rules";
 import {
   AccountCard,
   BrandsCard,
+  ProfileEditing,
   ColorCard,
   MeasurementsCard,
   StyleCard,
@@ -19,6 +22,8 @@ const fabrics = (xs: unknown): Array<{ name: string; strength: "soft" | "hard" }
         .filter((x): x is { name: string; strength?: string } => !!x && typeof (x as { name?: unknown }).name === "string")
         .map((x) => ({ name: x.name, strength: x.strength === "hard" ? ("hard" as const) : ("soft" as const) }))
     : [];
+export const metadata = { title: "Profile · valette" };
+
 const n = (v: unknown): number | null => (typeof v === "number" ? v : v != null && v !== "" && !Number.isNaN(Number(v)) ? Number(v) : null);
 
 export default async function ProfilePage() {
@@ -41,6 +46,14 @@ export default async function ProfilePage() {
     supabase,
     (photos ?? []).map((p) => p.image_path as string)
   );
+  const name = ((profile?.name as string | null) ?? "").trim();
+  const season = ((color?.season_label as string | null) ?? "").trim();
+  const bestColors = strs(color?.best_colors);
+  const avoidColors = strs(color?.avoid_colors);
+  const hexes: Record<string, string | null> = {};
+  for (const c of [...bestColors, ...avoidColors]) hexes[c] = resolveColor({ name: c });
+  const strip = bestColors.map((c) => ({ name: c, hex: hexes[c] })).filter((c): c is { name: string; hex: string } => !!c.hex).slice(0, 6);
+
   const photoUrls: Record<string, string> = {};
   for (const p of photos ?? []) {
     const u = signed[p.image_path as string];
@@ -49,34 +62,39 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Profile"
-        actions={
-          <ButtonLink href="/profile/palette" variant="secondary" size="sm">
-            Palette card
-          </ButtonLink>
-        }
-      />
+      <div className="space-y-3">
+        <PageHeader
+          title={name || "Profile"}
+          eyebrow={season || undefined}
+          actions={
+            <ButtonLink href="/profile/palette" variant="secondary" size="sm">
+              Palette card
+            </ButtonLink>
+          }
+        />
+        {strip.length > 0 && (
+          <Link href="/profile/palette" aria-label={`Palette card: ${strip.map((c) => c.name).join(", ")}`} className="flex min-h-11 items-center rounded-full">
+            <span aria-hidden="true" className="flex h-3 w-full overflow-hidden rounded-full ring-1 ring-inset ring-line">
+              {strip.map((c) => (
+                <span key={c.name} className="flex-1" style={{ background: c.hex }} />
+              ))}
+            </span>
+          </Link>
+        )}
+      </div>
 
-      <AccountCard
-        data={{
-          name: (profile?.name as string | null) ?? "",
-          email: (profile?.email as string) ?? "",
-          location: (profile?.location as string | null) ?? "",
-          presentation: (profile?.presentation as "womens" | "mens" | "both") ?? "both",
-        }}
-      />
-
+      <ProfileEditing>
       <ColorCard
         data={{
           season_label: (color?.season_label as string | null) ?? "",
           undertone: (color?.undertone as string | null) ?? "",
           depth: (color?.depth as string | null) ?? "",
           contrast: (color?.contrast as string | null) ?? "",
-          best_colors: strs(color?.best_colors),
-          avoid_colors: strs(color?.avoid_colors),
+          best_colors: bestColors,
+          avoid_colors: avoidColors,
           notes: (color?.notes as string | null) ?? "",
         }}
+        hexes={hexes}
       />
 
       <StyleCard
@@ -110,7 +128,17 @@ export default async function ProfilePage() {
 
       <ProfilePhotos urls={photoUrls} />
 
+      <AccountCard
+        data={{
+          name: (profile?.name as string | null) ?? "",
+          email: (profile?.email as string) ?? "",
+          location: (profile?.location as string | null) ?? "",
+          presentation: (profile?.presentation as "womens" | "mens" | "both") ?? "both",
+        }}
+      />
+
       <AppCard />
+      </ProfileEditing>
 
       <form action="/auth/signout" method="post" className="sm:hidden">
         <Button type="submit" variant="secondary" block>

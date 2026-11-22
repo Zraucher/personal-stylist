@@ -3,8 +3,7 @@ import { loadRecommendation } from "@/lib/today/recommend";
 import { localDate } from "@/lib/today/weather";
 import TodayClient from "./TodayClient";
 import PlannedToday from "./PlannedToday";
-import Link from "next/link";
-import { PageHeader } from "@/components/ui";
+import { ButtonLink, ChipLink, PageHeader } from "@/components/ui";
 import { signedImageUrls } from "@/lib/closet/images";
 import { isoDaysAgo } from "@/lib/time";
 
@@ -61,18 +60,26 @@ export default async function TodayPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Today" subtitle="Three outfits from your closet for the weather and where you are going." />
+      <PageHeader
+        title="Today"
+        subtitle="Three outfits from your closet, picked for the weather and where you're headed."
+        actions={
+          <ButtonLink href="/opinions" variant="quiet" size="sm" className="-mr-2">
+            Second opinions
+          </ButtonLink>
+        }
+      />
       {(newVotes > 0 || drops > 0) && (
         <div className="flex flex-wrap gap-2">
           {newVotes > 0 && (
-            <Link href="/opinions" className="tap inline-flex min-h-9 items-center rounded-full bg-blush px-3.5 text-sm font-semibold text-ink transition-colors dark:text-stone-900 duration-200 ease-soft hover:bg-blush/80">
+            <ChipLink href="/opinions" tone="warm">
               {newVotes} new vote{newVotes === 1 ? "" : "s"} from friends
-            </Link>
+            </ChipLink>
           )}
           {drops > 0 && (
-            <Link href="/wishlist" className="tap inline-flex min-h-9 items-center rounded-full bg-sky-brand px-3.5 text-sm font-semibold text-ink transition-colors dark:text-stone-900 duration-200 ease-soft hover:bg-sky-brand/80">
-              {drops} price drop{drops === 1 ? "" : "s"} on finds you watch
-            </Link>
+            <ChipLink href="/wishlist" tone="info">
+              {drops} price drop{drops === 1 ? "" : "s"} on products you watch
+            </ChipLink>
           )}
         </div>
       )}

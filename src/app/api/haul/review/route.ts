@@ -19,20 +19,35 @@ const Body = z.union([
 
 const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif" };
 
+const SAVE_FAILED = "Couldn't save this product. Try again.";
+
+/** Headlines never lead with the stored verdict word ("Keep:", "Cut, with a flag:"). */
+function plainHeadline(h: string): string {
+  const s = h.replace(/^(keep|cut|provisional)\b[^:]{0,40}:\s*/i, "");
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/** Plain lines for the model errors; the raw message never reaches the page. */
+function aiDetail(code: string): string {
+  if (code === "rate_limited") return "We're busy right now. Try again in a minute.";
+  if (code === "unavailable") return "Reviews are off right now. Try again later.";
+  return "Couldn't review this product. Try again.";
+}
+
 /** Review one product for a haul: scrape (or take a screenshot), verify color from the image, score, save. */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  if (!user) return NextResponse.json({ error: "unauthorized", detail: "You're signed out. Sign in again to save this." }, { status: 401 });
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "bad_request", detail: "Send a product link or a screenshot." }, { status: 400 });
   const body = parsed.data;
 
   const { data: haul } = await supabase.from("hauls").select("id, retailer").eq("id", body.haulId).eq("user_id", user.id).maybeSingle();
-  if (!haul) return NextResponse.json({ error: "not_found" }, { status: 404 });
-  if (!aiAvailable()) return NextResponse.json({ error: "unavailable", detail: "Reviews need the Anthropic key in Vercel." }, { status: 503 });
+  if (!haul) return NextResponse.json({ error: "not_found", detail: "That haul isn't here anymore. Go back to Shop and start a new one." }, { status: 404 });
+  if (!aiAvailable()) return NextResponse.json({ error: "unavailable", detail: "Reviews are off right now. Try again later." }, { status: 503 });
 
   let imagePath: string;
   let product: Awaited<ReturnType<typeof scrapeProduct>> | null = null;
@@ -40,12 +55,12 @@ export async function POST(request: NextRequest) {
 
   if ("url" in body) {
     const u = safeUrl(body.url);
-    if (!u) return NextResponse.json({ error: "bad_url", detail: "Use a full https product link." }, { status: 400 });
+    if (!u) return NextResponse.json({ error: "bad_url", detail: "Paste a full product link (starting with https://)." }, { status: 400 });
     url = u.toString();
     try {
       product = await scrapeProduct(url);
     } catch (e) {
-      const msg = e instanceof ScrapeError ? e.message : "Could not read that page.";
+      const msg = e instanceof ScrapeError ? e.message : "We couldn't read that page. Upload a screenshot instead.";
       const tip = strategyFor(u).tip;
       const { data: row } = await supabase
         .from("haul_items")
@@ -55,7 +70,7 @@ export async function POST(request: NextRequest) {
           name: u.hostname.replace(/^www\./, "") + u.pathname.slice(0, 60),
           url,
           verdict: "provisional",
-          headline: `Provisional: ${msg}${tip ? ` ${tip}` : ""}`,
+          headline: `${msg}${tip ? ` ${tip}` : ""}`,
           scrape_status: e instanceof ScrapeError ? e.code : "failed",
         })
         .select("*")
@@ -77,7 +92,7 @@ export async function POST(request: NextRequest) {
           stated_colorway: product.colorway,
           source_image_url: product.imageUrl,
           verdict: "provisional",
-          headline: "Provisional: the product photo would not download. Upload a screenshot to finish the review.",
+          headline: "The product photo wouldn't download. Upload a screenshot to finish the review.",
           scrape_status: "no_image",
           scrape_source: product.source,
         })
@@ -87,14 +102,14 @@ export async function POST(request: NextRequest) {
     }
     imagePath = `${user.id}/hauls/${crypto.randomUUID()}.${EXT[img.type] ?? "jpg"}`;
     const { error: upErr } = await supabase.storage.from(CLOSET_BUCKET).upload(imagePath, img.bytes, { contentType: img.type });
-    if (upErr) return NextResponse.json({ error: "save_failed", detail: upErr.message }, { status: 500 });
+    if (upErr) return NextResponse.json({ error: "save_failed", detail: SAVE_FAILED }, { status: 500 });
   } else {
-    if (!body.imagePath.startsWith(`${user.id}/hauls/`)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    if (!body.imagePath.startsWith(`${user.id}/hauls/`)) return NextResponse.json({ error: "forbidden", detail: "That photo isn't from your account. Upload it again." }, { status: 403 });
     imagePath = body.imagePath;
   }
 
   const { data: blob } = await supabase.storage.from(CLOSET_BUCKET).download(imagePath);
-  if (!blob) return NextResponse.json({ error: "image_not_found" }, { status: 404 });
+  if (!blob) return NextResponse.json({ error: "image_not_found", detail: "We couldn't find that screenshot. Upload it again." }, { status: 404 });
   const image = await blobToImage(blob);
 
   try {
@@ -106,7 +121,7 @@ export async function POST(request: NextRequest) {
     const listed = product?.colorway ? lexiconHex(product.colorway) : null;
     const seen = tags.colors[0]?.hex && /^#[0-9a-f]{6}$/i.test(tags.colors[0].hex) ? tags.colors[0].hex : null;
     if (product?.colorway && listed && seen && deltaE(listed, seen) > 25) {
-      mismatch = `Listed as "${product.colorway}", but the photo reads ${tags.colors[0].name}.`;
+      mismatch = `Listed as "${product.colorway}". The photo reads ${tags.colors[0].name}.`;
     }
 
     const ctx = await loadStyleContext(supabase, user.id);
@@ -143,7 +158,7 @@ export async function POST(request: NextRequest) {
         construction: tags.construction,
         scores: result.scores,
         verdict: result.verdict,
-        headline: mismatch ? `${result.headline} ${mismatch}` : result.headline,
+        headline: mismatch ? `${plainHeadline(result.headline)} ${mismatch}` : plainHeadline(result.headline),
         reasoning: tags.notes,
         tailoring_needed: result.tailoringNote,
         color_mismatch: mismatch,
@@ -152,10 +167,10 @@ export async function POST(request: NextRequest) {
       })
       .select("*")
       .single();
-    if (error) return NextResponse.json({ error: "save_failed", detail: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: "save_failed", detail: SAVE_FAILED }, { status: 500 });
     return NextResponse.json({ item: row });
   } catch (e) {
-    if (e instanceof AiError) return NextResponse.json({ error: e.code, detail: e.message }, { status: e.code === "rate_limited" ? 429 : 502 });
+    if (e instanceof AiError) return NextResponse.json({ error: e.code, detail: aiDetail(e.code) }, { status: e.code === "rate_limited" ? 429 : 502 });
     throw e;
   }
 }

@@ -101,15 +101,17 @@ export default function ItemPlaceholder({
   subcategory: string | null | undefined;
   colors?: ItemColor[] | null;
   label?: string;
-  /** Small thumbnails: the silhouette only, no caption. */
+  /** Small thumbnails: a slightly larger silhouette. */
   compact?: boolean;
 }) {
   const kind = placeholderKind(category, subcategory);
   const fill = tintFor(colors);
   const stroke = strokeFor(fill);
+  // An empty label means a caption nearby already names the piece: hide the drawing from screen readers.
+  const name = label === "" ? null : label ?? subcategory ?? category ?? "item";
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-inset">
-      <svg viewBox="0 0 100 100" className={compact ? "h-[72%] w-[72%]" : "h-3/5 w-3/5"} role="img" aria-label={label ?? subcategory ?? category ?? "item"}>
+    <div className="flex h-full w-full items-center justify-center bg-inset">
+      <svg viewBox="0 0 100 100" className={compact ? "h-[72%] w-[72%]" : "h-3/5 w-3/5"} {...(name ? { role: "img", "aria-label": name } : { "aria-hidden": true })}>
         {kind === "glasses" ? (
           <g fill={fill} fillOpacity="0.85" stroke={stroke} strokeWidth="2.5" strokeLinejoin="round">
             <rect x="10" y="38" width="32" height="22" rx="7" />
@@ -128,7 +130,6 @@ export default function ItemPlaceholder({
           </g>
         )}
       </svg>
-      {!compact && <span className="px-2 text-center text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500">{label ?? subcategory ?? category ?? "item"}</span>}
     </div>
   );
 }

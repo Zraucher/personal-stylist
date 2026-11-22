@@ -28,7 +28,7 @@ export default async function BasicsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Basics"
-        subtitle="Tick what you own. Each tick adds a placeholder to your closet, and we ask for the brand and color so it is accurate."
+        subtitle="Tick what you own. Each one goes in your closet, and we'll ask the brand and color so it's right."
         actions={
           <ButtonLink href="/closet" size="sm">
             Done

@@ -15,7 +15,7 @@ export async function checkOutfitAction(itemIds: string[]): Promise<{ compositio
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
   const ids = clean(itemIds);
   if (ids.length === 0) return {};
   const { composition } = await loadAndCheck(supabase, user.id, ids);
@@ -28,13 +28,13 @@ export async function saveOutfit(input: { itemIds: string[]; name?: string; occa
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
 
   const ids = clean(input.itemIds);
-  if (ids.length < 2) return { error: "Pick at least two pieces" };
+  if (ids.length < 2) return { error: "Pick at least two pieces." };
 
   const { composition, items } = await loadAndCheck(supabase, user.id, ids);
-  if (items.length !== ids.length) return { error: "Some pieces are no longer in your closet" };
+  if (items.length !== ids.length) return { error: "Some of these pieces aren't in your closet anymore. Pick others." };
 
   const { data, error } = await supabase
     .from("outfits")
@@ -49,7 +49,7 @@ export async function saveOutfit(input: { itemIds: string[]; name?: string; occa
     })
     .select("id")
     .single();
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't save this outfit. Try again." };
 
   revalidatePath("/outfits");
   return { id: data.id as string };
@@ -60,9 +60,9 @@ export async function deleteOutfit(id: string): Promise<{ error?: string }> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { error: "Signed out" };
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
   const { error } = await supabase.from("outfits").delete().eq("id", id).eq("user_id", user.id);
-  if (error) return { error: error.message };
+  if (error) return { error: "Couldn't delete this outfit. Try again." };
   revalidatePath("/outfits");
   return {};
 }

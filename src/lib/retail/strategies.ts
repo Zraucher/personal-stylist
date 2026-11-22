@@ -14,12 +14,12 @@ export type Strategy = {
 };
 
 const PLAYBOOK: Record<string, Strategy> = {
-  "revolve.com": { label: "Revolve", tip: "Direct page fetch usually works." },
-  "lagence.com": { label: "L'Agence", needsBrowser: true, tip: "Pages render with JavaScript. If it fails, search the product name plus colorway, or check Nordstrom Rack.", markdownsAt: "nordstromrack.com" },
-  "azazie.com": { label: "Azazie", needsBrowser: true, tip: "Product images often fail to load; a screenshot works best." },
+  "revolve.com": { label: "Revolve", tip: "Try the link again in a minute." },
+  "lagence.com": { label: "L'Agence", needsBrowser: true, tip: "Search the product name and color instead, or check Nordstrom Rack.", markdownsAt: "nordstromrack.com" },
+  "azazie.com": { label: "Azazie", needsBrowser: true, tip: "A screenshot works best for this store." },
   "nordstromrack.com": { label: "Nordstrom Rack", needsBrowser: true, tip: "Often carries L'Agence markdowns." },
   "nordstrom.com": { label: "Nordstrom", needsBrowser: true },
-  "amazon.com": { label: "Amazon", needsBrowser: true, tip: "Amazon blocks most scrapers; a screenshot is the reliable route." },
+  "amazon.com": { label: "Amazon", needsBrowser: true, tip: "A screenshot works best for Amazon." },
   "joahbrown.com": { label: "Joah Brown", tryShopify: true },
   "vuoriclothing.com": { label: "Vuori", tryShopify: true },
   "travismathew.com": { label: "TravisMathew", tryShopify: true },

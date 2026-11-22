@@ -43,24 +43,6 @@ export default function SourcedList({ items }: { items: SourcedItem[] }) {
 
   return (
     <div className="space-y-4">
-      {open.length > 1 && (
-        <Button
-          type="button"
-          variant="primary"
-          size="sm"
-          disabled={busyAll}
-          aria-busy={busyAll || undefined}
-          onClick={() =>
-            startAll(async () => {
-              // One at a time, so a slow retailer does not stall the rest.
-              for (const i of open) await accept(i.id);
-            })
-          }
-        >
-          {busyAll ? "Saving…" : `Use all ${open.length} photos`}
-        </Button>
-      )}
-
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
         {items.map((item) => {
           const s = state[item.id] ?? "idle";
@@ -68,7 +50,7 @@ export default function SourcedList({ items }: { items: SourcedItem[] }) {
             <Card key={item.id} pad="none" className="flex flex-col p-1.5">
               <Thumb
                 src={item.source_image_url}
-                alt={item.name ?? ""}
+                alt=""
                 product
                 size="fill"
                 className={s === "dismissed" ? "opacity-40" : undefined}
@@ -89,7 +71,7 @@ export default function SourcedList({ items }: { items: SourcedItem[] }) {
                   <p className="text-sm font-semibold leading-tight">{item.name}</p>
                   <p className="mt-0.5 text-xs text-stone-500">{[item.brand, item.colors].filter(Boolean).join(" · ")}</p>
                 </div>
-                <div role="status" aria-live="polite" className="contents">
+                <div role="status" aria-live="polite">
                   {s === "done" ? (
                     <p className="text-sm font-medium text-stone-700">
                       <span aria-hidden="true">✓ </span>Saved
@@ -118,7 +100,7 @@ export default function SourcedList({ items }: { items: SourcedItem[] }) {
                     href={item.source_page_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex min-h-6 items-center text-xs text-stone-500 underline underline-offset-2 hover:text-stone-900"
+                    className="tap inline-flex items-center self-start text-xs text-stone-500 underline underline-offset-2 hover:text-stone-900"
                   >
                     Source page<span className="sr-only"> (opens in a new tab)</span>
                   </a>
@@ -128,6 +110,24 @@ export default function SourcedList({ items }: { items: SourcedItem[] }) {
           );
         })}
       </div>
+      {/* Bulk accept sits after the grid, so each match gets looked at first. */}
+      {open.length > 1 && (
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={busyAll}
+          aria-busy={busyAll || undefined}
+          onClick={() =>
+            startAll(async () => {
+              // One at a time, so a slow retailer does not stall the rest.
+              for (const i of open) await accept(i.id);
+            })
+          }
+        >
+          {busyAll ? "Saving…" : `Use all ${open.length} photos`}
+        </Button>
+      )}
     </div>
   );
 }

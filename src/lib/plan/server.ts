@@ -6,6 +6,7 @@ import { loadCloset } from "@/lib/today/recommend";
 import { buildCandidates, outfitName, seasonFor, OCCASIONS, type Candidate, type ClosetPiece, type DayConditions, type Occasion } from "@/lib/today/candidates";
 import { forecast, geocode, localDate, statedWeather, summarize, type Hourly, type WeatherSummary } from "@/lib/today/weather";
 import { planSequence } from "./sequence";
+import { cleanHeadline } from "@/lib/verdict";
 
 export const OCCASION_IDS = OCCASIONS.map((o) => o.id) as [Occasion, ...Occasion[]];
 const ALL_HOURS = ["morning", "midday", "evening"] as const;
@@ -160,7 +161,7 @@ export async function weekView(supabase: SupabaseClient, s: WeekState): Promise<
         ? {
             id: o.id,
             name: o.name ?? "Outfit",
-            headline: o.composition?.headline ?? null,
+            headline: o.composition?.headline ? cleanHeadline(o.composition.headline) : null,
             overall: o.composition?.overall ?? null,
             items: o.item_ids
               .map((id) => byId.get(id))

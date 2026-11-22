@@ -20,7 +20,7 @@ export default async function AskPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Ask" subtitle="For days that are not routine. Say it the way you would to a friend." />
+      <PageHeader title="Ask" subtitle="For days that aren't routine. Say it the way you'd text a friend." />
       <AskClient initial={initial} />
     </div>
   );

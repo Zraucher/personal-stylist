@@ -15,9 +15,9 @@ export function tally(votes: Array<{ verdict: string }>): Tally {
   const leading = tie ? null : ranked[0][0];
   const word = { works: "works on you", almost: "almost", not: "not for you" };
   let summary: string;
-  if (total === 1) summary = `1 vote: ${word[ranked[0][0]]}`;
+  if (total === 1) summary = `One friend says ${word[ranked[0][0]]}`;
   else if (leading && t[leading] === total) summary = `Everyone says ${word[leading]}`;
-  else if (leading) summary = `Mostly ${word[leading]} (${t[leading]} of ${total})`;
+  else if (leading) summary = `Most say ${word[leading]} (${t[leading]} of ${total})`;
   else summary = `Split decision (${total} votes)`;
   return { ...t, total, leading, summary };
 }
