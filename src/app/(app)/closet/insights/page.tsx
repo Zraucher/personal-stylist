@@ -201,7 +201,7 @@ export default async function InsightsPage() {
             <div className="flex flex-wrap gap-2 pt-1">
               {ins.topColors.map((c) => (
                 <span key={c.name} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-stone-700 ring-1 ring-inset ring-line-strong">
-                  <span aria-hidden="true" className="size-3 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15" style={{ background: c.hex ?? "transparent" }} />
+                  <span aria-hidden="true" className="size-3 rounded-full ring-1 ring-inset ring-black/10" style={{ background: c.hex ?? "transparent" }} />
                   {c.name} · {c.count}
                 </span>
               ))}

@@ -55,5 +55,5 @@ export function Thumb({
 
 /** A small color dot. */
 export function Swatch({ hex, name, className }: { hex?: string | null; name?: string; className?: string }) {
-  return <span title={name} className={cx("inline-block size-3.5 shrink-0 rounded-full ring-1 ring-inset ring-black/10 dark:ring-white/15", className)} style={{ background: hex ?? "var(--color-stone-300)" }} />;
+  return <span title={name} className={cx("inline-block size-3.5 shrink-0 rounded-full ring-1 ring-inset ring-black/10", className)} style={{ background: hex ?? "var(--color-stone-300)" }} />;
 }

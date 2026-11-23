@@ -10,8 +10,8 @@ const TONE: Record<ChipTone, string> = {
   works: "bg-emerald-700 text-on-accent",
   almost: "bg-amber-500 text-ink",
   not: "bg-red-700 text-on-accent",
-  info: "bg-sky-brand text-ink dark:text-stone-900",
-  warm: "bg-blush text-ink dark:text-stone-900",
+  info: "bg-sky-brand text-ink",
+  warm: "bg-blush text-ink",
   overlay: "bg-ink/75 text-[#fbf7f2] backdrop-blur-sm",
 };
 

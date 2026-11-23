@@ -78,65 +78,16 @@
 }
 
 /* Landing sections alternate Linen and white, so it keeps the original pairing in light mode. */
-@media (prefers-color-scheme: light) {
-  .landing {
-    --color-ground: #fbf7f2;
-    --color-card: #ffffff;
-  }
+/* Light only: the app always uses the White/Linen colorway, whatever the device setting. */
+:root {
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Warm charcoal dark mode: the light White/Linen look at night, not the old navy. */
-    --color-white: #35312e;
-    --color-stone-50: #2b2826;
-    --color-stone-100: #35312e;
-    --color-stone-200: #45403b;
-    --color-stone-300: #5a544d;
-    --color-stone-400: #8c847b;
-    --color-stone-500: #b5ada3;
-    --color-stone-600: #ccc5bb;
-    --color-stone-700: #e0dad1;
-    --color-stone-800: #efeae3;
-    --color-stone-900: #fbf7f2;
-
-    --color-emerald-100: #243a2f;
-    --color-emerald-300: #3f8f69;
-    --color-emerald-400: #4fae80;
-    --color-emerald-600: #5fc290;
-    --color-emerald-700: #6fcf9f;
-    --color-emerald-800: #8ad9b1;
-    --color-emerald-900: #bfebd3;
-
-    --color-amber-50: #3b3425;
-    --color-amber-100: #4a4027;
-    --color-amber-300: #8a7136;
-    --color-amber-500: #f2c14e;
-    --color-amber-600: #f2c14e;
-    --color-amber-700: #f2d58a;
-    --color-amber-800: #f2c14e;
-    --color-amber-900: #f6dfa0;
-
-    --color-red-100: #4a2d25;
-    --color-red-600: #ec9880;
-    --color-red-700: #ec9880;
-    --color-red-900: #f2b8a6;
-
-    --color-blush: #4d3b37;
-    --color-sky-brand: #2f3b45;
-
-    --color-ground: #2b2826;
-    --color-card: #35312e;
-    --color-raised: #3e3a36;
-    --color-inset: #24211f;
-    --color-line: rgb(251 247 242 / 0.08);
-    --color-line-strong: rgb(251 247 242 / 0.16);
-    --color-on-accent: #2b2826;
-    --shadow-active: inset 0 1px 0 rgb(251 247 242 / 0.06), 0 8px 24px rgb(0 0 0 / 0.35);
-    --shadow-sheet: inset 0 1px 0 rgb(251 247 242 / 0.06), 0 16px 40px rgb(0 0 0 / 0.5);
-    color-scheme: dark;
-  }
+.landing {
+  --color-ground: #fbf7f2;
+  --color-card: #ffffff;
 }
+
 
 @layer base {
   body {

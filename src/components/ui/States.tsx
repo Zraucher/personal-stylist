@@ -4,10 +4,10 @@ import { cx } from "./cx";
 /** Nothing here yet: a warm panel with one lowercase line, one sentence and one action. */
 export function EmptyState({ title, body, action, compact = false, className }: { title: ReactNode; body?: ReactNode; action?: ReactNode; compact?: boolean; className?: string }) {
   if (compact) {
-    return <div className={cx("rounded-card bg-blush/50 px-4 py-3.5 text-sm text-stone-700 dark:bg-blush/70", className)}>{body ?? title}</div>;
+    return <div className={cx("rounded-card bg-blush/50 px-4 py-3.5 text-sm text-stone-700", className)}>{body ?? title}</div>;
   }
   return (
-    <div className={cx("rounded-card bg-blush/50 px-5 py-8 text-center dark:bg-blush/70", className)}>
+    <div className={cx("rounded-card bg-blush/50 px-5 py-8 text-center", className)}>
       <p className="font-display text-xl font-extrabold leading-tight tracking-[-0.02em]">{title}</p>
       {body && <p className="mx-auto mt-1.5 max-w-[42ch] text-sm leading-relaxed text-stone-700">{body}</p>}
       {action && <div className="mt-5 flex flex-wrap justify-center gap-2">{action}</div>}

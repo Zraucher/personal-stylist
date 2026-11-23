@@ -8,7 +8,7 @@ Personal stylist web app (Next.js 16 App Router, React 19, Tailwind v4, Supabase
 - Tokens live in `src/app/globals.css`. Use `bg-card`, `bg-raised`, `bg-inset`, `ring-line`, `text-ink` (on Marigold/Blush/Sky), `text-on-accent` (on Go Green/Clay), `rounded-card`, `shadow-active`, `ease-soft`, `tap`.
 - One green (`primary`) action per screen; green otherwise only for "works on you". Selected states are a light tint with a Night outline (chips) or a white raised pill (segmented controls). One `active` card per screen.
 - Every page starts with `PageHeader`. Garment images always go through `Thumb`. No `window.confirm`; use `ConfirmButton`.
-- Accessibility: text ≥ `text-stone-500`; label every input; `aria-pressed` on toggles; `role="status"`/`role="alert"` for async results; 44 px touch targets; check light and dark mode at 375 px.
+- Accessibility: text ≥ `text-stone-500`; label every input; `aria-pressed` on toggles; `role="status"`/`role="alert"` for async results; 44 px touch targets; check at 375 px; the app is light-only, no dark mode.
 
 ## Engineering notes
 - Tests: `node --test scripts/test-*.mjs`.
