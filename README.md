@@ -19,7 +19,7 @@ Sign-in is a code, not a link. Corporate email scanners open links and burn the 
 - The login page asks for the email, checks the invite list, then shows a code box on the same page. Type the code there. The code box only appears right after the email is submitted, and requesting a new code invalidates the old one.
 - `requestMagicLink` and `verifyCode` live in `src/app/login/actions.ts`. `verifyCode` calls `verifyOtp({ email, token, type: "email" })`.
 - Supabase Auth Site URL is `https://www.myvalette.com`; redirect URLs include its `/auth/callback` (still used for the PKCE link flow, which is no longer the primary path).
-- Email goes out through custom SMTP via AgentMail (`smtp.agentmail.to:465`, sender `valette@agentmail.to`). The SMTP password is an AgentMail API key, entered in the Supabase dashboard only. Not yet verified: whether AgentMail delivers to external addresses such as Val's. A verified sender on `myvalette.com` would be better long term.
+- Email goes out through custom SMTP via AgentMail (`smtp.agentmail.to:465`, sender `hello@myvalette.com`, a verified AgentMail domain; DNS records live in Vercel DNS, DMARC p=reject). The SMTP password is an AgentMail API key, entered in the Supabase dashboard only. The AgentMail free plan allows one custom domain.
 - Site URL, redirect URLs, SMTP and email templates are dashboard-only; the Supabase connector has no tool for them.
 
 ## Session 3: closet capture
