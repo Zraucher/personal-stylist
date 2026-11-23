@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "valette",
+  "description": "Save any product you're shopping for to valette. We watch the price and tell you if it's worth buying.",
+  "version": "1.0.0",
+  "icons": { "192": "icon.png" },
+  "action": { "default_title": "Save to valette", "default_popup": "popup.html", "default_icon": "icon.png" },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["activeTab", "scripting", "contextMenus"],
+  "host_permissions": ["https://www.myvalette.com/*"]
+}

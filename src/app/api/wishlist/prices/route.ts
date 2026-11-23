@@ -31,7 +31,10 @@ export async function POST() {
     const history = (Array.isArray(r.price_history) ? r.price_history : []) as PricePoint[];
     const next = price != null ? appendPrice(history, price, at) : history;
     const patch: Record<string, unknown> = { price_checked_at: at, price_history: next };
-    if (price != null) patch.price = price;
+    if (price != null) {
+      patch.price = price;
+      patch.list_price = res.status === "fulfilled" ? res.value.listPrice ?? null : null;
+    }
     await supabase.from("wishlist_candidates").update(patch).eq("id", r.id).eq("user_id", user.id);
     updated.push({ id: r.id as string, price: price ?? (r.price as number | null), firstPrice: (r.first_price as number | null) ?? null, history: next });
   }

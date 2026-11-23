@@ -114,3 +114,17 @@ export async function setWatch(id: string, watch: boolean): Promise<R> {
   if (error) return { ok: false, error: SAVE_FAILED };
   return { ok: true };
 }
+
+/** "Tell me at this price". Null clears it. Setting one starts the price watch. */
+export async function setTarget(id: string, target: number | null): Promise<R> {
+  if (target != null && !(Number.isFinite(target) && target > 0 && target < 1_000_000)) return { ok: false, error: "Enter a price, like 60." };
+  const { supabase, user } = await me();
+  if (!user) return { ok: false, error: SIGNED_OUT };
+  const { data: row } = await supabase.from("wishlist_candidates").select("price, first_price").eq("id", id).eq("user_id", user.id).maybeSingle();
+  if (!row) return { ok: false, error: "That product isn't here anymore. Refresh the page." };
+  const patch: Record<string, unknown> = { target_price: target };
+  if (target != null) Object.assign(patch, { watch: true, state: "saved", first_price: row.first_price ?? row.price });
+  const { error } = await supabase.from("wishlist_candidates").update(patch).eq("id", id).eq("user_id", user.id);
+  if (error) return { ok: false, error: SAVE_FAILED };
+  return { ok: true };
+}

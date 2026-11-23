@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { scrapeProduct } from "@/lib/retail/scrape";
-import { appendPrice, priceCheckDue, priceDrop, type PricePoint } from "@/lib/retail/price";
+import { appendPrice, priceCheckDue, priceNews, type PricePoint } from "@/lib/retail/price";
 import { localDate } from "@/lib/today/weather";
 import { pushConfigured, pushToUser } from "@/lib/push/send";
 
@@ -19,7 +19,6 @@ function authorized(req: NextRequest): boolean {
   return got.length === want.length && timingSafeEqual(got, want);
 }
 
-const money = (n: number) => `$${n % 1 ? n.toFixed(2) : n}`;
 
 export async function GET(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -29,7 +28,7 @@ export async function GET(req: NextRequest) {
   // 1. Prices: everything watched and due, oldest check first, bounded per run.
   const { data: watched } = await admin
     .from("wishlist_candidates")
-    .select("id, user_id, url, name, price, first_price, price_checked_at, price_history")
+    .select("id, user_id, url, name, price, first_price, target_price, price_checked_at, price_history")
     .eq("watch", true)
     .order("price_checked_at", { ascending: true, nullsFirst: true })
     .limit(200);
@@ -46,14 +45,17 @@ export async function GET(req: NextRequest) {
       const price = res.status === "fulfilled" ? res.value.price : null;
       const history = (Array.isArray(r.price_history) ? r.price_history : []) as PricePoint[];
       const patch: Record<string, unknown> = { price_checked_at: at, price_history: price != null ? appendPrice(history, price, at) : history };
-      if (price != null) patch.price = price;
+      const listPrice = res.status === "fulfilled" ? res.value.listPrice ?? null : null;
+      if (price != null) {
+        patch.price = price;
+        patch.list_price = listPrice;
+      }
       await admin.from("wishlist_candidates").update(patch).eq("id", r.id);
-      const before = r.price != null ? Number(r.price) : null;
-      const drop = priceDrop(r.first_price != null ? Number(r.first_price) : null, price);
-      // Only news: the price is below where it was yesterday, and meaningfully below where it started.
-      if (drop && before != null && price != null && price < before) {
+      const num = (v: unknown) => (v != null ? Number(v) : null);
+      const news = priceNews({ name: r.name as string | null, before: num(r.price), first: num(r.first_price), target: num(r.target_price) }, price, listPrice);
+      if (news) {
         const list = drops.get(r.user_id as string) ?? [];
-        list.push(`${((r.name as string | null) ?? "A product").slice(0, 40)} is ${money(price)} (down ${drop.percent}%)`);
+        list.push(news);
         drops.set(r.user_id as string, list);
       }
     }
@@ -63,7 +65,7 @@ export async function GET(req: NextRequest) {
   if (pushConfigured()) {
     for (const [userId, lines] of drops) {
       pushes += await pushToUser(userId, "prices", {
-        title: lines.length === 1 ? "Price drop" : `${lines.length} price drops`,
+        title: lines.length === 1 ? "Price alert" : `${lines.length} price alerts`,
         body: lines.slice(0, 3).join(" · "),
         url: "/wishlist",
         tag: "prices",

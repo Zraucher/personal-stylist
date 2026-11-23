@@ -18,7 +18,13 @@ export type ScrapedProduct = {
   colorway: string | null;
   material: string | null;
   description: string | null;
-  source: "shopify" | "scrapling" | "firecrawl" | "fetch";
+  /** The store's "was" price when the product is marked down. */
+  listPrice?: number | null;
+  rating?: number | null;
+  reviewCount?: number | null;
+  /** Customer review text found on the page. */
+  reviews?: string[];
+  source: "shopify" | "scrapling" | "firecrawl" | "fetch" | "browser";
 };
 
 export class ScrapeError extends Error {
@@ -124,6 +130,18 @@ function findProduct(node: unknown): Json | null {
   return null;
 }
 
+const num = (v: unknown): number | null => (v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : null);
+
+/** schema.org marks a "was" price as a priceSpecification of type ListPrice or StrikethroughPrice. */
+function listPriceOf(offer: Json | undefined, price: number | null): number | null {
+  const specs = offer?.priceSpecification;
+  for (const sp of (Array.isArray(specs) ? specs : specs ? [specs] : []) as Json[]) {
+    const n = num(sp.price);
+    if (/ListPrice|StrikethroughPrice|MSRP/i.test(String(sp.priceType ?? "")) && n != null && (price == null || n > price)) return n;
+  }
+  return null;
+}
+
 export function parseProductHtml(html: string, url: string): Omit<ScrapedProduct, "source"> {
   let product: Json | null = null;
   for (const m of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
@@ -143,6 +161,7 @@ export function parseProductHtml(html: string, url: string): Omit<ScrapedProduct
   const priceRaw = offer?.price ?? offer?.lowPrice ?? variantOffer?.price ?? meta(html, "product:price:amount") ?? meta(html, "og:price:amount");
   const price = priceRaw != null && !Number.isNaN(Number(priceRaw)) ? Number(priceRaw) : null;
   const brand = product?.brand;
+  const agg = product?.aggregateRating as Json | undefined;
   const title = str(product?.name) ?? meta(html, "og:title") ?? decode(html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] ?? "").trim() ?? null;
   let abs: string | null = null;
   if (imageUrl) {
@@ -162,6 +181,14 @@ export function parseProductHtml(html: string, url: string): Omit<ScrapedProduct
     colorway: str(product?.color) ?? str(variant?.color) ?? meta(html, "product:color"),
     material: str(product?.material),
     description: (str(product?.description) ?? meta(html, "og:description"))?.slice(0, 600) ?? null,
+    listPrice: listPriceOf(offer ?? variantOffer, price) ?? num(meta(html, "product:original_price:amount") ?? meta(html, "og:price:standard_amount")),
+    rating: num(agg?.ratingValue),
+    reviewCount: num(agg?.reviewCount ?? agg?.ratingCount),
+    reviews: (Array.isArray(product?.review) ? (product.review as Json[]) : product?.review ? [product.review as Json] : [])
+      .map((r) => str(r.reviewBody) ?? str(r.description))
+      .filter((t): t is string => !!t)
+      .slice(0, 20)
+      .map((t) => t.slice(0, 400)),
   };
 }
 
@@ -174,7 +201,7 @@ async function viaShopify(u: URL): Promise<ScrapedProduct | null> {
   try {
     const r = await safeFetch(`${u.origin}/products/${m[1]}.js`, { headers: { "User-Agent": UA, Accept: "application/json" }, signal: AbortSignal.timeout(10000) });
     if (!r || !r.ok || !(r.headers.get("content-type") ?? "").includes("json")) return null;
-    const p = (await r.json()) as { title?: string; vendor?: string; featured_image?: string; images?: string[]; price?: number; variants?: Array<{ id: number; option1?: string; title?: string; featured_image?: { src?: string } | null; price?: number }>; options?: Array<{ name: string } | string>; description?: string };
+    const p = (await r.json()) as { title?: string; vendor?: string; featured_image?: string; images?: string[]; price?: number; variants?: Array<{ id: number; option1?: string; title?: string; featured_image?: { src?: string } | null; price?: number; compare_at_price?: number | null }>; options?: Array<{ name: string } | string>; description?: string };
     const variantId = u.searchParams.get("variant");
     const v = p.variants?.find((x) => String(x.id) === variantId) ?? p.variants?.[0];
     const optionNames = (p.options ?? []).map((o) => (typeof o === "string" ? o : o.name).toLowerCase());
@@ -187,6 +214,7 @@ async function viaShopify(u: URL): Promise<ScrapedProduct | null> {
       imageUrl: img ? (img.startsWith("//") ? `https:${img}` : img) : null,
       price: typeof (v?.price ?? p.price) === "number" ? (v?.price ?? p.price)! / 100 : null,
       currency: null,
+      listPrice: v?.compare_at_price && v.compare_at_price > (v.price ?? 0) ? v.compare_at_price / 100 : null,
       colorway: colorIdx === 0 ? v?.option1 ?? null : colorIdx > 0 ? v?.title?.split(" / ")[colorIdx] ?? null : null,
       material: null,
       description: p.description ? p.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 600) : null,

@@ -97,6 +97,16 @@ export default function SaveClient({ link, noLink }: { link: string | null; noLi
             </p>
           </li>
           <li className="space-y-2 py-3">
+            <p className="font-semibold text-stone-900">Chrome extension</p>
+            <p>One click on any product page saves it, and we tell you right there whether it&apos;s worth buying and which size reviewers say to get.</p>
+            <p>
+              To install: download and unzip it, open <span className="font-medium">chrome://extensions</span>, turn on Developer mode, click Load unpacked and pick the unzipped folder.
+            </p>
+            <ButtonLink href="/valette-extension.zip" variant="secondary" size="sm" download>
+              Download the extension
+            </ButtonLink>
+          </li>
+          <li className="space-y-2 py-3">
             <p className="font-semibold text-stone-900">Computer</p>
             <p>Drag this button to your bookmarks bar. Click it on any product page.</p>
             <a ref={bookmark} onClick={(e) => e.preventDefault()} className="inline-flex h-9 cursor-grab items-center rounded-full px-4 text-sm font-semibold ring-1 ring-stone-900">
