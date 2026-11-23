@@ -9,6 +9,13 @@ import WearPanel from "./WearPanel";
 import { localDate } from "@/lib/today/weather";
 import { PageHeader, Thumb } from "@/components/ui";
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase.from("closet_items").select("name").eq("id", id).maybeSingle();
+  return { title: `${data?.name ?? "Piece"} · valette` };
+}
+
 export default async function ItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
