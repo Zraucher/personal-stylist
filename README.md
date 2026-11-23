@@ -89,6 +89,13 @@ Sign-in is a code, not a link. Corporate email scanners open links and burn the 
 - `extension/` is the Chrome extension (Manifest V3, no build step). The popup reads the open product page, saves it through `/api/wishlist/save` (its `page` data fills in when the store blocks our reader), then shows the advice. Right-click has "Save to valette". Rebuild the download after any change: `python scripts/zip-extension.py` writes `public/valette-extension.zip`. Not in the Chrome Web Store yet; people load it unpacked.
 - Tests: `node --test scripts/test-shop.mjs`.
 
+## Closet from a store link, and outfit mockups
+
+- "Bought it online?" on `/closet/new` (and `/save?to=closet&url=`) adds a piece from its product link: `POST /api/closet/import` reads the page, copies the store photo into the closet bucket (`src/lib/closet/photo.ts`), tags it when the AI key is set, otherwise guesses the category from the name (`src/lib/closet/guess.ts`). A page with no price is refused, because a dead product link usually lands on a category page. The same link twice finds the same piece, and buying something stops its price watch on the shopping list.
+- Outfit cards on `/outfits` have "See it as one picture": a flat lay or a ghost model (`src/components/ui/OutfitMockup.tsx`, positions in `src/lib/outfit/mockup.ts`). Store photos on white blend into the canvas; a person's own photos keep their background (no background removal yet). Pieces without a photo draw as silhouettes.
+- The Chrome extension asks where a product goes: shopping list or closet. Right-click has both too. Version 1.1.0.
+- Tests: `node --test scripts/test-closet-link.mjs`.
+
 ## Environment variables
 
 | Name | Needed for | Status |

@@ -75,26 +75,33 @@ const line = (label, text) => {
   return p;
 };
 
-async function main() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  let data;
-  try {
-    [{ result: data }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readPage });
-  } catch {
-    return show(el("p", "Open a product page in a store, then click this again."));
-  }
-  const saveLink = `${APP}/save?url=${encodeURIComponent(data.link)}`;
-  const res = await post("/api/wishlist/save", { link: data.link, page: data.page }).catch(() => null);
-  if (!res) return show(el("p", "Couldn't reach valette. Check your connection and try again."));
-  // Signed out: the app redirects every request to /login.
-  if (res.status === 401 || res.redirected) return show(el("p", "Sign in to valette, then click this again on the product page."), link("Sign in", `${APP}/login`));
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) return show(el("p", body.detail || "Couldn't save that. Try again."), link("Open valette", saveLink));
+const button = (text, onClick, cls = "btn") => {
+  const b = el("button", text, cls);
+  b.type = "button";
+  b.addEventListener("click", onClick);
+  return b;
+};
 
+/** Signed out, unreachable or refused: a message instead of the result. Null when the response is good. */
+async function problem(res, fallbackLink) {
+  if (!res) return [el("p", "Couldn't reach valette. Check your connection and try again.")];
+  // Signed out: the app redirects every request to /login.
+  if (res.status === 401 || res.redirected) return [el("p", "Sign in to valette, then click this again on the product page."), link("Sign in", `${APP}/login`)];
+  if (res.ok) return null;
+  const body = await res.json().catch(() => ({}));
+  return [el("p", body.detail || "Couldn't save that. Try again."), link("Open valette", fallbackLink)];
+}
+
+async function toList(data) {
+  show(el("p", "Saving it to your shopping list…"));
+  const res = await post("/api/wishlist/save", { link: data.link, page: data.page }).catch(() => null);
+  const bad = await problem(res, `${APP}/save?url=${encodeURIComponent(data.link)}`);
+  if (bad) return show(...bad);
+  const body = await res.json().catch(() => ({}));
   const c = body.candidate;
   const head = [
     el("h1", c.name || "Saved"),
-    el("p", [body.already ? "Already in your saved products" : "Saved", c.price != null ? `$${Number(c.price).toFixed(2)}` : null, c.watch ? "watching the price" : null].filter(Boolean).join(" · "), "muted"),
+    el("p", [body.already ? "Already on your shopping list" : "On your shopping list", c.price != null ? `$${Number(c.price).toFixed(2)}` : null, c.watch ? "watching the price" : null].filter(Boolean).join(" · "), "muted"),
   ];
   const open = link("Open in valette", `${APP}/wishlist#saved`);
   show(...head, el("p", "Reading reviews…", "muted"), open);
@@ -109,6 +116,39 @@ async function main() {
     line(SIZE[a.sizing] ?? "Sizing", a.sizingNote),
     line("Price", a.price),
     open
+  );
+}
+
+async function toCloset(data) {
+  show(el("p", "Adding it to your closet…"));
+  const res = await post("/api/closet/import", { link: data.link, page: data.page }).catch(() => null);
+  const bad = await problem(res, `${APP}/save?to=closet&url=${encodeURIComponent(data.link)}`);
+  if (bad) return show(...bad);
+  const { item, already } = await res.json().catch(() => ({}));
+  show(
+    el("h1", item?.name || "Added"),
+    el("p", [already ? "Already in your closet" : "Added to your closet", item?.price != null ? `$${Number(item.price).toFixed(2)}` : null].filter(Boolean).join(" · "), "muted"),
+    el("p", "Check its color and type in valette, then it shows up in your outfits."),
+    link("Check the details", `${APP}/closet/${item?.id ?? ""}`)
+  );
+}
+
+async function main() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  let data;
+  try {
+    [{ result: data }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readPage });
+  } catch {
+    return show(el("p", "Open a product page in a store, then click this again."));
+  }
+  show(
+    el("h1", data.page.name || "This product"),
+    el("p", "Add it to", "muted"),
+    el("div", null, "choices"),
+  );
+  out.querySelector(".choices").append(
+    button("Shopping list", () => toList(data)),
+    button("My closet (I bought it)", () => toCloset(data), "btn quiet")
   );
 }
 
