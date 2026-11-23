@@ -74,6 +74,28 @@ export async function verifyCode(
   redirect("/today");
 }
 
+// Store reviewers (Chrome Web Store) can't receive our email codes, so this one account signs in with a password.
+// Everyone else has no password set, so the check below is a guard rail, not the lock: the lock is that only
+// this account has a password (set by hand in the Supabase dashboard).
+const REVIEW_EMAIL = "chrome-review@myvalette.com";
+
+export async function signInWithPassword(
+  _prev: LoginState,
+  formData: FormData
+): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
+  if (email !== REVIEW_EMAIL) {
+    return { status: "error", email, message: "Password sign-in is only for app store review. Use the email code instead." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    return { status: "error", email, message: "That email and password don't match." };
+  }
+  redirect("/today");
+}
+
 // The host that served the login page is where the magic link should land.
 // Falls back to NEXT_PUBLIC_SITE_URL, then localhost. Supabase only honours
 // redirect URLs on its allowlist, so a spoofed Host header cannot redirect anywhere else.
