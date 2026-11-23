@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "valette · check it on you before you wear it",
     description: "Your outfit, checked against your coloring and your closet. More outfits from what you own, fewer second guesses.",
-    url: "https://www.myvallette.com",
+    url: "https://www.myvalette.com",
     siteName: "valette",
     type: "website",
   },

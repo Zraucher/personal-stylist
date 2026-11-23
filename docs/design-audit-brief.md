@@ -1,7 +1,7 @@
 # Design audit brief (shared by all audit agents)
 
 ## The product
-Valette is a personal stylist web app (installable PWA) live at www.myvallette.com. Users check outfits against their coloring and closet. Main areas, each a route under `src/app/(app)/`:
+Valette is a personal stylist web app (installable PWA) live at www.myvalette.com. Users check outfits against their coloring and closet. Main areas, each a route under `src/app/(app)/`:
 - **Today** (`today/`): three outfit cards, verdict chips, "wore it / not me", planned-outfit card, nudges strip.
 - **Plan** (`plan/`): 7-day planner cards; trips (`plan/trips/new`, `plan/trips/[id]`) with looks and a packing list.
 - **Closet** (`closet/`, `closet/[id]`, `closet/insights`, `gaps/`, `outfits/`, `outfits/new`): item grid, item detail + scorecard + wear panel, insights, gaps, outfit builder. Shared sub-menu `ClosetSubnav.tsx`.

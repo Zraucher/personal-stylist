@@ -1,6 +1,6 @@
 # Valette
 
-Personal stylist web app (Next.js 16 App Router, React 19, Tailwind v4, Supabase, Claude). Live at www.myvallette.com.
+Personal stylist web app (Next.js 16 App Router, React 19, Tailwind v4, Supabase, Claude). Live at www.myvalette.com.
 
 ## Design rules (always)
 - `docs/DESIGN.md` is the design system (Second Look, v2). Read it before any UI change. The "Valette Brand Book" artifact mirrors it.

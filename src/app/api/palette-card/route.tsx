@@ -50,7 +50,7 @@ export async function GET() {
             <div style={{ fontSize: 32, marginTop: 10 }}>{avoid.join(" · ")}</div>
           </div>
         )}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 30, fontWeight: 800, color: "#1d1b2b", marginTop: avoid.length ? 32 : "auto" }}>valette<div style={{ width: 30, height: 30, borderRadius: 15, background: "#2f7d5b", display: "flex", alignItems: "center", justifyContent: "center", color: "#fbf7f2", fontSize: 20 }}>✓</div><div style={{ fontSize: 22, fontWeight: 400, color: "#6b6577", marginLeft: 12 }}>check it on you · myvallette.com</div></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 30, fontWeight: 800, color: "#1d1b2b", marginTop: avoid.length ? 32 : "auto" }}>valette<div style={{ width: 30, height: 30, borderRadius: 15, background: "#2f7d5b", display: "flex", alignItems: "center", justifyContent: "center", color: "#fbf7f2", fontSize: 20 }}>✓</div><div style={{ fontSize: 22, fontWeight: 400, color: "#6b6577", marginLeft: 12 }}>check it on you · myvalette.com</div></div>
       </div>
     ),
     { width: 1080, height: 1350, headers: { "Cache-Control": "private, no-store" } }

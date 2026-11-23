@@ -6,7 +6,7 @@ Plan: `C:\Users\zack\Downloads\Style-App-Personal-Build-Plan-2026-11-08.md` (ten
 
 ## State as of 2026-11-11
 
-- **Production:** https://www.myvallette.com (domain is `myvallette`, two l's). The apex redirects to www; `app.` and `dev.` aliases also point at production.
+- **Production:** https://www.myvalette.com (domain is `myvalette`, one l). The apex redirects to www. The old domain `myvallette.com` (apex, www, app., dev.) 308-redirects to https://www.myvalette.com.
 - **Supabase:** project **Valette App** (`dqnreeflkhrbsfuvkzjx`, us-east-1). Migrations 0001 to 0011 are applied. Migrations are applied through the Supabase connector, not a CLI.
 - **Vercel:** team `valette` (`team_qjPh7HC46TP4L3YnzhiDcXXM`), project `prj_VEGr6clooeo28BUSYJ0TYCwekf2n`. Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` (fallback only; the login page uses the request host) and `ANTHROPIC_API_KEY`. Vercel Authentication is off; the app's invite gate does the gatekeeping.
 - **Seeds** apply on first sign-in (`apply_seed`, called from the `on_auth_user_created` trigger). Zack's payload is keyed to `zack@gpsteam.com` (signed in, 23 seeded closet items, no photos yet). Val's is keyed to `valerieraucher@gmail.com` (not yet signed in).
@@ -18,8 +18,8 @@ Sign-in is a code, not a link. Corporate email scanners open links and burn the 
 
 - The login page asks for the email, checks the invite list, then shows a code box on the same page. Type the code there. The code box only appears right after the email is submitted, and requesting a new code invalidates the old one.
 - `requestMagicLink` and `verifyCode` live in `src/app/login/actions.ts`. `verifyCode` calls `verifyOtp({ email, token, type: "email" })`.
-- Supabase Auth Site URL is `https://www.myvallette.com`; redirect URLs include its `/auth/callback` (still used for the PKCE link flow, which is no longer the primary path).
-- Email goes out through custom SMTP via AgentMail (`smtp.agentmail.to:465`, sender `valette@agentmail.to`). The SMTP password is an AgentMail API key, entered in the Supabase dashboard only. Not yet verified: whether AgentMail delivers to external addresses such as Val's. A verified sender on `myvallette.com` would be better long term.
+- Supabase Auth Site URL is `https://www.myvalette.com`; redirect URLs include its `/auth/callback` (still used for the PKCE link flow, which is no longer the primary path).
+- Email goes out through custom SMTP via AgentMail (`smtp.agentmail.to:465`, sender `valette@agentmail.to`). The SMTP password is an AgentMail API key, entered in the Supabase dashboard only. Not yet verified: whether AgentMail delivers to external addresses such as Val's. A verified sender on `myvalette.com` would be better long term.
 - Site URL, redirect URLs, SMTP and email templates are dashboard-only; the Supabase connector has no tool for them.
 
 ## Session 3: closet capture

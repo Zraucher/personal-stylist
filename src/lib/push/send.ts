@@ -24,7 +24,7 @@ export const pushConfigured = () => !!(process.env.VAPID_PUBLIC_KEY && process.e
 let ready = false;
 function setup() {
   if (ready || !pushConfigured()) return ready;
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "https://www.myvallette.com", process.env.VAPID_PUBLIC_KEY!, process.env.VAPID_PRIVATE_KEY!);
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || "https://www.myvalette.com", process.env.VAPID_PUBLIC_KEY!, process.env.VAPID_PRIVATE_KEY!);
   ready = true;
   return true;
 }

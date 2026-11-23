@@ -68,7 +68,7 @@ export async function buildSnapshot(
 export function siteOrigin(headersList: Headers): string {
   const env = process.env.NEXT_PUBLIC_SITE_URL;
   if (env) return env.replace(/\/$/, "");
-  const host = headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "www.myvallette.com";
+  const host = headersList.get("x-forwarded-host") ?? headersList.get("host") ?? "www.myvalette.com";
   const proto = headersList.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   return `${proto}://${host}`;
 }

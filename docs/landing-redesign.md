@@ -2,7 +2,7 @@
 
 ## Plan
 
-**Goal.** Turn myvallette.com into a standard consumer-app landing page: a page that explains the product to someone who has never seen it and gets them on the waitlist. Right now it reads like a compressed version of the app.
+**Goal.** Turn myvalette.com into a standard consumer-app landing page: a page that explains the product to someone who has never seen it and gets them on the waitlist. Right now it reads like a compressed version of the app.
 
 **Routing (done before the prompt runs).** `/` no longer redirects signed-in users to `/today`. Everyone sees the landing page. Signed-in visitors get "Open the app" in place of "Sign in" and the waitlist. The installed app still opens on `/today` (`manifest.ts` start_url), and `/login` still sends signed-in users to `/today`.
 
