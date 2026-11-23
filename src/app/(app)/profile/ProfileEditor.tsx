@@ -206,7 +206,7 @@ function FabricInput({ label, value, onChange, placeholder }: { label: string; v
               aria-label={`${f.name} as a hard rule`}
               className={
                 "tap inline-flex items-center rounded-full px-2 text-xs font-semibold transition-colors duration-200 ease-soft " +
-                (f.strength === "hard" ? "bg-stone-900 text-stone-50" : "bg-inset text-stone-600 ring-1 ring-inset ring-line-strong")
+                (f.strength === "hard" ? "bg-stone-200 text-stone-900 ring-1 ring-inset ring-stone-900" : "bg-inset text-stone-600 ring-1 ring-inset ring-line-strong")
               }
               title="Tap to switch between soft (a preference) and hard (a rule)"
             >

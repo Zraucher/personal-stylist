@@ -489,7 +489,7 @@ function Scale({
             aria-label={`${n}, ${labels[n]}`}
             className={
               "tap min-h-9 rounded-[10px] text-sm font-medium tabular-nums transition-colors duration-200 ease-soft " +
-              (value === n ? "bg-stone-900 text-stone-50" : "text-stone-700 hover:bg-card")
+              (value === n ? "bg-raised text-stone-900 shadow-active ring-1 ring-line" : "text-stone-700 hover:bg-card")
             }
           >
             {n}

@@ -33,7 +33,7 @@ export function ChipLink({ tone = "warm", className, children, ...rest }: Compon
   );
 }
 
-/** Toggle chip. Selected is Night, never green (green means "works on you"). */
+/** Toggle chip. Selected is a light tint with a Night outline, never green (green means "works on you"). */
 export function ChipButton({ selected = false, className, ...rest }: Omit<ComponentProps<"button">, "type"> & { selected?: boolean }) {
   return (
     <button
@@ -41,7 +41,7 @@ export function ChipButton({ selected = false, className, ...rest }: Omit<Compon
       aria-pressed={selected}
       className={cx(
         "tap inline-flex min-h-9 items-center justify-center gap-1 rounded-full px-3.5 text-sm font-medium ring-1 ring-inset transition-colors duration-200 ease-soft disabled:opacity-50",
-        selected ? "bg-stone-900 text-stone-50 ring-stone-900" : "bg-card text-stone-700 ring-line-strong hover:ring-stone-400",
+        selected ? "bg-stone-200 text-stone-900 ring-stone-900" : "bg-card text-stone-700 ring-line-strong hover:ring-stone-400",
         className
       )}
       {...rest}

@@ -49,7 +49,7 @@ export function Segmented<T extends string>({
             }}
             className={cx(
               "tap inline-flex min-h-9 items-center rounded-full px-4 text-sm font-semibold transition-colors duration-200 ease-soft",
-              on ? "bg-stone-900 text-stone-50" : "text-stone-600 hover:text-stone-900"
+              on ? "bg-raised text-stone-900 shadow-active ring-1 ring-line" : "text-stone-600 hover:text-stone-900"
             )}
           >
             {o.label}
