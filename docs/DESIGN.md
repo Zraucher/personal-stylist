@@ -7,7 +7,7 @@ Built from four audits on 2026-11-21: impeccable (hierarchy, type, states), high
 ## 1. Principles
 
 1. **One green thing per screen.** Go Green means "works on you" and the single main action. Nothing else is green: not selection, not focus, not decoration.
-2. **Flat on linen, one lift.** Cards are hairline-framed surfaces. Only the active card on a screen (the chosen look, today's plan) gets the soft shadow.
+2. **Linen cards on white, one lift.** Pages are white; cards are hairline-framed Linen surfaces (the landing page keeps Linen pages with white cards). Only the active card on a screen (the chosen look, today's plan) gets the soft shadow.
 3. **Warm, never gadgety.** Pill buttons, 20 px cards, editorial titles, real garment shapes. No gradients, no glass panels on content, no bouncy motion.
 4. **Same pattern, same component.** Buttons, chips, cards, fields, headers, empty states and thumbnails come from `src/components/ui/`. Never hand-type a variant.
 5. **Readable for everyone.** Text 4.5:1, controls 3:1, visible focus, labelled inputs, announced results, 44 px touch targets on phones. Light and dark mode both pass.
@@ -18,8 +18,8 @@ Tailwind's scales stay remapped to the brand (stone = Linen→Night, emerald = G
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `ground` | #FBF7F2 | #1D1B2B | page background |
-| `card` | #FFFFFF | #252338 | standard surface |
+| `ground` | #FFFFFF (landing: #FBF7F2) | #1D1B2B | page background |
+| `card` | #FBF7F2 (landing: #FFFFFF) | #252338 | standard surface |
 | `raised` | #FFFFFF | #2D2A42 | the one active card |
 | `inset` | #F5EEE6 | #1A1827 | photo wells, inputs, segmented tracks |
 | `line` | Night 8% | Linen 8% | card hairlines (`ring-1 ring-line`) |

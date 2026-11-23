@@ -43,7 +43,7 @@ async function isSignedIn(): Promise<boolean> {
 export default async function Home() {
   const signedIn = await isSignedIn();
   return (
-    <div className="min-h-dvh bg-ground text-stone-900">
+    <div className="landing min-h-dvh bg-ground text-stone-900">
       <LandingNav signedIn={signedIn} />
       <main id="main" tabIndex={-1} className="outline-none">
         <Hero signedIn={signedIn} />

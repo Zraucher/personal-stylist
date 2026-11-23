@@ -49,8 +49,9 @@
   --color-sky-brand: #cfe0f0;
 
   /* Surfaces and lines (design system v2, docs/DESIGN.md) */
-  --color-ground: #fbf7f2;
-  --color-card: #ffffff;
+  /* White pages, Linen cards (the landing Verdicts colorway). The landing page keeps Linen pages: see .landing below. */
+  --color-ground: #ffffff;
+  --color-card: #fbf7f2;
   --color-raised: #ffffff;
   --color-inset: #f5eee6;
   --color-line: rgb(29 27 43 / 0.08);
@@ -74,6 +75,14 @@
 @theme inline {
   --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-bricolage), var(--font-figtree), ui-sans-serif, sans-serif;
+}
+
+/* Landing sections alternate Linen and white, so it keeps the original pairing in light mode. */
+@media (prefers-color-scheme: light) {
+  .landing {
+    --color-ground: #fbf7f2;
+    --color-card: #ffffff;
+  }
 }
 
 @media (prefers-color-scheme: dark) {
