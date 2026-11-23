@@ -4,13 +4,14 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { addWish, deleteWish, setCandidateState, setWatch, setWishStatus, sourcingHaul, upcomingStatus } from "./actions";
 import { priceDrop } from "@/lib/retail/price";
+import { toCandidateView } from "./view";
 import AskFriendsButton from "@/components/AskFriendsButton";
 import { Button, Card, Chip, ChipButton, ConfirmButton, EmptyState, Field, Input, Notice, SectionTitle, Select, Skeleton, Thumb } from "@/components/ui";
 
 export type WishView = { id: string; title: string; preferences: string | null; budget: string | null; colors: string[]; status: "open" | "found" | "dropped"; lastSearched: string | null };
 export type CandidateView = {
   id: string;
-  wishId: string;
+  wishId: string | null;
   url: string;
   name: string | null;
   brand: string | null;
@@ -103,10 +104,13 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
     };
   }, [candidates]);
 
+  // Errors for a saved product (no wish) show in the saved section.
+  const key = (c: CandidateView) => c.wishId ?? "saved";
+
   const toggleWatch = async (c: CandidateView) => {
-    fail(c.wishId, null);
+    fail(key(c), null);
     const r = await setWatch(c.id, !c.watch);
-    if (!r.ok) return fail(c.wishId, r.error);
+    if (!r.ok) return fail(key(c), r.error);
     setCands((xs) => xs.map((x) => (x.id === c.id ? { ...x, watch: !c.watch, state: !c.watch ? "saved" : x.state, firstPrice: x.firstPrice ?? x.price } : x)));
   };
 
@@ -135,21 +139,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
       if (res.status === 401) throw new Error(SIGNED_OUT);
       if (res.status === 404) throw new Error("That wish isn't here anymore. Refresh the page.");
       if (!res.ok) throw new Error(body.detail || "Couldn't search stores just now. Try again in a minute.");
-      const fresh: CandidateView[] = (body.candidates ?? []).map((c: Record<string, unknown>) => ({
-        id: c.id as string,
-        wishId: w.id,
-        url: c.url as string,
-        name: (c.name as string | null) ?? null,
-        brand: (c.brand as string | null) ?? null,
-        imageUrl: (c.image_url as string | null) ?? null,
-        price: c.price != null ? Number(c.price) : null,
-        paletteStatus: (c.palette_status as string | null) ?? null,
-        paletteReason: (c.palette_reason as string | null) ?? null,
-        state: (c.state as string) ?? "new",
-        colors: Array.isArray(c.colors) ? (c.colors as CandidateView["colors"]) : [],
-        watch: !!c.watch,
-        firstPrice: c.first_price != null ? Number(c.first_price) : null,
-      }));
+      const fresh: CandidateView[] = (body.candidates ?? []).map(toCandidateView);
       setCands((xs) => [...fresh, ...xs.filter((x) => !fresh.some((f) => f.id === x.id))]);
       const inPal = fresh.filter((f) => IN_PALETTE.has(f.paletteStatus ?? "")).length;
       setNotes((n) => ({ ...n, [w.id]: body.note ?? `Read ${fresh.length} ${fresh.length === 1 ? "product" : "products"}, ${inPal} in your palette. We searched for ${(body.queries ?? []).join(" · ")}.` }));
@@ -163,7 +153,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
 
   const review = async (c: CandidateView) => {
     setBusy(c.id);
-    fail(c.wishId, null);
+    fail(key(c), null);
     try {
       const h = await sourcingHaul(c.wishId);
       if (!h.ok || !h.id) throw new Error(h.ok ? "Couldn't open a haul for this. Try again." : h.error);
@@ -174,20 +164,107 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
       }
       router.push(`/hauls/${h.id}`);
     } catch (e) {
-      fail(c.wishId, e instanceof Error ? e.message : "Couldn't review this product. Try again.");
+      fail(key(c), e instanceof Error ? e.message : "Couldn't review this product. Try again.");
       setBusy(null);
     }
   };
 
   const candState = async (c: CandidateView, state: "saved" | "dismissed") => {
-    fail(c.wishId, null);
+    fail(key(c), null);
     const r = await setCandidateState(c.id, state);
-    if (!r.ok) return fail(c.wishId, r.error);
+    if (!r.ok) return fail(key(c), r.error);
     setCands((xs) => (state === "dismissed" ? xs.filter((x) => x.id !== c.id) : xs.map((x) => (x.id === c.id ? { ...x, state } : x))));
   };
 
+  const card = (c: CandidateView) => {
+    const inPal = IN_PALETTE.has(c.paletteStatus ?? "");
+    const outPal = OUT_PALETTE.has(c.paletteStatus ?? "");
+    const drop = c.watch ? priceDrop(c.firstPrice, c.price) : null;
+    return (
+      <Card as="li" key={c.id} pad="none" className="flex min-w-0 flex-col overflow-hidden">
+        <a href={c.url} target="_blank" rel="noreferrer" className="block p-2 pb-0">
+          <Thumb src={c.imageUrl} alt={`${c.name ?? "Product"} (opens the store in a new tab)`} product />
+        </a>
+        <div className="flex flex-1 flex-col gap-1 p-3 text-xs">
+          <p className="line-clamp-2 text-sm font-semibold leading-snug">{c.name ?? c.url}</p>
+          <p className="tabular-nums text-stone-500">{[c.brand, c.price != null ? `$${c.price.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
+          {(drop || inPal || outPal) && (
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              {drop && (
+                <Chip tone="almost">
+                  <span aria-hidden="true">↓</span>
+                  <span className="sr-only">Down</span> ${drop.amount.toFixed(2)} ({drop.percent}%)
+                </Chip>
+              )}
+              {inPal && <Chip tone="outline">✓ in palette</Chip>}
+              {outPal && <Chip tone="outline">outside your palette</Chip>}
+            </div>
+          )}
+          {!drop && c.watch && <p className="text-stone-500">Watching the price</p>}
+          <div className="mt-auto space-y-1.5 pt-2">
+            <div className="flex flex-wrap gap-1.5">
+              <Button type="button" size="sm" onClick={() => review(c)} disabled={busy === c.id} aria-busy={busy === c.id}>
+                {busy === c.id ? "Reviewing…" : "Full review"}
+              </Button>
+              {c.state === "saved" ? (
+                <Chip tone="neutral" className="self-center">
+                  Saved
+                </Chip>
+              ) : (
+                <Button type="button" variant="quiet" size="sm" onClick={() => candState(c, "saved")}>
+                  Save
+                </Button>
+              )}
+            </div>
+            <details className="group">
+              <summary className={summaryClass}>
+                More
+                <Chevron />
+              </summary>
+              <div className="flex flex-wrap gap-1.5 pt-1.5">
+                {c.paletteReason && <p className="basis-full text-xs leading-relaxed text-stone-600">{c.paletteReason}</p>}
+                {drop && <p className="basis-full text-xs text-stone-600">Down since you started watching.</p>}
+                {c.price != null && (
+                  <ChipButton selected={c.watch} onClick={() => toggleWatch(c)}>
+                    {c.watch ? "Watching price" : "Watch price"}
+                  </ChipButton>
+                )}
+                <AskFriendsButton target={{ kind: "find", candidateId: c.id }} compact />
+                <Button type="button" variant="quiet" size="sm" onClick={() => candState(c, "dismissed")}>
+                  {c.wishId ? "Dismiss" : "Remove"}
+                </Button>
+              </div>
+            </details>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
+  const saved = cands.filter((c) => !c.wishId);
+
   return (
     <div className="space-y-6">
+      <section id="saved" className="scroll-mt-20 space-y-3" aria-labelledby="saved-title">
+        <SectionTitle>
+          <span id="saved-title">Saved products</span>
+        </SectionTitle>
+        <form action="/save" method="get" className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <Field label="Save a product from any store" className="min-w-0 flex-1">
+            <Input name="url" placeholder="Paste a product link" inputMode="url" autoComplete="off" required />
+          </Field>
+          <Button type="submit">Save</Button>
+        </form>
+        <p className="text-xs text-stone-500">
+          We keep the photo and price, check it against your palette and watch for price drops.{" "}
+          <a href="/save" className="font-medium text-stone-700 underline underline-offset-2">
+            Save from your phone or browser
+          </a>
+        </p>
+        {errors.saved && <Notice tone="error">{errors.saved}</Notice>}
+        {saved.length > 0 && <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">{saved.map(card)}</ul>}
+      </section>
+
       <Card as="form" onSubmit={add} aria-labelledby="add-wish-title" className="space-y-4">
         <h2 id="add-wish-title" className="font-display text-xl font-bold leading-tight">
           Add a wish
@@ -298,70 +375,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
               )}
               {visible.length > 0 && (
                 <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {visible.map((c) => {
-                    const inPal = IN_PALETTE.has(c.paletteStatus ?? "");
-                    const outPal = OUT_PALETTE.has(c.paletteStatus ?? "");
-                    const drop = c.watch ? priceDrop(c.firstPrice, c.price) : null;
-                    return (
-                      <Card as="li" key={c.id} pad="none" className="flex min-w-0 flex-col overflow-hidden">
-                        <a href={c.url} target="_blank" rel="noreferrer" className="block p-2 pb-0">
-                          <Thumb src={c.imageUrl} alt={`${c.name ?? "Product"} (opens the store in a new tab)`} product />
-                        </a>
-                        <div className="flex flex-1 flex-col gap-1 p-3 text-xs">
-                          <p className="line-clamp-2 text-sm font-semibold leading-snug">{c.name ?? c.url}</p>
-                          <p className="tabular-nums text-stone-500">{[c.brand, c.price != null ? `$${c.price.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
-                          {(drop || inPal || outPal) && (
-                            <div className="flex flex-wrap gap-1 pt-0.5">
-                              {drop && (
-                                <Chip tone="almost">
-                                  <span aria-hidden="true">↓</span>
-                                  <span className="sr-only">Down</span> ${drop.amount.toFixed(2)} ({drop.percent}%)
-                                </Chip>
-                              )}
-                              {inPal && <Chip tone="outline">✓ in palette</Chip>}
-                              {outPal && <Chip tone="outline">outside your palette</Chip>}
-                            </div>
-                          )}
-                          {!drop && c.watch && <p className="text-stone-500">Watching the price</p>}
-                          <div className="mt-auto space-y-1.5 pt-2">
-                            <div className="flex flex-wrap gap-1.5">
-                              <Button type="button" size="sm" onClick={() => review(c)} disabled={busy === c.id} aria-busy={busy === c.id}>
-                                {busy === c.id ? "Reviewing…" : "Full review"}
-                              </Button>
-                              {c.state === "saved" ? (
-                                <Chip tone="neutral" className="self-center">
-                                  Saved
-                                </Chip>
-                              ) : (
-                                <Button type="button" variant="quiet" size="sm" onClick={() => candState(c, "saved")}>
-                                  Save
-                                </Button>
-                              )}
-                            </div>
-                            <details className="group">
-                              <summary className={summaryClass}>
-                                More
-                                <Chevron />
-                              </summary>
-                              <div className="flex flex-wrap gap-1.5 pt-1.5">
-                                {c.paletteReason && <p className="basis-full text-xs leading-relaxed text-stone-600">{c.paletteReason}</p>}
-                                {drop && <p className="basis-full text-xs text-stone-600">Down since you started watching.</p>}
-                                {c.price != null && (
-                                  <ChipButton selected={c.watch} onClick={() => toggleWatch(c)}>
-                                    {c.watch ? "Watching price" : "Watch price"}
-                                  </ChipButton>
-                                )}
-                                <AskFriendsButton target={{ kind: "find", candidateId: c.id }} compact />
-                                <Button type="button" variant="quiet" size="sm" onClick={() => candState(c, "dismissed")}>
-                                  Dismiss
-                                </Button>
-                              </div>
-                            </details>
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })}
+                  {visible.map(card)}
                 </ul>
               )}
               {mine.length > visible.length && (

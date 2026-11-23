@@ -68,20 +68,21 @@ export async function setCandidateState(id: string, state: "new" | "saved" | "di
 }
 
 /** The haul that sourcing reviews go into, one per wishlist entry. */
-export async function sourcingHaul(wishId: string): Promise<R> {
+export async function sourcingHaul(wishId: string | null): Promise<R> {
   const { supabase, user } = await me();
   if (!user) return { ok: false, error: SIGNED_OUT };
-  const { data: wish } = await supabase.from("wishlist").select("id, title, category").eq("id", wishId).eq("user_id", user.id).maybeSingle();
-  if (!wish) return { ok: false, error: "That wish isn't here anymore. Refresh the page." };
-  const what = (wish.title as string | null) ?? (wish.category as string);
-  const label = `Wishlist: ${what}`.slice(0, 80);
+  // Saved products (no wish) share one haul.
+  const { data: wish } = wishId ? await supabase.from("wishlist").select("id, title, category").eq("id", wishId).eq("user_id", user.id).maybeSingle() : { data: null };
+  if (wishId && !wish) return { ok: false, error: "That wish isn't here anymore. Refresh the page." };
+  const what = wish ? ((wish.title as string | null) ?? (wish.category as string)) : "";
+  const label = wish ? `Wishlist: ${what}`.slice(0, 80) : "Saved products";
   // Hauls made before the rename are named "Sourcing: …"; keep reusing them.
   const legacy = `Sourcing: ${what}`.slice(0, 80);
   const { data: existing } = await supabase.from("hauls").select("id").eq("user_id", user.id).in("retailer", [label, legacy]).limit(1).maybeSingle();
   if (existing) return { ok: true, id: existing.id as string };
   const { data, error } = await supabase
     .from("hauls")
-    .insert({ user_id: user.id, retailer: label, status: "considering", date: new Date().toISOString().slice(0, 10), notes: "Products we found for your wishlist." })
+    .insert({ user_id: user.id, retailer: label, status: "considering", date: new Date().toISOString().slice(0, 10), notes: wish ? "Products we found for your wishlist." : "Products you saved from stores." })
     .select("id")
     .single();
   if (error) return { ok: false, error: SAVE_FAILED };

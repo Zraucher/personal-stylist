@@ -1,11 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { MODELS, aiAvailable } from "@/lib/ai/claude";
-import { tagImage } from "@/lib/ai/tag";
 import { loadStyleContext } from "@/lib/profile/context";
-import { scorePalette } from "@/lib/scorecard/rules";
-import { fetchImage, scrapeProduct } from "@/lib/retail/scrape";
+import { candidateFields } from "@/lib/retail/candidate";
+import { scrapeProduct } from "@/lib/retail/scrape";
 import { searchProducts } from "@/lib/retail/search";
 import { searchColors } from "@/lib/retail/synonyms";
 
@@ -57,37 +55,13 @@ export async function POST(request: NextRequest) {
 
   const saved: Array<Record<string, unknown>> = [];
   for (const p of products) {
-    let colorsRead: Array<{ name: string; hex?: string }> = p.colorway ? [{ name: p.colorway }] : [];
-    if (aiAvailable()) {
-      const img = await fetchImage(p.imageUrl!);
-      if (img) {
-        try {
-          const t = await tagImage(
-            { data: Buffer.from(img.bytes).toString("base64"), mediaType: img.type as "image/jpeg" | "image/png" | "image/webp" | "image/gif" },
-            { model: MODELS.bulk, hint: p.name ?? undefined }
-          );
-          colorsRead = t.colors;
-        } catch {
-          /* keep the listed color */
-        }
-      }
-    }
-    const palette = scorePalette({ name: p.name, subcategory: null, colors: colorsRead, pattern: null, material: null, construction: [] }, ctx.scoreColor);
     const { data: row } = await supabase
       .from("wishlist_candidates")
       .upsert(
         {
+          ...(await candidateFields(p, ctx)),
           user_id: user.id,
           wishlist_id: wish.id,
-          url: p.url,
-          name: p.name,
-          brand: p.brand,
-          image_url: p.imageUrl,
-          price: p.price,
-          currency: p.currency,
-          colors: colorsRead,
-          palette_status: palette.status,
-          palette_reason: palette.reason,
         },
         { onConflict: "wishlist_id,url" }
       )
