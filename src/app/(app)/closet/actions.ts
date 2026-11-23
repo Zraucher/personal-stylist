@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
+import { CUTOUT, originalOf, photoFiles } from "@/lib/closet/cutout";
 import { findBasic } from "@/lib/closet/basics";
 import { CATEGORIES, SEASONS, STATUSES } from "@/lib/closet/taxonomy";
 
@@ -109,11 +110,39 @@ export async function setItemPhoto(id: string, path: string): Promise<{ ok: true
   if (error) return { error: "Couldn't save this piece. Try again." };
 
   if (item.image_path && item.image_path !== path) {
-    await supabase.storage.from(CLOSET_BUCKET).remove([item.image_path as string]);
+    await supabase.storage.from(CLOSET_BUCKET).remove(photoFiles(item.image_path as string));
   }
   revalidatePath("/closet");
   revalidatePath(`/closet/${id}`);
   revalidatePath("/closet/sourced");
+  return { ok: true };
+}
+
+/** Show the background-free version, uploaded next to the original as `<original>.cutout.<ext>`. */
+export async function applyCutout(id: string, path: string): Promise<{ ok: true } | { error: string }> {
+  return swapPhoto(id, (current) => (CUTOUT.test(path) && originalOf(path) === current ? path : null));
+}
+
+/** Back to the photo as taken; the cut-out file goes. */
+export async function restorePhoto(id: string): Promise<{ ok: true } | { error: string }> {
+  return swapPhoto(id, originalOf, true);
+}
+
+async function swapPhoto(id: string, next: (current: string) => string | null, dropCurrent = false): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "You're signed out. Sign in again to save this." };
+  const { data: item } = await supabase.from("closet_items").select("image_path").eq("id", id).eq("user_id", user.id).maybeSingle();
+  if (!item?.image_path) return { error: "That piece isn't here anymore. Go back to your closet." };
+  const path = next(item.image_path as string);
+  if (!path) return { error: "That photo changed. Reload the page and try again." };
+  const { error } = await supabase.from("closet_items").update({ image_path: path, updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", user.id);
+  if (error) return { error: "Couldn't save this piece. Try again." };
+  if (dropCurrent) await supabase.storage.from(CLOSET_BUCKET).remove([item.image_path as string]);
+  revalidatePath("/closet");
+  revalidatePath(`/closet/${id}`);
   return { ok: true };
 }
 
@@ -168,7 +197,7 @@ export async function deleteItem(id: string): Promise<void> {
     .maybeSingle();
 
   if (item?.image_path) {
-    await supabase.storage.from(CLOSET_BUCKET).remove([item.image_path]);
+    await supabase.storage.from(CLOSET_BUCKET).remove(photoFiles(item.image_path));
   }
   await supabase.from("closet_items").delete().eq("id", id).eq("user_id", user.id);
   revalidatePath("/closet");

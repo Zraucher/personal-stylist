@@ -4,6 +4,7 @@ import { signedImageUrls } from "@/lib/closet/images";
 import { CATEGORIES, type Category, type ClosetItem } from "@/lib/closet/taxonomy";
 import ItemForm, { type ItemFormValues } from "../ItemForm";
 import DeleteItemButton from "./DeleteItemButton";
+import PhotoCutout from "./PhotoCutout";
 import ScorecardPanel, { type ScorecardRow } from "../ScorecardPanel";
 import WearPanel from "./WearPanel";
 import { localDate } from "@/lib/today/weather";
@@ -80,6 +81,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
         <div className="mx-auto w-full max-w-[360px] sm:max-w-none">
           <Thumb src={imageUrl} alt="" item={item} size="fill" />
           {!item.image_path && <p className="mt-2 text-center text-xs text-stone-500">No photo yet. Add one under Edit details.</p>}
+          {item.image_path && imageUrl && <PhotoCutout id={item.id} path={item.image_path} url={imageUrl} />}
         </div>
         <div className="min-w-0 space-y-4">
           <ScorecardPanel itemId={item.id} hasImage={!!item.image_path} initial={scorecard} initialAnswer={answer} />
