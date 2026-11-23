@@ -73,6 +73,14 @@ Sign-in is a code, not a link. Corporate email scanners open links and burn the 
 
 - `/gaps` counts the outfits the closet makes across five typical days, adds each missing basic (in its own color or the first two palette colors) and counts again. A suggestion shows only when it adds 3 or more outfits, with a link that adds it to the wishlist. Price watch is deferred (see the tracker).
 
+## Saved products (the DogEar idea, built in)
+
+- Save a product from any store and decide later. `/save?url=` (also `text=` and `title=`, which is what a phone's share sheet sends) saves the link; the Wishlist page has a paste box and shows them under **Saved products**.
+- Ways in: the paste box, Android Share (the manifest's `share_target`), an iPhone Shortcut that opens `/save?url=`, and a bookmarks-bar button on `/save`.
+- `POST /api/wishlist/save` cleans the link (`src/lib/retail/link.ts` drops tracking parameters), reads the page with the scraper chain, checks the palette and starts the price watch. A page that can't be read is still saved as a bare link.
+- A saved product is a `wishlist_candidates` row with no wish (`wishlist_id` null, migration 0018), so price watch, the daily cron, Full review and Ask a friend all work on it unchanged.
+- Not built: saving by forwarding an email, and returning to `/save` after a sign-in (a signed-out save lands on Today).
+
 ## Environment variables
 
 | Name | Needed for | Status |
@@ -85,7 +93,7 @@ Sign-in is a code, not a link. Corporate email scanners open links and burn the 
 ## Tests
 
 ```bash
-node --test scripts/test-rules.mjs scripts/test-composition.mjs scripts/test-today.mjs scripts/test-gaps.mjs
+node --test scripts/test-rules.mjs scripts/test-composition.mjs scripts/test-today.mjs scripts/test-gaps.mjs scripts/test-link.mjs
 ```
 
 Needs Node 22.18+. The rules, composition, candidate and gap modules are erasable TypeScript, so Node runs them directly (40 tests).

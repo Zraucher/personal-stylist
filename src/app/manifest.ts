@@ -17,7 +17,10 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/pwa-icon/512", sizes: "512x512", type: "image/png", purpose: "any" },
       { src: "/pwa-icon/maskable", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
+    // Android: "Share" from a store page lands on /save with the link.
+    share_target: { action: "/save", method: "GET", params: { title: "title", text: "text", url: "url" } },
     shortcuts: [
+      { name: "Save a product", url: "/save" },
       { name: "Today", url: "/today" },
       { name: "Plan my week", url: "/plan" },
       { name: "Closet", url: "/closet" },

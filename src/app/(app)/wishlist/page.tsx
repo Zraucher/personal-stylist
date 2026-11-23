@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui";
+import { toCandidateView } from "./view";
 import WishlistClient, { type CandidateView, type WishView } from "./WishlistClient";
 
 export const metadata = { title: "Wishlist · valette" };
@@ -27,28 +28,14 @@ export default async function WishlistPage({ searchParams }: { searchParams: Pro
     status: (w.status as "open" | "found" | "dropped") ?? "open",
     lastSearched: (w.last_searched_at as string | null) ?? null,
   }));
-  const candViews: CandidateView[] = (cands ?? []).map((c) => ({
-    id: c.id as string,
-    wishId: c.wishlist_id as string,
-    url: c.url as string,
-    name: (c.name as string | null) ?? null,
-    brand: (c.brand as string | null) ?? null,
-    imageUrl: (c.image_url as string | null) ?? null,
-    price: c.price != null ? Number(c.price) : null,
-    paletteStatus: (c.palette_status as string | null) ?? null,
-    paletteReason: (c.palette_reason as string | null) ?? null,
-    state: (c.state as string) ?? "new",
-    colors: Array.isArray(c.colors) ? (c.colors as Array<{ name: string; hex?: string }>) : [],
-    watch: !!c.watch,
-    firstPrice: c.first_price != null ? Number(c.first_price) : null,
-  }));
+  const candViews: CandidateView[] = (cands ?? []).map(toCandidateView);
 
   return (
     <div className="space-y-6">
       <PageHeader
         back={{ href: "/hauls", label: "Shop" }}
         title="Wishlist"
-        subtitle="Pieces you want. Find options searches stores in your colors and from brands you love."
+        subtitle="Pieces you want and products you saved. Find options searches stores in your colors and from brands you love."
       />
       <WishlistClient
         wishes={wishViews}
