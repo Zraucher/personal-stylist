@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { requestMagicLink, verifyCode, type LoginState } from "./actions";
+import { requestMagicLink, signInWithPassword, verifyCode, type LoginState } from "./actions";
 import Wordmark from "@/components/Wordmark";
 import WaitlistForm from "@/components/landing/WaitlistForm";
 import { Button, Card, Chip, Field, Input, Notice } from "@/components/ui";
@@ -18,6 +18,7 @@ export default function LoginPage() {
 function LoginFlow({ onRestart }: { onRestart: () => void }) {
   const [state, formAction, pending] = useActionState(requestMagicLink, initial);
   const [codeState, codeAction, codePending] = useActionState(verifyCode, initial);
+  const [pwState, pwAction, pwPending] = useActionState(signInWithPassword, initial);
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-ground px-4 py-12 text-stone-900">
@@ -99,6 +100,25 @@ function LoginFlow({ onRestart }: { onRestart: () => void }) {
             {state.status === "error" && <Notice tone="error">{state.message}</Notice>}
           </form>
         )}
+
+        {state.status === "idle" || state.status === "error" ? (
+          // For app store reviewers only; the action refuses every other email.
+          <details className="mt-6 text-sm" open={pwState.status === "error"}>
+            <summary className="cursor-pointer text-stone-600">Sign in with password</summary>
+            <form action={pwAction} className="mt-3 space-y-3">
+              <Field label="Email" srOnly>
+                <Input type="email" name="email" required autoComplete="username" defaultValue={pwState.email ?? ""} placeholder="Email" />
+              </Field>
+              <Field label="Password" srOnly>
+                <Input type="password" name="password" required autoComplete="current-password" placeholder="Password" />
+              </Field>
+              <Button type="submit" variant="secondary" block disabled={pwPending} aria-busy={pwPending || undefined}>
+                {pwPending ? "Signing in…" : "Sign in with password"}
+              </Button>
+              {pwState.status === "error" && <Notice tone="error">{pwState.message}</Notice>}
+            </form>
+          </details>
+        ) : null}
       </div>
     </main>
   );
