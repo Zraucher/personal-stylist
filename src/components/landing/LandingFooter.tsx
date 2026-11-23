@@ -32,6 +32,7 @@ export function LandingFooter({ signedIn }: { signedIn: boolean }) {
                   <Link href="/login" className={link}>Sign in</Link>
                 )}
               </li>
+              <li><Link href="/help" className={link}>Help</Link></li>
               <li><Link href="/privacy" className={link}>Privacy</Link></li>
             </ul>
           </nav>

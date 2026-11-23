@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/o/", "/offline", "/api/cron/"];
+const PUBLIC_PATHS = ["/login", "/auth", "/privacy", "/help", "/o/", "/offline", "/api/cron/"];
 // The marketing home page is public for everyone; signed-in visitors see it too, with an "Open the app" button.
 const PUBLIC_EXACT = ["/"];
 
