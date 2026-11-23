@@ -8,7 +8,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
     <section aria-labelledby="hero-title" className="overflow-hidden">
       <div className="mx-auto grid max-w-6xl items-center gap-16 px-4 pb-24 pt-10 sm:px-6 sm:pt-16 md:grid-cols-[1.15fr_1fr] md:gap-10 md:pb-32 lg:gap-20">
         <div className="space-y-7">
-          <EyebrowPill className="bg-blush text-ink dark:text-stone-900">early access · invite only</EyebrowPill>
+          <EyebrowPill className="bg-blush text-ink">early access · invite only</EyebrowPill>
           <h1
             id="hero-title"
             className="text-balance font-display text-[46px] font-extrabold leading-[0.95] tracking-[-0.045em] sm:text-[64px] lg:text-[80px]"

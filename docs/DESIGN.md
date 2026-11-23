@@ -10,27 +10,27 @@ Built from four audits on 2026-11-21: impeccable (hierarchy, type, states), high
 2. **Linen cards on white, one lift.** Pages are white; cards are hairline-framed Linen surfaces (the landing page keeps Linen pages with white cards). Only the active card on a screen (the chosen look, today's plan) gets the soft shadow.
 3. **Warm, never gadgety.** Pill buttons, 20 px cards, editorial titles, real garment shapes. No gradients, no glass panels on content, no bouncy motion.
 4. **Same pattern, same component.** Buttons, chips, cards, fields, headers, empty states and thumbnails come from `src/components/ui/`. Never hand-type a variant.
-5. **Readable for everyone.** Text 4.5:1, controls 3:1, visible focus, labelled inputs, announced results, 44 px touch targets on phones. Light and dark mode both pass.
+5. **Readable for everyone.** Text 4.5:1, controls 3:1, visible focus, labelled inputs, announced results, 44 px touch targets on phones.
 
 ## 2. Tokens (`src/app/globals.css`)
 
-Tailwind's scales stay remapped to the brand (stone = Linen→Night, emerald = Go Green, amber = Marigold, red = Clay). Dark mode inverts stone automatically onto a warm charcoal (not navy), so night mode reads as the same White/Linen look. New tokens:
+Tailwind's scales stay remapped to the brand (stone = Linen→Night, emerald = Go Green, amber = Marigold, red = Clay). The app is light-only (no dark mode). New tokens:
 
-| Token | Light | Dark | Use |
-|---|---|---|---|
-| `ground` | #FFFFFF (landing: #FBF7F2) | #2B2826 | page background |
-| `card` | #FBF7F2 (landing: #FFFFFF) | #35312E | standard surface |
-| `raised` | #FFFFFF | #3E3A36 | the one active card |
-| `inset` | #F5EEE6 | #24211F | photo wells, inputs, segmented tracks |
-| `line` | Night 8% | Linen 8% | card hairlines (`ring-1 ring-line`) |
-| `line-strong` | Night 16% | Linen 16% | dividers that must show |
-| `ink` | #1D1B2B | #1D1B2B | text on Marigold, Blush or Sky fills; never inverts |
-| `on-accent` | #FFFFFF | #1D1B2B | text on Go Green and Clay fills |
-| `stone-400` | #8A8094 | #736D8C | control borders only (3:1); never body text |
-| `shadow-active` | 0 1 2 / 4% + 0 6 20 / 8% Night | inset highlight + 0 8 24 black 35% | the active card |
-| `shadow-sheet` | 0 16 40 Night 14% | inset highlight + 0 16 40 black 50% | dialogs |
-| `radius-control` 14 px, `radius-thumb` 12 px, `radius-card` 20 px, `radius-sheet` 28 px | | | |
-| `ease-soft` | cubic-bezier(.32,.72,0,1) | | all transitions |
+| Token | Light | Use |
+|---|---|---|
+| `ground` | #FFFFFF (landing: #FBF7F2) | page background |
+| `card` | #FBF7F2 (landing: #FFFFFF) | standard surface |
+| `raised` | #FFFFFF | the one active card |
+| `inset` | #F5EEE6 | photo wells, inputs, segmented tracks |
+| `line` | Night 8% | card hairlines (`ring-1 ring-line`) |
+| `line-strong` | Night 16% | dividers that must show |
+| `ink` | #1D1B2B | text on Marigold, Blush or Sky fills; never inverts |
+| `on-accent` | #FFFFFF | text on Go Green and Clay fills |
+| `stone-400` | #8A8094 | control borders only (3:1); never body text |
+| `shadow-active` | 0 1 2 / 4% + 0 6 20 / 8% Night | the active card |
+| `shadow-sheet` | 0 16 40 Night 14% | dialogs |
+| `radius-control` 14 px, `radius-thumb` 12 px, `radius-card` 20 px, `radius-sheet` 28 px | | |
+| `ease-soft` | cubic-bezier(.32,.72,0,1) | all transitions |
 
 Rules: muted text is `text-stone-500` minimum (`text-stone-400` is not a text colour). On Blush or Sky panels use `text-stone-600` or darker. Text on Marigold is always `text-ink`.
 
@@ -109,4 +109,4 @@ Only: button press, chip colour change (150–200 ms), the active card's shadow,
 
 ## 9. Accessibility checklist (every change)
 
-Focus ring is a 2 px Night outline with 2 px offset (global). Inputs are labelled. Toggles use `aria-pressed`; chip groups use `role="group"` with a label. Targets ≥ 44 px on touch (`tap` utility). Colour is never the only signal. Decorative glyphs are `aria-hidden`. Check light and dark mode, and 375 px width.
+Focus ring is a 2 px Night outline with 2 px offset (global). Inputs are labelled. Toggles use `aria-pressed`; chip groups use `role="group"` with a label. Targets ≥ 44 px on touch (`tap` utility). Colour is never the only signal. Decorative glyphs are `aria-hidden`. Check at 375 px width.
