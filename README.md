@@ -81,6 +81,14 @@ Sign-in is a code, not a link. Corporate email scanners open links and burn the 
 - A saved product is a `wishlist_candidates` row with no wish (`wishlist_id` null, migration 0018), so price watch, the daily cron, Full review and Ask a friend all work on it unchanged.
 - Not built: saving by forwarding an email, and returning to `/save` after a sign-in (a signed-out save lands on Today).
 
+## Price alerts, "Should I buy it?" and the Chrome extension
+
+- Migration 0019 adds `list_price`, `target_price`, `rating`, `review_count`, `advice`, `advised_at` to `wishlist_candidates`.
+- Alerts: the daily cron pushes a line only when a watched price went down (`priceNews` in `src/lib/retail/price.ts`): hit the person's "Tell me at this price", on sale against the store's own list price, or a plain drop. Cards show "On sale" and "At your price" chips. No email alerts: the app has no mailer.
+- `POST /api/wishlist/advise {id, reviews?}` (`src/lib/retail/advice.ts`) re-reads the page, gathers reviews (the page's own data, what the extension saw on screen, web search snippets when `FIRECRAWL_API_KEY` is set) and answers buy / wait / skip with a sizing call (size up, size down, true to size, mixed). Without the AI key it falls back to counting sizing remarks (`src/lib/retail/sizing.ts`). It never invents reviews; with none it says sizing is unknown.
+- `extension/` is the Chrome extension (Manifest V3, no build step). The popup reads the open product page, saves it through `/api/wishlist/save` (its `page` data fills in when the store blocks our reader), then shows the advice. Right-click has "Save to valette". Rebuild the download after any change: `python scripts/zip-extension.py` writes `public/valette-extension.zip`. Not in the Chrome Web Store yet; people load it unpacked.
+- Tests: `node --test scripts/test-shop.mjs`.
+
 ## Environment variables
 
 | Name | Needed for | Status |

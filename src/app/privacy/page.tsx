@@ -34,6 +34,8 @@ export default function PrivacyPage() {
               <li>Your closet: the pieces you add and any photos you upload.</li>
               <li>Your feedback on outfits and what you wear, so suggestions and closet insights get better.</li>
               <li>Product links you paste to check a find or watch its price. We fetch that page to read the product photo, name and price, and check it again each day while you watch it.</li>
+              <li>If you use our Chrome extension: when you click it, it reads the product page you have open (name, photo, price, rating and the customer reviews on the page) and sends that to Valette to save the product. It reads nothing until you click it.</li>
+              <li>When you ask whether a saved product is worth buying: we read its customer reviews, and may search the web for more, using the product&apos;s name and brand. Your sizes and measurements are used to word the sizing advice.</li>
               <li>If you share a look for a second opinion: anyone with that link can see the pieces in it and vote until it closes. Friends who vote give only an optional first name and comment.</li>
               <li>If you vote on a friend&apos;s look: the first name you type is saved in your own browser so you don&apos;t have to type it again. It stays on your device, and clearing your browser&apos;s site data removes it.</li>
               <li>If you turn on notifications: a device address from your browser, used only to send you Valette notifications.</li>

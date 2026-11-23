@@ -4,11 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 import { loadStyleContext } from "@/lib/profile/context";
 import { candidateFields } from "@/lib/retail/candidate";
 import { cleanLink } from "@/lib/retail/link";
-import { safeUrl, scrapeProduct } from "@/lib/retail/scrape";
+import { safeUrl, scrapeProduct, type ScrapedProduct } from "@/lib/retail/scrape";
 
 export const maxDuration = 60;
 
-const Body = z.object({ link: z.string().max(4000) });
+const text = z.string().trim().max(300).nullish();
+const amount = z.number().positive().max(1_000_000).nullish();
+// `page` is what the Chrome extension read off the open product page. It fills in when the store blocks our reader.
+const Body = z.object({
+  link: z.string().max(4000),
+  page: z.object({ name: text, brand: text, image: z.string().max(2000).nullish(), price: amount, currency: text, listPrice: amount, rating: z.number().min(0).max(5).nullish(), reviewCount: z.number().int().min(0).nullish() }).optional(),
+});
 
 /** Save a product link from any store. The link is kept even when the page can't be read. */
 export async function POST(request: NextRequest) {
@@ -28,7 +34,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ candidate: { ...existing, state: "saved" }, already: true, read: !!existing.name });
   }
 
-  const product = await scrapeProduct(url).catch(() => null);
+  const seen = parsed.success ? parsed.data.page : undefined;
+  const scraped = await scrapeProduct(url).catch(() => null);
+  const product: ScrapedProduct | null = scraped
+    ? { ...scraped, price: scraped.price ?? seen?.price ?? null, listPrice: scraped.listPrice ?? seen?.listPrice ?? null, rating: scraped.rating ?? seen?.rating ?? null, reviewCount: scraped.reviewCount ?? seen?.reviewCount ?? null }
+    : seen?.name
+      ? {
+          url,
+          name: seen.name,
+          brand: seen.brand ?? new URL(url).hostname.replace(/^www\./, ""),
+          imageUrl: seen.image && safeUrl(seen.image) ? seen.image : null,
+          price: seen.price ?? null,
+          currency: seen.currency ?? null,
+          colorway: null,
+          material: null,
+          description: null,
+          listPrice: seen.listPrice ?? null,
+          rating: seen.rating ?? null,
+          reviewCount: seen.reviewCount ?? null,
+          source: "browser",
+        }
+      : null;
   const fields = product
     ? await candidateFields(product, await loadStyleContext(supabase, user.id))
     : { name: null, brand: new URL(url).hostname.replace(/^www\./, ""), price: null };

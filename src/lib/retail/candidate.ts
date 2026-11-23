@@ -20,5 +20,5 @@ export async function candidateFields(p: ScrapedProduct, ctx: Awaited<ReturnType
     }
   }
   const palette = scorePalette({ name: p.name, subcategory: null, colors, pattern: null, material: null, construction: [] }, ctx.scoreColor);
-  return { url: p.url, name: p.name, brand: p.brand, image_url: p.imageUrl, price: p.price, currency: p.currency, colors, palette_status: palette.status, palette_reason: palette.reason };
+  return { url: p.url, name: p.name, brand: p.brand, image_url: p.imageUrl, price: p.price, currency: p.currency, colors, palette_status: palette.status, palette_reason: palette.reason, list_price: p.listPrice ?? null, rating: p.rating ?? null, review_count: p.reviewCount ?? null };
 }

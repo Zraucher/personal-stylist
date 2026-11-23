@@ -2,8 +2,10 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { addWish, deleteWish, setCandidateState, setWatch, setWishStatus, sourcingHaul, upcomingStatus } from "./actions";
-import { priceDrop } from "@/lib/retail/price";
+import { addWish, deleteWish, setCandidateState, setTarget, setWatch, setWishStatus, sourcingHaul, upcomingStatus } from "./actions";
+import type { Advice } from "@/lib/retail/advice";
+import { priceDrop, saleOff } from "@/lib/retail/price";
+import { SIZING_LABEL } from "@/lib/retail/sizing";
 import { toCandidateView } from "./view";
 import AskFriendsButton from "@/components/AskFriendsButton";
 import { Button, Card, Chip, ChipButton, ConfirmButton, EmptyState, Field, Input, Notice, SectionTitle, Select, Skeleton, Thumb } from "@/components/ui";
@@ -23,6 +25,10 @@ export type CandidateView = {
   colors: Array<{ name: string; hex?: string }>;
   watch: boolean;
   firstPrice: number | null;
+  listPrice: number | null;
+  targetPrice: number | null;
+  lowest: number | null;
+  advice: Advice | null;
 };
 type Need = { id: string; label: string; season: string | null; status: string };
 
@@ -67,6 +73,44 @@ function TrashIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
     </svg>
+  );
+}
+
+const VERDICT: Record<Advice["verdict"], { tone: "works" | "almost" | "not"; mark: string; label: string }> = {
+  buy: { tone: "works", mark: "✓", label: "worth buying" },
+  wait: { tone: "almost", mark: "◐", label: "wait" },
+  skip: { tone: "not", mark: "✕", label: "skip it" },
+};
+
+/** The "Should I buy it?" answer: verdict, sizing from reviews, price. */
+function AdviceNote({ a }: { a: Advice }) {
+  const v = VERDICT[a.verdict];
+  const size = SIZING_LABEL[a.sizing];
+  return (
+    <div className="space-y-1.5 rounded-control bg-inset p-2.5 text-xs leading-relaxed text-stone-700">
+      <Chip tone={v.tone}>
+        <span aria-hidden="true">{v.mark}</span> {v.label}
+      </Chip>
+      <p className="text-sm font-semibold leading-snug text-stone-900">{a.headline}</p>
+      <p>
+        <span className="font-semibold text-stone-900">{size ?? "Sizing"}.</span> {a.sizingNote}
+      </p>
+      <p>
+        <span className="font-semibold text-stone-900">Price.</span> {a.price}
+      </p>
+      <details className="group">
+        <summary className={summaryClass}>
+          Why
+          <Chevron />
+        </summary>
+        <div className="space-y-1 pt-1">
+          <p>{a.fit}</p>
+          {a.pros.length > 0 && <p>Reviewers like: {a.pros.join(", ")}.</p>}
+          {a.cons.length > 0 && <p>Reviewers warn: {a.cons.join(", ")}.</p>}
+          <p className="text-stone-500">{a.reviewsRead > 0 ? `From ${a.reviewsRead} review ${a.reviewsRead === 1 ? "remark" : "remarks"} we could read.` : "We couldn't read any reviews for this one."}</p>
+        </div>
+      </details>
+    </div>
   );
 }
 
@@ -169,6 +213,30 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
     }
   };
 
+  const advise = async (c: CandidateView) => {
+    setBusy(`adv:${c.id}`);
+    fail(key(c), null);
+    try {
+      const res = await fetch("/api/wishlist/advise", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: c.id }) });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(res.status === 401 ? SIGNED_OUT : body.detail || "Couldn't review this product. Try again.");
+      const fresh = toCandidateView(body.candidate);
+      setCands((xs) => xs.map((x) => (x.id === c.id ? fresh : x)));
+    } catch (e) {
+      fail(key(c), e instanceof Error ? e.message : "Couldn't review this product. Try again.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveTarget = async (c: CandidateView, raw: string) => {
+    fail(key(c), null);
+    const target = raw.trim() ? Number(raw.replace(/[$,\s]/g, "")) : null;
+    const r = await setTarget(c.id, target);
+    if (!r.ok) return fail(key(c), r.error);
+    setCands((xs) => xs.map((x) => (x.id === c.id ? { ...x, targetPrice: target, ...(target != null ? { watch: true, state: "saved", firstPrice: x.firstPrice ?? x.price } : {}) } : x)));
+  };
+
   const candState = async (c: CandidateView, state: "saved" | "dismissed") => {
     fail(key(c), null);
     const r = await setCandidateState(c.id, state);
@@ -180,6 +248,8 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
     const inPal = IN_PALETTE.has(c.paletteStatus ?? "");
     const outPal = OUT_PALETTE.has(c.paletteStatus ?? "");
     const drop = c.watch ? priceDrop(c.firstPrice, c.price) : null;
+    const off = saleOff(c.listPrice, c.price);
+    const atTarget = c.targetPrice != null && c.price != null && c.price <= c.targetPrice;
     return (
       <Card as="li" key={c.id} pad="none" className="flex min-w-0 flex-col overflow-hidden">
         <a href={c.url} target="_blank" rel="noreferrer" className="block p-2 pb-0">
@@ -187,8 +257,8 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
         </a>
         <div className="flex flex-1 flex-col gap-1 p-3 text-xs">
           <p className="line-clamp-2 text-sm font-semibold leading-snug">{c.name ?? c.url}</p>
-          <p className="tabular-nums text-stone-500">{[c.brand, c.price != null ? `$${c.price.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
-          {(drop || inPal || outPal) && (
+          <p className="tabular-nums text-stone-500">{[c.brand, c.price != null ? `$${c.price.toFixed(2)}` : null, off ? `was $${c.listPrice!.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
+          {(drop || off || atTarget || inPal || outPal) && (
             <div className="flex flex-wrap gap-1 pt-0.5">
               {drop && (
                 <Chip tone="almost">
@@ -196,15 +266,18 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
                   <span className="sr-only">Down</span> ${drop.amount.toFixed(2)} ({drop.percent}%)
                 </Chip>
               )}
+              {atTarget && <Chip tone="almost">At your price</Chip>}
+              {off && <Chip tone="almost">On sale, {off}% off</Chip>}
               {inPal && <Chip tone="outline">✓ in palette</Chip>}
               {outPal && <Chip tone="outline">outside your palette</Chip>}
             </div>
           )}
-          {!drop && c.watch && <p className="text-stone-500">Watching the price</p>}
+          {!drop && c.watch && <p className="text-stone-500">{c.targetPrice != null && !atTarget ? `Watching for $${c.targetPrice.toFixed(2)}` : "Watching the price"}</p>}
+          {c.advice && <AdviceNote a={c.advice} />}
           <div className="mt-auto space-y-1.5 pt-2">
             <div className="flex flex-wrap gap-1.5">
-              <Button type="button" size="sm" onClick={() => review(c)} disabled={busy === c.id} aria-busy={busy === c.id}>
-                {busy === c.id ? "Reviewing…" : "Full review"}
+              <Button type="button" size="sm" onClick={() => advise(c)} disabled={busy === `adv:${c.id}`} aria-busy={busy === `adv:${c.id}`}>
+                {busy === `adv:${c.id}` ? "Reading reviews…" : c.advice ? "Check again" : "Should I buy it?"}
               </Button>
               {c.state === "saved" ? (
                 <Chip tone="neutral" className="self-center">
@@ -229,6 +302,26 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
                     {c.watch ? "Watching price" : "Watch price"}
                   </ChipButton>
                 )}
+                {c.lowest != null && c.price != null && c.lowest < c.price && <p className="basis-full text-xs text-stone-600">Lowest we&apos;ve seen: ${c.lowest.toFixed(2)}.</p>}
+                {c.price != null && (
+                  <form
+                    className="flex basis-full items-end gap-1.5"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      saveTarget(c, String(new FormData(e.currentTarget).get("target") ?? ""));
+                    }}
+                  >
+                    <Field label="Tell me at this price" className="min-w-0 flex-1">
+                      <Input name="target" inputMode="decimal" placeholder={`e.g. ${Math.floor(c.price * 0.8)}`} defaultValue={c.targetPrice ?? ""} />
+                    </Field>
+                    <Button type="submit" size="md">
+                      Set
+                    </Button>
+                  </form>
+                )}
+                <Button type="button" variant="quiet" size="sm" onClick={() => review(c)} disabled={busy === c.id} aria-busy={busy === c.id}>
+                  {busy === c.id ? "Reviewing…" : "Full review"}
+                </Button>
                 <AskFriendsButton target={{ kind: "find", candidateId: c.id }} compact />
                 <Button type="button" variant="quiet" size="sm" onClick={() => candState(c, "dismissed")}>
                   {c.wishId ? "Dismiss" : "Remove"}
