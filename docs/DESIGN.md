@@ -14,14 +14,14 @@ Built from four audits on 2026-11-21: impeccable (hierarchy, type, states), high
 
 ## 2. Tokens (`src/app/globals.css`)
 
-Tailwind's scales stay remapped to the brand (stone = Linen→Night, emerald = Go Green, amber = Marigold, red = Clay). Dark mode inverts stone automatically. New tokens:
+Tailwind's scales stay remapped to the brand (stone = Linen→Night, emerald = Go Green, amber = Marigold, red = Clay). Dark mode inverts stone automatically onto a warm charcoal (not navy), so night mode reads as the same White/Linen look. New tokens:
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `ground` | #FFFFFF (landing: #FBF7F2) | #1D1B2B | page background |
-| `card` | #FBF7F2 (landing: #FFFFFF) | #252338 | standard surface |
-| `raised` | #FFFFFF | #2D2A42 | the one active card |
-| `inset` | #F5EEE6 | #1A1827 | photo wells, inputs, segmented tracks |
+| `ground` | #FFFFFF (landing: #FBF7F2) | #2B2826 | page background |
+| `card` | #FBF7F2 (landing: #FFFFFF) | #35312E | standard surface |
+| `raised` | #FFFFFF | #3E3A36 | the one active card |
+| `inset` | #F5EEE6 | #24211F | photo wells, inputs, segmented tracks |
 | `line` | Night 8% | Linen 8% | card hairlines (`ring-1 ring-line`) |
 | `line-strong` | Night 16% | Linen 16% | dividers that must show |
 | `ink` | #1D1B2B | #1D1B2B | text on Marigold, Blush or Sky fills; never inverts |
