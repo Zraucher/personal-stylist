@@ -5,5 +5,7 @@ m = json.load(open("extension/manifest.json", encoding="utf-8"))
 assert len(m["description"]) <= 132, "Chrome Web Store caps the manifest description at 132 characters"
 with zipfile.ZipFile("public/valette-extension.zip", "w", zipfile.ZIP_DEFLATED) as z:
     for f in sorted(os.listdir("extension")):
+        if os.path.isdir(os.path.join("extension", f)):
+            continue  # store-listing/ images are for the Web Store page, not the extension
         z.write(os.path.join("extension", f), f)
 print("valette", m["version"])
