@@ -86,7 +86,8 @@ async function main() {
   const saveLink = `${APP}/save?url=${encodeURIComponent(data.link)}`;
   const res = await post("/api/wishlist/save", { link: data.link, page: data.page }).catch(() => null);
   if (!res) return show(el("p", "Couldn't reach valette. Check your connection and try again."));
-  if (res.status === 401) return show(el("p", "Sign in to valette first. Your product will be saved right after."), link("Sign in and save", saveLink));
+  // Signed out: the app redirects every request to /login.
+  if (res.status === 401 || res.redirected) return show(el("p", "Sign in to valette first. Your product will be saved right after."), link("Sign in and save", saveLink));
   const body = await res.json().catch(() => ({}));
   if (!res.ok) return show(el("p", body.detail || "Couldn't save that. Try again."), link("Open valette", saveLink));
 
@@ -99,7 +100,7 @@ async function main() {
   show(...head, el("p", "Reading reviews…", "muted"), open);
 
   const adv = await post("/api/wishlist/advise", { id: c.id, reviews: data.reviews }).catch(() => null);
-  const a = adv?.ok ? (await adv.json().catch(() => ({}))).candidate?.advice : null;
+  const a = adv?.ok && !adv.redirected ? (await adv.json().catch(() => ({}))).candidate?.advice : null;
   if (!a) return show(...head, el("p", "We couldn't review it just now. Ask again from your saved products.", "muted"), open);
   show(
     ...head,
