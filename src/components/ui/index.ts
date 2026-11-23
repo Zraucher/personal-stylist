@@ -11,3 +11,4 @@ export { ConfirmButton } from "./ConfirmButton";
 export { CheckTick } from "./CheckTick";
 export { OutfitStrip, WeatherLine, VoteBar, OutfitCardSkeleton, GridSkeleton, type StripItem } from "./Outfit";
 export { Segmented } from "./Segmented";
+export { OutfitMockup } from "./OutfitMockup";

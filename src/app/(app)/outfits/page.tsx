@@ -5,7 +5,7 @@ import { OverallChip, cleanHeadline } from "./CompositionPanel";
 import DeleteOutfitButton from "./DeleteOutfitButton";
 import ClosetSubnav from "../ClosetSubnav";
 import AskFriendsButton from "@/components/AskFriendsButton";
-import { ButtonLink, Card, EmptyState, OutfitStrip, PageHeader } from "@/components/ui";
+import { ButtonLink, Card, EmptyState, OutfitMockup, OutfitStrip, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Outfits · valette" };
 
@@ -40,6 +40,19 @@ export default async function OutfitsPage() {
     (itemRows ?? []).map((r) => r.image_path as string | null)
   );
 
+  const pieces = (ids: string[]) =>
+    ids.map((id) => {
+      const it = items.get(id);
+      return {
+        id,
+        name: it?.name ?? "Removed piece",
+        url: it?.image_path ? urls[it.image_path] : null,
+        category: it?.category,
+        subcategory: it?.subcategory,
+        colors: it?.colors,
+      };
+    });
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -72,19 +85,16 @@ export default async function OutfitsPage() {
         <ul className="space-y-3">
           {outfits.map((o) => (
             <Card as="li" key={o.id} className="space-y-3">
-              <OutfitStrip
-                items={o.item_ids.map((id) => {
-                  const it = items.get(id);
-                  return {
-                    id,
-                    name: it?.name ?? "Removed piece",
-                    url: it?.image_path ? urls[it.image_path] : null,
-                    category: it?.category,
-                    subcategory: it?.subcategory,
-                    colors: it?.colors,
-                  };
-                })}
-              />
+              <OutfitStrip items={pieces(o.item_ids)} />
+              <details className="group">
+                <summary className="tap flex cursor-pointer list-none items-center gap-1.5 text-sm font-semibold text-stone-700 hover:text-stone-900 [&::-webkit-details-marker]:hidden">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 transition-transform duration-200 ease-soft group-open:rotate-90">
+                    <path d="m9 6 6 6-6 6" />
+                  </svg>
+                  See it as one picture
+                </summary>
+                <OutfitMockup items={pieces(o.item_ids)} className="pt-3" />
+              </details>
               <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                 {o.composition && <OverallChip overall={o.composition.overall} />}
                 <h2 className="min-w-0 truncate font-display text-lg font-bold leading-snug">{o.name ?? o.occasion ?? "Untitled outfit"}</h2>

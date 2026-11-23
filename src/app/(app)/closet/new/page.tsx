@@ -1,5 +1,6 @@
 import { ButtonLink, PageHeader } from "@/components/ui";
 import ItemCapture from "./ItemCapture";
+import LinkImport from "./LinkImport";
 
 export default function NewItemPage() {
   return (
@@ -13,6 +14,7 @@ export default function NewItemPage() {
         }
       />
       <ItemCapture />
+      <LinkImport />
     </div>
   );
 }
