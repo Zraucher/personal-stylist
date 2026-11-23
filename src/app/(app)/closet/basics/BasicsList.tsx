@@ -81,7 +81,7 @@ export default function BasicsList({ defaultTab, showTabs, owned: initialOwned }
                         aria-hidden="true"
                         className={
                           "flex size-5 shrink-0 items-center justify-center rounded-[6px] border-[1.5px] text-xs transition-colors duration-150 ease-soft " +
-                          (on ? "border-stone-900 bg-stone-900 text-stone-50" : "border-stone-400 bg-card")
+                          (on ? "border-stone-900 bg-stone-200 text-stone-900" : "border-stone-400 bg-card")
                         }
                       >
                         {on ? "✓" : ""}

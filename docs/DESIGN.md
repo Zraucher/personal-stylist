@@ -61,7 +61,7 @@ Verdict chips stay lowercase with symbol + word: `✓ works on you`, `◐ almost
 |---|---|
 | `Button` / `ButtonLink` | Pill. `primary` (Go Green, one per screen), `secondary` (Night outline), `quiet` (text with soft hover), `danger` (Clay text). Sizes `sm` (h-9) and `md` (h-11). Press: `active:scale-[0.98]`. `type` is required on `Button`. |
 | `Chip` / `ChipLink` | Static label, or a nudge that links somewhere. Tones: neutral, outline, works, almost, not, info, warm, overlay. Wrap ✓ ◐ ✕ glyphs in `aria-hidden`. |
-| `ChipButton` | Toggle. Selected = Night fill (never green). Sets `aria-pressed`. |
+| `ChipButton` | Toggle. Selected = light tint (`bg-stone-200`) with a Night outline (never green). Sets `aria-pressed`. |
 | `Card` | `surface` (hairline), `active` (raised + shadow), `warm` (blush), `inset`. `as` any element, including `form`. |
 | `PageHeader` | Eyebrow, title, subtitle, back link (chevron), actions slot. Every app page starts with it. |
 | `Field`, `Input`, `Select`, `Textarea` | 44 px, `rounded-control`, `bg-inset`, 16 px text (no iOS zoom), `border-stone-400`. Every input has a label (visible or `sr-only`). |
@@ -74,7 +74,7 @@ Verdict chips stay lowercase with symbol + word: `✓ works on you`, `◐ almost
 | `OutfitStrip` | Every outfit, everywhere: pieces first, the same size on Today, Plan, Trips, Outfits and Second opinions. `lg` on cards (4 across, +N past four), `sm` in compact rows. |
 | `WeatherLine` | The feels-like high large in the display face, with low, rain, UV and wind as small meta. |
 | `VoteBar` | Every vote tally: works, almost, not for you, with 2 px gaps. |
-| `Segmented` | Two to four views (Looks / Packing list). Chosen = Night. Full tabs pattern when given panel ids. |
+| `Segmented` | Two to four views (Looks / Packing list). Chosen = white raised pill on the inset track. Full tabs pattern when given panel ids. |
 | `OutfitCardSkeleton`, `GridSkeleton` | Loading states shaped like the real content. |
 | `CHECK_MARK` (`src/lib/verdict.ts`) | Every rule check: ✓ good, ○ okay, ◐ watch, ✕ no, – not checked. Glyph plus word, never colour alone. |
 
@@ -93,7 +93,7 @@ The full list lives in `docs/design-review-round2.md` ("Decisions that apply eve
 
 - Header: sticky, `bg-ground/80` with blur, top safe area, 56 px tall, hairline shadow instead of a border. Sign out lives on Profile on phones.
 - Bottom tab bar: blur, home-indicator padding, 2 px rounded line icons (sun, calendar, hanger, bubble, bag, person), active tab = soft Night pill behind the icon plus a bold label.
-- Closet sub-menu: a segmented control on an inset track below the page header. The current page is a Night pill.
+- Closet sub-menu: a segmented control on an inset track below the page header. The current page is a white raised pill.
 - Skip link to `#main`; header nav labelled "Primary", tab bar "Main".
 
 ## 7. States

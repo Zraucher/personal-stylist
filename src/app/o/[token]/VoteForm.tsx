@@ -107,7 +107,7 @@ export default function VoteForm({ token, owner, closed, initialTally, defaultNa
                 onClick={() => !pending && vote(o.v)}
                 className={
                   "min-h-12 rounded-full px-5 py-3 text-left text-base font-bold ring-inset transition-[background-color,color,transform] duration-200 ease-soft active:scale-[0.99] aria-disabled:cursor-wait " +
-                  (selected ? "bg-stone-900 text-stone-50 ring-2 ring-stone-900" : "bg-card text-stone-900 ring-[1.5px] ring-stone-400 hover:bg-stone-900/[0.06]")
+                  (selected ? "bg-stone-200 text-stone-900 ring-2 ring-stone-900" : "bg-card text-stone-900 ring-[1.5px] ring-stone-400 hover:bg-stone-900/[0.06]")
                 }
               >
                 <span aria-hidden="true" className={selected ? "" : o.tint}>

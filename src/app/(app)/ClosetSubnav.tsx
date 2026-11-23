@@ -25,7 +25,7 @@ export default function ClosetSubnav() {
               aria-current={on ? "page" : undefined}
               className={
                 "tap inline-flex min-h-9 shrink-0 items-center rounded-full px-3.5 transition-[background-color,color] duration-200 ease-soft " +
-                (on ? "bg-stone-900 font-semibold text-stone-50" : "font-medium text-stone-600 hover:text-stone-900")
+                (on ? "bg-raised text-stone-900 shadow-active ring-1 ring-line font-semibold" : "font-medium text-stone-600 hover:text-stone-900")
               }
             >
               {l.label}
