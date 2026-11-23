@@ -2,15 +2,13 @@ import type { ReactNode } from "react";
 import { cx } from "@/components/ui";
 
 // Shared building blocks for the landing page sections. The landing page uses a wider type
-// scale than the app and alternating grounds (Linen, card white, Night, Blush), nothing else new.
+// scale than the app and alternating grounds (Linen, card white, Blush), nothing else new.
 
-type Tone = "ground" | "card" | "night" | "blush";
+type Tone = "ground" | "card" | "blush";
 
 const TONE: Record<Tone, string> = {
   ground: "bg-ground",
   card: "bg-card border-y border-line",
-  // Ink and fixed Linen, not the stone scale (which inverts). Raised in dark mode so the band still reads on the Night page.
-  night: "bg-ink text-[#fbf7f2] dark:bg-raised",
   blush: "bg-blush",
 };
 
