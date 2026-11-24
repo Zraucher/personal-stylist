@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { loadRecommendation, recommend } from "@/lib/today/recommend";
+import { HereSchema, loadRecommendation, recommend } from "@/lib/today/recommend";
 
 export const maxDuration = 60;
 
@@ -11,7 +11,7 @@ const Body = z.object({
   indoorCold: z.boolean(),
   dayOffset: z.number().int().min(0).max(1).optional(),
   // Where the browser says the person is right now; used for this forecast only, never stored.
-  here: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }).nullish(),
+  here: HereSchema,
 });
 
 export async function POST(request: NextRequest) {

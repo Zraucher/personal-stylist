@@ -4,33 +4,13 @@ import { useId, useState } from "react";
 import { OCCASIONS, type Occasion } from "@/lib/today/candidates";
 import type { RecommendationView } from "@/lib/today/recommend";
 import { Button, ButtonLink, Card, Checkbox, ChipButton, ChipGroup, EmptyState, Notice, OutfitCardSkeleton } from "@/components/ui";
+import { whereAmI } from "@/lib/here";
 import RecommendationCards, { RecWeather } from "./RecommendationCards";
 
 const FAILED = "Couldn't pick outfits just now. Try again in a minute.";
 
 type Hour = "morning" | "midday" | "evening";
 const HOURS: Hour[] = ["morning", "midday", "evening"];
-
-type Here = { latitude: number; longitude: number };
-
-/** The browser's location if the person allows it; null on no, no answer within 15s, or no support. */
-function whereAmI(): Promise<Here | null> {
-  if (typeof navigator === "undefined" || !navigator.geolocation) return Promise.resolve(null);
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(null), 15000);
-    navigator.geolocation.getCurrentPosition(
-      (p) => {
-        clearTimeout(timer);
-        resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude });
-      },
-      () => {
-        clearTimeout(timer);
-        resolve(null);
-      },
-      { enableHighAccuracy: false, maximumAge: 30 * 60 * 1000, timeout: 10000 }
-    );
-  });
-}
 
 /** One line that says what the current picks were made for. */
 function summarize(occasion: Occasion, hours: Hour[], indoorCold: boolean, tomorrow: boolean) {

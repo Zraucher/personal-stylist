@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { whereAmI } from "@/lib/here";
 import type { RecommendationView } from "@/lib/today/recommend";
 import RecommendationCards from "../today/RecommendationCards";
 import { Button, Card, EmptyState, Field, ListCard, Notice, OutfitCardSkeleton, Textarea } from "@/components/ui";
@@ -26,7 +27,8 @@ export default function AskClient({ initial }: { initial: RecommendationView | n
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: query }) });
+      const here = await whereAmI();
+      const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: query, here }) });
       const body = await res.json().catch(() => ({}));
       if (!res.ok || !body.recommendation) throw new Error(typeof body.detail === "string" ? body.detail : FAILED);
       setRec(body.recommendation);
