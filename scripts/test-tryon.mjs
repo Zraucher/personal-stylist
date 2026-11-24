@@ -25,3 +25,7 @@ test("cache path is stable, per user, and changes with the pieces", () => {
   assert.notEqual(tryOnPath("u1", "u1/profile/x.jpg", a), tryOnPath("u1", "u1/profile/x.jpg", b));
   assert.ok(tryOnPath("u1", "u1/profile/x.jpg", a).startsWith("u1/tryon/"));
 });
+
+test("sends the original photo when the piece has our cut-out", () => {
+  assert.deepEqual(tryOnSteps([p("tee", "top", "u/a.jpg.cutout.webp")]), [{ path: "u/a.jpg", category: "tops" }]);
+});
