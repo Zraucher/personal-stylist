@@ -31,7 +31,7 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
   },
   {
     q: "I'm not getting price alerts",
-    a: "Price alerts arrive as notifications. Turn them on in Profile, under The app. On iPhone, add valette to your Home Screen first (Share, then Add to Home Screen); notifications only work there. We check prices once a day.",
+    a: "We check prices once a day and email you from hello@myvalette.com when one drops (check spam the first time). For phone notifications too, turn them on in Profile, under The app. On iPhone, add valette to your Home Screen first (Share, then Add to Home Screen); notifications only work there.",
   },
   {
     q: "How do I add something I bought online?",

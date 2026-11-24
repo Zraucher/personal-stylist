@@ -137,7 +137,7 @@ export default async function ProfilePage() {
         }}
       />
 
-      <AppCard />
+      <AppCard emailAlerts={(profile?.email_alerts as boolean | undefined) ?? true} />
       </ProfileEditing>
 
       <form action="/auth/signout" method="post" className="sm:hidden">

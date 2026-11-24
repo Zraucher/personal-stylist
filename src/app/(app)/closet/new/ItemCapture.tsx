@@ -4,6 +4,7 @@ import { useRef, useState, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/closet/compress";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
+import { makeCutout } from "@/lib/closet/make-cutout";
 import { Button, Card, Chip, Notice, Thumb } from "@/components/ui";
 import ItemForm, { EMPTY_VALUES, applyTags, requestTags, type ItemFormValues } from "../ItemForm";
 
@@ -45,13 +46,26 @@ export default function ItemCapture() {
       const { error: upErr } = await supabase.storage.from(CLOSET_BUCKET).upload(path, blob, { contentType: type, upsert: false });
       if (upErr) throw new Error("Couldn't upload that photo. Check your connection and try again.");
 
+      const original = URL.createObjectURL(blob);
       setImagePath(path);
-      setPreviewUrl(URL.createObjectURL(blob));
+      setPreviewUrl(original);
       setPhase("tagging");
 
-      const { tags, message } = await requestTags(path);
+      // Take the background out while we read the photo. No plain background, or any failure: keep the original.
+      const cut = makeCutout(original)
+        .then(async ({ blob: c, ext: cext }) => {
+          const next = `${path}.cutout.${cext}`;
+          const { error } = await supabase.storage.from(CLOSET_BUCKET).upload(next, c, { contentType: c.type, upsert: true });
+          return error ? null : { path: next, url: URL.createObjectURL(c) };
+        })
+        .catch(() => null);
+      const [{ tags, message }, cutoutDone] = await Promise.all([requestTags(path), cut]);
+      if (cutoutDone) {
+        setImagePath(cutoutDone.path);
+        setPreviewUrl(cutoutDone.url);
+      }
       setInitial(tags ? applyTags(EMPTY_VALUES, tags) : EMPTY_VALUES);
-      setNote(message);
+      setNote([message, cutoutDone && "We took the background out. Put it back from the piece's page after you save."].filter(Boolean).join(" ") || null);
       setPhase("form");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't upload that photo. Try again.");

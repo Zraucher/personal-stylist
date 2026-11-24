@@ -5,6 +5,8 @@ import { scrapeProduct } from "@/lib/retail/scrape";
 import { appendPrice, priceCheckDue, priceNews, type PricePoint } from "@/lib/retail/price";
 import { localDate } from "@/lib/today/weather";
 import { pushConfigured, pushToUser } from "@/lib/push/send";
+import { emailConfigured, sendEmail } from "@/lib/email/send";
+import { priceAlertEmail, unsubscribeSig } from "@/lib/email/alerts";
 
 export const maxDuration = 300;
 
@@ -61,6 +63,20 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Price drops also go by email to everyone who hasn't turned that off.
+  let emails = 0;
+  if (emailConfigured() && process.env.CRON_SECRET && drops.size) {
+    const site = "https://www.myvalette.com";
+    const { data: people } = await admin.from("profiles").select("id, email").in("id", [...drops.keys()]).eq("email_alerts", true);
+    for (const p of people ?? []) {
+      if (!p.email) continue;
+      const unsub = `${site}/api/alerts/unsubscribe?u=${p.id}&s=${unsubscribeSig(p.id as string, process.env.CRON_SECRET)}`;
+      const mail = priceAlertEmail(drops.get(p.id as string) ?? [], site, unsub);
+      const headers = { "List-Unsubscribe": `<${unsub}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" };
+      if (await sendEmail({ to: p.email as string, ...mail, headers })) emails++;
+    }
+  }
+
   let pushes = 0;
   if (pushConfigured()) {
     for (const [userId, lines] of drops) {
@@ -96,5 +112,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ checked: due.length, dropUsers: drops.size, pushes });
+  return NextResponse.json({ checked: due.length, dropUsers: drops.size, pushes, emails });
 }
