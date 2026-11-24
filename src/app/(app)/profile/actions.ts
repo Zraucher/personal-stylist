@@ -202,3 +202,12 @@ export async function removePhotoSlot(slot: string): Promise<Result> {
   revalidatePath("/profile");
   return { ok: true };
 }
+
+export async function saveEmailAlerts(on: boolean): Promise<Result> {
+  const { supabase, user } = await currentUser();
+  if (!user) return { ok: false, error: SIGNED_OUT };
+  const { error } = await supabase.from("profiles").update({ email_alerts: on === true }).eq("id", user.id);
+  if (error) return { ok: false, error: SAVE_FAILED };
+  revalidatePath("/profile");
+  return { ok: true };
+}

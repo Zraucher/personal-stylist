@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, ButtonLink, Card, CheckTick, Chip, Eyebrow, OutfitStrip } from "@/components/ui";
+import { Button, ButtonLink, Card, CheckTick, Chip, Eyebrow, OutfitPicture, OutfitStrip } from "@/components/ui";
 
 type Item = { id: string; name: string; url: string | null; hex: string | null; category?: string | null; subcategory?: string | null; colors?: Array<{ name: string; hex?: string }> };
 
 export default function PlannedToday({ date, name, items, worn }: { date: string; name: string; items: Item[]; worn: boolean }) {
+  const strip = items.map((it) => ({ id: it.id, name: it.name, url: it.url, category: it.category, subcategory: it.subcategory, colors: it.colors ?? (it.hex ? [{ name: it.name, hex: it.hex }] : null) }));
   const [done, setDone] = useState(worn);
   // The tick draws only when the person taps Wore it here, not for a day already marked.
   const [justDone, setJustDone] = useState(false);
@@ -28,7 +29,8 @@ export default function PlannedToday({ date, name, items, worn }: { date: string
         </ButtonLink>
       </div>
       <p className="font-display text-lg font-bold leading-snug">{name}</p>
-      <OutfitStrip size="sm" items={items.map((it) => ({ id: it.id, name: it.name, url: it.url, category: it.category, subcategory: it.subcategory, colors: it.colors ?? (it.hex ? [{ name: it.name, hex: it.hex }] : null) }))} />
+      <OutfitStrip size="sm" items={strip} />
+      <OutfitPicture items={strip} />
       <div role="status" aria-live="polite" className="flex flex-wrap items-center gap-2">
         {done ? (
           <Chip tone="works">

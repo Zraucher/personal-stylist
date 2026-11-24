@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button, Card, Checkbox, SectionTitle } from "@/components/ui";
+import { saveEmailAlerts } from "@/app/(app)/profile/actions";
 
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Prefs = { morning: boolean; prices: boolean; votes: boolean };
@@ -15,7 +16,7 @@ const b64ToBytes = (b64: string) => {
 };
 
 /** "Get the app" and notification switches, on the Profile page. */
-export default function AppCard() {
+export default function AppCard({ emailAlerts }: { emailAlerts: boolean }) {
   const [installEvt, setInstallEvt] = useState<BIPEvent | null>(null);
   const [standalone, setStandalone] = useState(false);
   const [ios, setIos] = useState(false);
@@ -24,6 +25,7 @@ export default function AppCard() {
   const [prefs, setPrefs] = useState<Prefs>({ morning: true, prices: true, votes: true });
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [email, setEmail] = useState(emailAlerts);
 
   useEffect(() => {
     const onPrompt = (e: Event) => {
@@ -177,6 +179,19 @@ export default function AppCard() {
             </div>
           </>
         )}
+        <Checkbox
+          checked={email}
+          onChange={async (e) => {
+            const on = e.target.checked;
+            setEmail(on);
+            const r = await saveEmailAlerts(on);
+            if (!r.ok) {
+              setEmail(!on);
+              setNote(r.error);
+            }
+          }}
+          label="Email me when a price drops"
+        />
         <p role="status" aria-live="polite" className="text-sm text-stone-700 empty:hidden">
           {note}
         </p>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { RecommendationView } from "@/lib/today/recommend";
 import { respondToOutfit } from "./actions";
 import AskFriendsButton from "@/components/AskFriendsButton";
-import { Button, ButtonLink, Card, CheckTick, Chip, Field, Input, Notice, OutfitStrip, WeatherLine, buttonClass, cx, type ButtonVariant } from "@/components/ui";
+import { Button, ButtonLink, Card, CheckTick, Chip, Field, Input, Notice, OutfitPicture, OutfitStrip, WeatherLine, buttonClass, cx, type ButtonVariant } from "@/components/ui";
 
 type Fb = "wore" | "skipped" | "disliked" | "benchmark" | "failure";
 const FB_LABEL: Record<Fb, string> = { wore: "wore it", skipped: "skip", disliked: "not me", benchmark: "this is so me", failure: "felt like a costume" };
@@ -152,6 +152,7 @@ export default function RecommendationCards({ rec, showWeather = true }: { rec: 
           return (
             <Card as="article" key={p.outfitId} variant={isChosen ? "active" : "surface"} className="space-y-3">
               <OutfitStrip items={p.items} size="lg" />
+              <OutfitPicture items={p.items} />
               <div className="flex items-start justify-between gap-3">
                 <h2 className="flex min-w-0 items-center gap-2 font-display text-lg font-bold leading-snug">
                   {justWore === p.outfitId && <CheckTick size={22} animate className="text-emerald-700" />}
