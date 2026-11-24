@@ -10,6 +10,9 @@ import { cleanHeadline } from "@/lib/verdict";
 
 const list = (xs: unknown): string[] => (Array.isArray(xs) ? xs.filter((x): x is string => typeof x === "string") : []);
 
+/** Where the browser says the person is (already rounded on the device). */
+export const HereSchema = z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }).nullish();
+
 export type RecommendInput = {
   kind: "today" | "ask";
   occasion: Occasion;
@@ -86,9 +89,7 @@ export async function loadCloset(supabase: SupabaseClient, userId: string): Prom
 
 async function weatherFor(supabase: SupabaseClient, userId: string, ctx: Awaited<ReturnType<typeof loadStyleContext>>, input: RecommendInput) {
   if (input.here && input.tempOverride == null) {
-    // Rounded to about a kilometer: enough for a forecast, and all Open-Meteo sees.
-    const round = (n: number) => Math.round(n * 100) / 100;
-    const h = await forecast(round(input.here.latitude), round(input.here.longitude));
+    const h = await forecast(input.here.latitude, input.here.longitude);
     // The forecast runs in the place's own time from local midnight, 24 hours a day, so its dates are that place's dates.
     const date = h?.time[(input.dayOffset ?? 0) * 24]?.slice(0, 10);
     const s = h && date ? summarize(h, date, input.hours, "your location") : null;

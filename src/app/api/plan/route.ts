@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { dayCandidates, fillWeek, loadWeekState, OCCASION_IDS, removePlanOutfit, savePlanDay, weekView } from "@/lib/plan/server";
 import { planSequence } from "@/lib/plan/sequence";
+import { HereSchema } from "@/lib/today/recommend";
 import { recordWear } from "@/lib/wear";
 
 export const maxDuration = 60;
@@ -23,12 +24,14 @@ export async function POST(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  const parsed = Body.safeParse(await request.json().catch(() => null));
+  const raw = await request.json().catch(() => null);
+  const parsed = Body.safeParse(raw);
   if (!parsed.success) return NextResponse.json({ error: "bad_request" }, { status: 400 });
   const b = parsed.data;
+  const here = HereSchema.safeParse(raw?.here).data ?? null;
 
   try {
-    const s = await loadWeekState(supabase, user.id);
+    const s = await loadWeekState(supabase, user.id, here);
     let message: string | null = null;
     if (b.action !== "view" && b.action !== "fill" && !s.dates.includes(b.date)) return NextResponse.json({ error: "That day is outside this week. Reload Plan and try again." }, { status: 400 });
 

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { AiError, MODELS, aiAvailable, structured } from "@/lib/ai/claude";
-import { loadCloset, loadRecommendation, recommend } from "@/lib/today/recommend";
+import { HereSchema, loadCloset, loadRecommendation, recommend } from "@/lib/today/recommend";
 import type { Occasion } from "@/lib/today/candidates";
 
 export const maxDuration = 60;
@@ -21,7 +21,7 @@ const ParseSchema = z.object({
   mustInclude: z.array(z.string()).describe("Specific pieces they want to wear, as they named them."),
 });
 
-const Body = z.object({ text: z.string().trim().min(3).max(500) });
+const Body = z.object({ text: z.string().trim().min(3).max(500), here: HereSchema });
 
 /** Without Claude: a rough reading of the request so Ask still works. */
 function heuristic(text: string, todayIdx: number) {
@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
       band,
       exclude: read.exclude,
       mustInclude,
+      here: parsed.data.here,
       prompt: text,
       extraContext: read.dayOffset > 6 ? "This is more than a week away, so there is no forecast." : null,
     });

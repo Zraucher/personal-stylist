@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
+import { whereAmI, whereAmIIfAllowed, type Here } from "@/lib/here";
 import type { PlanDayView, WeekView } from "@/lib/plan/server";
 import { OCCASIONS } from "@/lib/today/candidates";
 import AskFriendsButton from "@/components/AskFriendsButton";
@@ -39,13 +40,18 @@ export default function PlanClient({ initial }: { initial: WeekView }) {
   const [justWore, setJustWore] = useState<ReadonlySet<string>>(new Set());
   const [, start] = useTransition();
 
+  // The week's forecast follows where the person is, once they allow it; until then, their Profile city.
+  const here = useRef<Here | null>(null);
+
   const call: Call = (key, body) => {
     setBusy((s) => new Set(s).add(key));
     setMessage(null);
     setError(null);
     start(async () => {
       try {
-        const r = await fetch("/api/plan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+        // Filling the week is the moment to ask; smaller actions only reuse a yes.
+        if (!here.current && GLOBAL.includes(key)) here.current = await whereAmI();
+        const r = await fetch("/api/plan", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, here: here.current }) });
         const j = await r.json().catch(() => ({}));
         if (!r.ok) setError(errorLine(j.error));
         else {
@@ -68,6 +74,14 @@ export default function PlanClient({ initial }: { initial: WeekView }) {
   const planned = week.days.filter((d) => d.outfit).length;
   const thin = week.closetSize < 6;
   const globalBusy = GLOBAL.some((k) => busy.has(k));
+
+  useEffect(() => {
+    void whereAmIIfAllowed().then((h) => {
+      if (!h) return;
+      here.current = h;
+      call("view", { action: "view" });
+    });
+  }, []);
 
   return (
     <div className="space-y-4">

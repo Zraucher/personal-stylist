@@ -121,7 +121,7 @@ export type WeekState = {
 };
 
 /** Everything needed to show or change the next seven days. */
-export async function loadWeekState(supabase: SupabaseClient, userId: string): Promise<WeekState> {
+export async function loadWeekState(supabase: SupabaseClient, userId: string, here?: { latitude: number; longitude: number } | null): Promise<WeekState> {
   const ctx = await loadStyleContext(supabase, userId);
   const { lat, lon, tz } = await homeCoords(supabase, userId, ctx);
   const today = localDate(tz);
@@ -129,7 +129,7 @@ export async function loadWeekState(supabase: SupabaseClient, userId: string): P
   const back = localDate(tz, -42);
   const [closet, weather, { data: planRows }] = await Promise.all([
     loadCloset(supabase, userId),
-    forecastDays(lat, lon, dates, ctx.location),
+    here ? forecastDays(here.latitude, here.longitude, dates, "your location") : forecastDays(lat, lon, dates, ctx.location),
     supabase.from("plans").select("id, date, occasion, outfit_id, worn").eq("user_id", userId).gte("date", back).lte("date", dates[6]),
   ]);
   const plans = new Map<string, { id: string; occasion: string; outfit_id: string | null; worn: boolean }>();
