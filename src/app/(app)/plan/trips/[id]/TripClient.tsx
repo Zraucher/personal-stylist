@@ -122,6 +122,16 @@ export default function TripClient({ trip }: { trip: TripView }) {
         </div>
       ) : (
         <div role="tabpanel" id={PANELS.pack} aria-labelledby={tabId("pack")} className="space-y-3">
+          {trip.tips.length > 0 && (
+            <Card as="section" variant="inset" className="space-y-1">
+              <h2 className="font-display text-lg font-bold leading-snug">Pack light</h2>
+              <ul className="list-disc space-y-0.5 pl-5 text-sm text-stone-700">
+                {trip.tips.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+            </Card>
+          )}
           {trip.packing.map((g) => (
             <Card as="section" key={g.role} className="space-y-1">
               <h2 className="font-display text-lg font-bold leading-snug">{g.label}</h2>

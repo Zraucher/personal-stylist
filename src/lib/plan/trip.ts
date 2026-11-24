@@ -3,12 +3,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { signedImageUrls } from "@/lib/closet/images";
 import { loadStyleContext } from "@/lib/profile/context";
 import { loadCloset } from "@/lib/today/recommend";
-import type { ClosetPiece, Occasion } from "@/lib/today/candidates";
+import type { ClosetPiece } from "@/lib/today/candidates";
 import { geocode, localDate, statedWeather, type WeatherSummary } from "@/lib/today/weather";
 import { dayCandidates, forecastDays, homeCoords, typicalDays } from "./server";
-import { daysBetween, packingList, planSequence, ROLE_LABEL, tripExtras, tripLooks, type Role, type TripOptions } from "./sequence";
+import { daysBetween, packingList, packingTips, planSequence, ROLE_LABEL, tripExtras, tripLooks, vibeHits, vibeWords, type Role, type TripLook, type TripOptions } from "./sequence";
 
-export type StoredLook = { key: string; date: string; occasion: Occasion; label: string; item_ids: string[]; weather: WeatherSummary | null };
+export type StoredLook = TripLook & { item_ids: string[]; weather: WeatherSummary | null };
 
 export type TripInput = { name: string | null; destination: string; start: string; end: string; options: TripOptions };
 
@@ -26,7 +26,13 @@ async function tripWeather(lat: number | null, lon: number | null, dates: string
 }
 
 function chooseLooks(closet: ClosetPiece[], looks: ReturnType<typeof tripLooks>, weatherByDate: Map<string, WeatherSummary>, ctx: Awaited<ReturnType<typeof loadStyleContext>>, fixed?: Array<string[] | null>, exclude?: Map<number, string[]>) {
-  const cands = looks.map((l, i) => (fixed?.[i] ? [] : dayCandidates(closet, weatherByDate.get(l.date)!, l.occasion, ctx, exclude?.get(i) ?? [])));
+  const cands = looks.map((l, i) => {
+    if (fixed?.[i]) return [];
+    const cs = dayCandidates(closet, weatherByDate.get(l.date)!, l.occasion, ctx, exclude?.get(i) ?? [], l.band);
+    // An event's style ("all white", "western") lifts the outfits that match it.
+    const words = vibeWords(l.vibe);
+    return words.length ? cs.map((c) => ({ ...c, score: c.score + 10 * vibeHits(c.items, words) })).sort((a, b) => b.score - a.score) : cs;
+  });
   const picks = planSequence(cands, { capsule: true, fixed, maxStatementRepeats: looks.length > 8 ? 2 : 1 });
   return looks.map((l, i) => (fixed?.[i] ? fixed[i]! : picks[i] >= 0 ? cands[i][picks[i]].items.map((p) => p.id) : []));
 }
@@ -96,6 +102,7 @@ export type TripView = {
   looks: Array<StoredLook & { pieces: TripPiece[] }>;
   packing: Array<{ role: Role; label: string; items: Array<TripPiece & { looks: number }> }>;
   extras: string[];
+  tips: string[];
   packed: string[];
 };
 
@@ -104,7 +111,7 @@ export async function loadTrip(supabase: SupabaseClient, userId: string, tripId:
   if (!t) return null;
   const looks = (t.looks as StoredLook[]) ?? [];
   const ids = [...new Set(looks.flatMap((l) => l.item_ids))];
-  const { data: rows } = ids.length ? await supabase.from("closet_items").select("id, name, category, subcategory, colors, image_path").in("id", ids) : { data: [] };
+  const { data: rows } = ids.length ? await supabase.from("closet_items").select("id, name, category, subcategory, colors, image_path, warmth").in("id", ids) : { data: [] };
   const urls = await signedImageUrls(supabase, (rows ?? []).map((r) => r.image_path as string | null));
   const byId = new Map(
     (rows ?? []).map((r) => [
@@ -114,6 +121,7 @@ export async function loadTrip(supabase: SupabaseClient, userId: string, tripId:
         name: ((r.name as string | null) ?? (r.subcategory as string | null) ?? "Piece") as string,
         subcategory: (r.subcategory as string | null) ?? null,
         category: (r.category as string | null) ?? null,
+        warmth: (r.warmth as number | null) ?? null,
         url: r.image_path ? urls[r.image_path as string] ?? null : null,
         hex: (Array.isArray(r.colors) ? (r.colors as Array<{ hex?: string }>)[0]?.hex : null) ?? null,
       },
@@ -137,6 +145,7 @@ export async function loadTrip(supabase: SupabaseClient, userId: string, tripId:
     looks: looks.map((l) => ({ ...l, pieces: l.item_ids.map((id) => byId.get(id)).filter((p): p is NonNullable<typeof p> => !!p) })),
     packing: [...groups.entries()].map(([role, items]) => ({ role, label: ROLE_LABEL[role], items })),
     extras: ((t.extras as Array<{ label: string }>) ?? []).map((e) => e.label),
+    tips: packingTips(looks, byId),
     packed: (t.packed as string[]) ?? [],
   };
 }
