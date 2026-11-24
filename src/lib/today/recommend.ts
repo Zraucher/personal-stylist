@@ -16,7 +16,7 @@ export type RecommendInput = {
   hours: HourWindow[];
   indoorCold: boolean;
   dayOffset?: number;
-  here?: { latitude: number; longitude: number; timezone: string } | null;
+  here?: { latitude: number; longitude: number } | null;
   tempOverride?: number | null;
   band?: [number, number];
   exclude?: string[];
@@ -89,7 +89,9 @@ async function weatherFor(supabase: SupabaseClient, userId: string, ctx: Awaited
     // Rounded to about a kilometer: enough for a forecast, and all Open-Meteo sees.
     const round = (n: number) => Math.round(n * 100) / 100;
     const h = await forecast(round(input.here.latitude), round(input.here.longitude));
-    const s = h ? summarize(h, localDate(input.here.timezone, input.dayOffset ?? 0), input.hours, "your location") : null;
+    // The forecast runs in the place's own time from local midnight, 24 hours a day, so its dates are that place's dates.
+    const date = h?.time[(input.dayOffset ?? 0) * 24]?.slice(0, 10);
+    const s = h && date ? summarize(h, date, input.hours, "your location") : null;
     if (s) return s;
   }
   let { latitude, longitude } = ctx;

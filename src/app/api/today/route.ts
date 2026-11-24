@@ -11,7 +11,7 @@ const Body = z.object({
   indoorCold: z.boolean(),
   dayOffset: z.number().int().min(0).max(1).optional(),
   // Where the browser says the person is right now; used for this forecast only, never stored.
-  here: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180), timezone: z.string().max(64) }).nullish(),
+  here: z.object({ latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180) }).nullish(),
 });
 
 export async function POST(request: NextRequest) {

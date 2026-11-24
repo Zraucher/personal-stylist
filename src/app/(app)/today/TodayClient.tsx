@@ -11,7 +11,7 @@ const FAILED = "Couldn't pick outfits just now. Try again in a minute.";
 type Hour = "morning" | "midday" | "evening";
 const HOURS: Hour[] = ["morning", "midday", "evening"];
 
-type Here = { latitude: number; longitude: number; timezone: string };
+type Here = { latitude: number; longitude: number };
 
 /** The browser's location if the person allows it; null on no, no answer within 15s, or no support. */
 function whereAmI(): Promise<Here | null> {
@@ -21,7 +21,7 @@ function whereAmI(): Promise<Here | null> {
     navigator.geolocation.getCurrentPosition(
       (p) => {
         clearTimeout(timer);
-        resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+        resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude });
       },
       () => {
         clearTimeout(timer);
