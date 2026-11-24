@@ -16,8 +16,8 @@ export function conditionsFor(w: WeatherSummary, indoorCold = false): DayConditi
 }
 
 /** Candidates for one day, best first. */
-export function dayCandidates(closet: ClosetPiece[], w: WeatherSummary, occasion: Occasion, ctx: StyleContext, exclude: string[] = []): Candidate[] {
-  const r = buildCandidates(closet, conditionsFor(w), { occasion, today: w.date }, ctx.scoreColor, ctx.scoreStyle, { limit: 10 });
+export function dayCandidates(closet: ClosetPiece[], w: WeatherSummary, occasion: Occasion, ctx: StyleContext, exclude: string[] = [], band?: [number, number]): Candidate[] {
+  const r = buildCandidates(closet, conditionsFor(w), { occasion, today: w.date, band }, ctx.scoreColor, ctx.scoreStyle, { limit: 10 });
   if (!exclude.length) return r.candidates;
   const key = (ids: string[]) => [...ids].sort().join(",");
   const banned = new Set([key(exclude)]);

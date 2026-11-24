@@ -7,6 +7,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createTrip, swapTripLook } from "@/lib/plan/trip";
 
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Pick a date");
+const TripEventSchema = z.object({
+  date,
+  when: z.enum(["day", "evening"]),
+  name: z.string().trim().min(1, "Name each event").max(60),
+  dress: z.enum(["casual", "smart", "cocktail", "formal", "black-tie"]),
+  vibe: z.string().trim().max(60).transform((v) => v || null).nullable(),
+});
 const TripForm = z
   .object({
     name: z.string().trim().max(80).optional(),
@@ -15,8 +22,9 @@ const TripForm = z
     end: date,
     daytime: z.enum(["casual", "office", "active"]),
     nights: z.boolean(),
-    event: z.boolean(),
+    events: z.array(TripEventSchema).max(12, "Up to 12 events per trip."),
   })
+  .refine((v) => v.events.every((e) => e.date >= v.start && e.date <= v.end), { message: "Each event needs a date during the trip.", path: ["events"] })
   .refine((v) => v.end >= v.start, { message: "The trip ends before it starts.", path: ["end"] })
   .refine((v) => (Date.parse(v.end) - Date.parse(v.start)) / 86400000 <= 13, { message: "Trips can be up to 14 days.", path: ["end"] });
 
@@ -30,7 +38,13 @@ export async function createTripAction(_prev: TripFormState, form: FormData): Pr
     end: form.get("end") ?? "",
     daytime: form.get("daytime") ?? "casual",
     nights: form.get("nights") === "on",
-    event: form.get("event") === "on",
+    events: (() => {
+      try {
+        return JSON.parse(String(form.get("events") ?? "[]"));
+      } catch {
+        return [];
+      }
+    })(),
   });
   if (!p.success) return { error: p.error.issues[0]?.message ?? "Check the trip details and try again." };
   const supabase = await createClient();
@@ -45,7 +59,7 @@ export async function createTripAction(_prev: TripFormState, form: FormData): Pr
     destination: p.data.destination,
     start: p.data.start,
     end: p.data.end,
-    options: { daytime: p.data.daytime, nights: p.data.nights, event: p.data.event },
+    options: { daytime: p.data.daytime, nights: p.data.nights, event: false, events: p.data.events },
   });
   if (r.error || !r.id) return { error: r.error ?? "Couldn't plan the trip. Try again." };
   revalidatePath("/plan");

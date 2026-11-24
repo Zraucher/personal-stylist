@@ -95,3 +95,52 @@ test("vote tally and public first names", () => {
   assert.equal(firstName("Zack Raucher"), "Zack");
   assert.equal(firstName("zack@example.com"), "your friend");
 });
+
+test("trip events replace the slot's look and carry their dress code and style", async () => {
+  const { tripLooks: tl } = await import("../src/lib/plan/sequence.ts");
+  const looks = tl("2026-12-01", "2026-12-03", {
+    daytime: "casual",
+    nights: true,
+    event: false,
+    events: [
+      { date: "2026-12-02", when: "evening", name: "Wedding", dress: "black-tie", vibe: null },
+      { date: "2026-12-02", when: "day", name: "Ranch tour", dress: "casual", vibe: "western" },
+    ],
+  });
+  const wed = looks.find((l) => l.key === "2026-12-02-night");
+  assert.deepEqual([wed.occasion, wed.band, wed.label], ["event", [5, 5], "Wedding · Black tie"]);
+  assert.equal(looks.find((l) => l.key === "2026-12-02-day").vibe, "western");
+  assert.equal(looks.filter((l) => l.label === "Dinner").length, 1); // only the first night still gets a plain dinner
+});
+
+test("vibe words expand common aesthetics and match pieces", async () => {
+  const { vibeWords, vibeHits } = await import("../src/lib/plan/sequence.ts");
+  const w = vibeWords("Beachy, all white");
+  assert.ok(w.includes("linen") && w.includes("white") && !w.includes("all"));
+  assert.equal(vibeHits([p("x", "top", "linen shirt"), t1, { ...b1, colors: [{ name: "white" }] }], w), 2);
+});
+
+test("capsule trips reuse shoes and skip a second bulky coat", () => {
+  const coat1 = p("c1", "outerwear", "wool coat"), coat2 = p("c2", "outerwear", "puffer coat");
+  const day1 = [c([t1, b1, s1, coat1], 45)];
+  const day2 = [c([t2, b2, s2, coat2], 46), c([t2, b2, s1, coat1], 44)];
+  const picks = planSequence([day1, day2], { capsule: true });
+  assert.deepEqual(day2[picks[1]].items.map((x) => x.id), ["t2", "b2", "s1", "c1"]);
+});
+
+test("packing tips count pieces, shoes and suggest wearing bulk on travel days", async () => {
+  const { packingTips } = await import("../src/lib/plan/sequence.ts");
+  const coat = p("c1", "outerwear", "wool coat");
+  const pieces = new Map([t1, t2, b1, s1, coat].map((x) => [x.id, x]));
+  const tips = packingTips(
+    [
+      { item_ids: ["t1", "b1", "s1", "c1"], occasion: "travel" },
+      { item_ids: ["t2", "b1", "s1"], occasion: "casual" },
+      { item_ids: ["t1", "b1", "s1"], occasion: "dinner" },
+    ],
+    pieces
+  );
+  assert.equal(tips[0], "5 pieces make 3 looks.");
+  assert.ok(tips.includes("1 pair of shoes covers every look."));
+  assert.ok(tips.some((t) => t.includes("wool coat") || t.includes("c1")));
+});
