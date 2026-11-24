@@ -55,7 +55,7 @@ export default function PrivacyPage() {
               <li>AgentMail sends our emails: sign-in codes, invites and price alerts.</li>
               <li>fal and FASHN make the See it on me pictures. They receive your full-body photo and the pieces&apos; photos only for that picture.</li>
               <li>Firecrawl and our own page reader fetch product pages you paste or that we suggest. They receive the link, not your details.</li>
-              <li>Open-Meteo provides weather for your city. It receives the city, not who you are.</li>
+              <li>Open-Meteo provides weather for your city, or for where you are if you let your browser share your location (rounded to about a kilometer). It receives the place, not who you are. We don&apos;t keep your location.</li>
               <li>If you turn on notifications, your browser&apos;s push service (Apple, Google or Mozilla) delivers them.</li>
             </ul>
             <p className="text-stone-700">Each of them handles your data only to provide their part of the service.</p>

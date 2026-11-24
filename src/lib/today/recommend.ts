@@ -16,6 +16,7 @@ export type RecommendInput = {
   hours: HourWindow[];
   indoorCold: boolean;
   dayOffset?: number;
+  here?: { latitude: number; longitude: number; timezone: string } | null;
   tempOverride?: number | null;
   band?: [number, number];
   exclude?: string[];
@@ -84,6 +85,13 @@ export async function loadCloset(supabase: SupabaseClient, userId: string): Prom
 }
 
 async function weatherFor(supabase: SupabaseClient, userId: string, ctx: Awaited<ReturnType<typeof loadStyleContext>>, input: RecommendInput) {
+  if (input.here && input.tempOverride == null) {
+    // Rounded to about a kilometer: enough for a forecast, and all Open-Meteo sees.
+    const round = (n: number) => Math.round(n * 100) / 100;
+    const h = await forecast(round(input.here.latitude), round(input.here.longitude));
+    const s = h ? summarize(h, localDate(input.here.timezone, input.dayOffset ?? 0), input.hours, "your location") : null;
+    if (s) return s;
+  }
   let { latitude, longitude } = ctx;
   let timezone: string | null = null;
   const { data: prof } = await supabase.from("profiles").select("timezone").eq("id", userId).maybeSingle();
