@@ -157,6 +157,36 @@ export function OutfitMockup({ items, className }: { items: StripItem[]; classNa
   );
 }
 
+/** "See it on me": the outfit on the person's full-body Profile photo, made on our server. */
+function TryOn({ items }: { items: StripItem[] }) {
+  const [state, setState] = useState<{ busy: boolean; url?: string; error?: string }>({ busy: false });
+  const run = async () => {
+    setState({ busy: true });
+    try {
+      const res = await fetch("/api/tryon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ itemIds: items.map((i) => i.id) }) });
+      const json = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
+      setState(json.url ? { busy: false, url: json.url } : { busy: false, error: json.error ?? "We couldn't make the picture. Try again." });
+    } catch {
+      setState({ busy: false, error: "We couldn't make the picture. Check your connection and try again." });
+    }
+  };
+  return (
+    <div className="space-y-2 pt-3" aria-live="polite">
+      {state.url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- a signed private URL
+        <img src={state.url} alt={`You wearing ${items.map((i) => i.name).join(", ")}`} className="mx-auto aspect-[2/3] w-full max-w-sm rounded-card object-cover ring-1 ring-line" />
+      ) : (
+        <div className="flex justify-center">
+          <Button type="button" size="sm" variant="secondary" disabled={state.busy} aria-busy={state.busy || undefined} onClick={run}>
+            {state.busy ? "Dressing you… (up to a minute)" : "See it on me"}
+          </Button>
+        </div>
+      )}
+      {state.error && <p className="text-center text-sm text-stone-700">{state.error}</p>}
+    </div>
+  );
+}
+
 /** Collapsed by default: the strip stays the quick view, the picture opens on demand. */
 export function OutfitPicture({ items, className }: { items: StripItem[]; className?: string }) {
   return (
@@ -168,6 +198,7 @@ export function OutfitPicture({ items, className }: { items: StripItem[]; classN
         See it as one picture
       </summary>
       <OutfitMockup items={items} className="pt-3" />
+      <TryOn items={items} />
     </details>
   );
 }
