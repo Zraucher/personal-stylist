@@ -11,6 +11,27 @@ const FAILED = "Couldn't pick outfits just now. Try again in a minute.";
 type Hour = "morning" | "midday" | "evening";
 const HOURS: Hour[] = ["morning", "midday", "evening"];
 
+type Here = { latitude: number; longitude: number; timezone: string };
+
+/** The browser's location if the person allows it; null on no, no answer within 15s, or no support. */
+function whereAmI(): Promise<Here | null> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), 15000);
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        clearTimeout(timer);
+        resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+      },
+      () => {
+        clearTimeout(timer);
+        resolve(null);
+      },
+      { enableHighAccuracy: false, maximumAge: 30 * 60 * 1000, timeout: 10000 }
+    );
+  });
+}
+
 /** One line that says what the current picks were made for. */
 function summarize(occasion: Occasion, hours: Hour[], indoorCold: boolean, tomorrow: boolean) {
   const parts = [OCCASIONS.find((o) => o.id === occasion)?.label ?? occasion];
@@ -38,10 +59,11 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
     setLoading(true);
     setError(null);
     try {
+      const here = await whereAmI();
       const res = await fetch("/api/today", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ occasion, hours, indoorCold, dayOffset: tomorrow ? 1 : 0 }),
+        body: JSON.stringify({ occasion, hours, indoorCold, dayOffset: tomorrow ? 1 : 0, here }),
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok || !body.recommendation) throw new Error(typeof body.detail === "string" ? body.detail : FAILED);
