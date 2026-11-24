@@ -42,6 +42,10 @@ const FAQ: Array<{ q: string; a: React.ReactNode }> = [
     a: "Yes. Open the piece in your closet and tap Remove the background under its photo. It works best on a plain background like a bed, floor or wall. Put the background back undoes it.",
   },
   {
+    q: "How does See it on me work?",
+    a: "Add a full-body Front photo in Profile (head to feet, plain background, arms relaxed). Then open See it as one picture on any outfit and tap See it on me. We dress your photo in the outfit's top, bottom, dress and jacket; shoes and bags don't show yet. It takes up to a minute, and you get 10 a day.",
+  },
+  {
     q: "How do I delete my account?",
     a: <>Email {mail} from your account&apos;s address and we&apos;ll remove everything within 30 days. You can delete single pieces and photos in the app at any time.</>,
   },

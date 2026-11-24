@@ -39,6 +39,7 @@ export default function PrivacyPage() {
               <li>If you share a look for a second opinion: anyone with that link can see the pieces in it and vote until it closes. Friends who vote give only an optional first name and comment.</li>
               <li>If you vote on a friend&apos;s look: the first name you type is saved in your own browser so you don&apos;t have to type it again. It stays on your device, and clearing your browser&apos;s site data removes it.</li>
               <li>If you turn on notifications: a device address from your browser, used only to send you Valette notifications.</li>
+              <li>If you tap See it on me: we send your full-body Profile photo and the outfit&apos;s piece photos to make a picture of you wearing it, and keep that picture with your private photos.</li>
             </ul>
           </section>
           <section className="space-y-2">
@@ -51,7 +52,8 @@ export default function PrivacyPage() {
               <li>Supabase stores your account, profile, closet and private photos (in the United States).</li>
               <li>Vercel hosts the app and handles each page request.</li>
               <li>Anthropic&apos;s Claude analyzes photos and writes suggestions. It receives only what each request needs and doesn&apos;t use it to train its models.</li>
-              <li>AgentMail sends our emails: sign-in codes and invites.</li>
+              <li>AgentMail sends our emails: sign-in codes, invites and price alerts.</li>
+              <li>fal and FASHN make the See it on me pictures. They receive your full-body photo and the pieces&apos; photos only for that picture.</li>
               <li>Firecrawl and our own page reader fetch product pages you paste or that we suggest. They receive the link, not your details.</li>
               <li>Open-Meteo provides weather for your city. It receives the city, not who you are.</li>
               <li>If you turn on notifications, your browser&apos;s push service (Apple, Google or Mozilla) delivers them.</li>

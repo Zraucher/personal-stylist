@@ -26,7 +26,10 @@ $0.15 to $0.25 per outfit on FASHN or Kling. Shoes and bags are not covered by a
 FASHN through fal: best garment fidelity, one SDK (`@fal-ai/client`) that also gives us Kling and
 the $0.04 model to compare without new contracts. Vertex if you'd rather keep it on Google.
 
-## Build (after you pick)
+## Built (FASHN v1.6 on fal, picked 2026-11-23)
+`/api/tryon` + "See it on me" under each outfit picture. Needs `FAL_KEY` in Vercel. Cap 10 a day per person, cached by photo + pieces.
+
+## Original build plan
 1. `FAL_KEY` (or the provider's key) in Vercel; you add it.
 2. Server action `tryOn(outfitId)`: signs short-lived URLs for the body photo and garments, chains
    top → bottom → outerwear, stores the result as `tryon/<user>/<outfit>.jpg` in the private bucket.
