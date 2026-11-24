@@ -88,17 +88,19 @@ export async function loadCloset(supabase: SupabaseClient, userId: string): Prom
 }
 
 async function weatherFor(supabase: SupabaseClient, userId: string, ctx: Awaited<ReturnType<typeof loadStyleContext>>, input: RecommendInput) {
-  if (input.here && input.tempOverride == null) {
-    const h = await forecast(input.here.latitude, input.here.longitude);
-    // The forecast runs in the place's own time from local midnight, 24 hours a day, so its dates are that place's dates.
-    const date = h?.time[(input.dayOffset ?? 0) * 24]?.slice(0, 10);
-    const s = h && date ? summarize(h, date, input.hours, "your location") : null;
-    if (s) return s;
-  }
   let { latitude, longitude } = ctx;
   let timezone: string | null = null;
   const { data: prof } = await supabase.from("profiles").select("timezone").eq("id", userId).maybeSingle();
   timezone = (prof?.timezone as string | null) ?? null;
+  if (input.here && input.tempOverride == null) {
+    const h = await forecast(input.here.latitude, input.here.longitude);
+    // Day offsets ("Saturday") count from the Profile clock; if that date is already over where they are, use their today.
+    const meant = localDate(timezone, input.dayOffset ?? 0);
+    const first = h?.time[0]?.slice(0, 10);
+    const date = first && meant < first ? first : meant;
+    const s = h ? summarize(h, date, input.hours, "your location") : null;
+    if (s) return s;
+  }
   if ((latitude == null || longitude == null) && ctx.location) {
     const g = await geocode(ctx.location);
     if (g) {
