@@ -29,6 +29,12 @@ the $0.04 model to compare without new contracts. Vertex if you'd rather keep it
 ## Built (FASHN v1.6 on fal, picked 2026-11-23)
 `/api/tryon` + "See it on me" under each outfit picture. Needs `FAL_KEY` in Vercel. Cap 10 a day per person, cached by photo + pieces.
 
+## Switched to Nano Banana 2 edit on fal (2026-11-25)
+`fal-ai/nano-banana-2/edit`: body photo plus every piece (up to 13, so shoes, bag, belt and hats too) in ONE call,
+about $0.08 a picture at 1K instead of $0.15 to $0.25 for a chained FASHN outfit. Tested on Higgsfield first (same
+model): a five-piece outfit kept the face and pose. Higgsfield's API was the other option; its key is a separate
+developer account with an unconfirmed model list, so fal (key already in Vercel) won.
+
 ## Original build plan
 1. `FAL_KEY` (or the provider's key) in Vercel; you add it.
 2. Server action `tryOn(outfitId)`: signs short-lived URLs for the body photo and garments, chains
