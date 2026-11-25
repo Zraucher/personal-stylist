@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { emailConfigured, sendEmail } from "@/lib/email/send";
 import { CLOSET_BUCKET } from "@/lib/closet/images";
 import { ALL_SLOT_IDS } from "@/lib/profile/photo-slots";
 
@@ -201,6 +202,23 @@ export async function removePhotoSlot(slot: string): Promise<Result> {
   if (old?.image_path) await supabase.storage.from(CLOSET_BUCKET).remove([old.image_path as string]);
   revalidatePath("/profile");
   return { ok: true };
+}
+
+/** Sends one test email to the signed-in person, at most every 10 minutes (the time sits in their auth metadata). */
+export async function sendTestEmail(): Promise<Result> {
+  const { supabase, user } = await currentUser();
+  if (!user?.email) return { ok: false, error: SIGNED_OUT };
+  if (!emailConfigured()) return { ok: false, error: "Email isn't set up yet." };
+  const last = Date.parse(String(user.user_metadata?.email_test_at ?? ""));
+  if (last && Date.now() - last < 10 * 60_000) return { ok: false, error: "We sent one a few minutes ago. Check your inbox and spam folder." };
+  await supabase.auth.updateUser({ data: { email_test_at: new Date().toISOString() } });
+  const sent = await sendEmail({
+    to: user.email,
+    subject: "Test email from valette",
+    text: "Price-drop emails from valette reach you. You can turn them off on your Profile page.",
+    html: '<div style="font:16px/1.5 system-ui,sans-serif;color:#1c1917;max-width:520px"><p style="font-weight:700;font-size:18px;margin:0 0 12px">It works</p><p>Price-drop emails from valette reach you. You can turn them off on your Profile page.</p></div>',
+  });
+  return sent ? { ok: true } : { ok: false, error: "The email didn't send. Try again later." };
 }
 
 export async function saveEmailAlerts(on: boolean): Promise<Result> {

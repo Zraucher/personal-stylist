@@ -23,7 +23,7 @@ export class AiError extends Error {
 
 export const aiAvailable = () => !!process.env.ANTHROPIC_API_KEY;
 
-type ImagePart = { data: string; mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif" };
+export type ImagePart = { data: string; mediaType: "image/jpeg" | "image/png" | "image/webp" | "image/gif" };
 
 /** Ask Claude for a structured answer. Throws AiError with a stable code. */
 export async function structured<S extends z.ZodType>(opts: {

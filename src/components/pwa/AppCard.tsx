@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button, Card, Checkbox, SectionTitle } from "@/components/ui";
-import { saveEmailAlerts } from "@/app/(app)/profile/actions";
+import { saveEmailAlerts, sendTestEmail } from "@/app/(app)/profile/actions";
 
 type BIPEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 type Prefs = { morning: boolean; prices: boolean; votes: boolean };
@@ -192,6 +192,20 @@ export default function AppCard({ emailAlerts }: { emailAlerts: boolean }) {
           }}
           label="Email me when a price drops"
         />
+        {email && (
+          <Button
+            type="button"
+            variant="quiet"
+            size="sm"
+            onClick={async () => {
+              setNote("Sending…");
+              const r = await sendTestEmail();
+              setNote(r.ok ? "Sent. Check your inbox." : r.error);
+            }}
+          >
+            Send me a test email
+          </Button>
+        )}
         <p role="status" aria-live="polite" className="text-sm text-stone-700 empty:hidden">
           {note}
         </p>
