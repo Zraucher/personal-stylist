@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useRef, useState, useTransition, 
 import { useRouter } from "next/navigation";
 import { addBrand, deleteBrand, saveAccount, saveColor, saveMeasurements, saveStyle } from "./actions";
 import { colorSeason, EYES, HAIRS, SKINS, UNDERTONES, type Features } from "@/lib/profile/season";
+import { compressImage } from "@/lib/closet/compress";
 import { Button, Card as UICard, Chip, EmptyState, Field, Input, Notice, SectionTitle, Select, Swatch, Textarea, type ChipTone } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
@@ -395,6 +396,24 @@ export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Recor
   const e = useEditor<ColorData>("color", data, (v) => saveColor(v));
   const [quiz, setQuiz] = useState<Features>({ skin: "light", undertone: "unsure", hair: "medium-brown", eyes: "hazel" });
   const [found, setFound] = useState<string | null>(null);
+  const [selfie, setSelfie] = useState<{ busy: boolean; note: string | null; error: boolean }>({ busy: false, note: null, error: false });
+  const selfieInput = useRef<HTMLInputElement>(null);
+  const readSelfie = async (file: File) => {
+    setSelfie({ busy: true, note: null, error: false });
+    setFound(null);
+    try {
+      const { blob, type } = await compressImage(file, 1024);
+      const form = new FormData();
+      form.append("photo", new File([blob], "selfie", { type }));
+      const r = await fetch("/api/color-selfie", { method: "POST", body: form });
+      const j = (await r.json()) as Partial<Features> & { warning?: string | null; error?: string };
+      if (!r.ok || !j.skin || !j.undertone || !j.hair || !j.eyes) throw new Error(j.error || "We couldn't read that photo. Try again, or answer the questions.");
+      setQuiz({ skin: j.skin, undertone: j.undertone, hair: j.hair, eyes: j.eyes });
+      setSelfie({ busy: false, note: `From your photo. Check these, then tap Find my colors.${j.warning ? ` ${j.warning}` : ""}`, error: false });
+    } catch (err) {
+      setSelfie({ busy: false, note: err instanceof Error ? err.message : "We couldn't read that photo.", error: true });
+    }
+  };
   const pick = <K extends keyof Features>(k: K, label: string, opts: Array<{ id: Features[K]; label: string }>) => (
     <Field label={label}>
       <Select value={quiz[k]} onChange={(ev) => setQuiz({ ...quiz, [k]: ev.target.value as Features[K] })}>
@@ -445,6 +464,27 @@ export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Recor
         <legend className="sr-only">Find my colors</legend>
         <p className="text-sm font-medium text-stone-700" aria-hidden="true">Find my colors</p>
         <p className="text-sm text-stone-500">Check in daylight, without makeup. Not sure of your undertone? Look at the veins on your wrist.</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            ref={selfieInput}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="user"
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={(ev) => {
+              const f = ev.target.files?.[0];
+              ev.target.value = "";
+              if (f) void readSelfie(f);
+            }}
+          />
+          <Button type="button" variant="secondary" size="sm" disabled={selfie.busy} aria-busy={selfie.busy || undefined} onClick={() => selfieInput.current?.click()}>
+            {selfie.busy ? "Reading your photo…" : "Use a selfie"}
+          </Button>
+          <span className="text-xs text-stone-500">Daylight, no filter. We don&apos;t keep the photo.</span>
+        </div>
+        {selfie.note && <Notice tone={selfie.error ? "error" : "info"}>{selfie.note}</Notice>}
         <div className="grid grid-cols-2 gap-3">
           {pick("skin", "Skin", SKINS)}
           {pick("undertone", "Skin undertone", UNDERTONES)}
