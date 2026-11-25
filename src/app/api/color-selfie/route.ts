@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     if (!r.face_visible) return NextResponse.json({ error: "We couldn't see a face clearly. Try a closer photo in daylight." }, { status: 422 });
     return NextResponse.json({ skin: r.skin, undertone: r.undertone, hair: r.hair, eyes: r.eyes, warning: r.warning });
   } catch (err) {
+    if (err instanceof AiError) console.error("color-selfie", err.code, err.message.slice(0, 300));
     if (err instanceof AiError) return NextResponse.json({ error: "We couldn't read that photo. Try again, or answer the questions." }, { status: aiErrorStatus(err) });
     throw err;
   }
