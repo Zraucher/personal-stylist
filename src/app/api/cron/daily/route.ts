@@ -3,7 +3,6 @@ import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { scrapeProduct } from "@/lib/retail/scrape";
 import { appendPrice, priceCheckDue, priceNews, type PricePoint } from "@/lib/retail/price";
-import { localDate } from "@/lib/today/weather";
 import { pushConfigured, pushToUser } from "@/lib/push/send";
 import { emailConfigured, sendEmail } from "@/lib/email/send";
 import { priceAlertEmail, unsubscribeSig } from "@/lib/email/alerts";
@@ -11,7 +10,7 @@ import { priceAlertEmail, unsubscribeSig } from "@/lib/email/alerts";
 export const maxDuration = 300;
 
 // Daily job (Vercel Cron, around 7am Pacific): re-check watched prices for everyone and send
-// the morning outfit and price-drop notifications. Vercel sends CRON_SECRET as a bearer token.
+// price-drop notifications. The morning outfit goes out hourly from /api/cron/morning, at 7am local time. Vercel sends CRON_SECRET as a bearer token.
 
 function authorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
@@ -86,29 +85,6 @@ export async function GET(req: NextRequest) {
         url: "/wishlist",
         tag: "prices",
       });
-    }
-
-    // 2. Morning outfit for everyone with notifications on.
-    const { data: subs } = await admin.from("push_subscriptions").select("user_id");
-    const users = [...new Set((subs ?? []).map((s) => s.user_id as string))];
-    const morning = async (userId: string): Promise<number> => {
-      const { data: prof } = await admin.from("profiles").select("timezone, name").eq("id", userId).maybeSingle();
-      const today = localDate((prof?.timezone as string | null) ?? null);
-      const { data: plan } = await admin.from("plans").select("outfit_id, weather, worn").eq("user_id", userId).eq("date", today).maybeSingle();
-      let title = "What are you wearing today?";
-      let body = "Three outfits for today's weather are ready.";
-      if (plan?.outfit_id && !plan.worn) {
-        const { data: o } = await admin.from("outfits").select("name").eq("id", plan.outfit_id).maybeSingle();
-        const w = plan.weather as { feelsMin?: number; feelsMax?: number; rainMax?: number; source?: string } | null;
-        title = `Today: ${((o?.name as string | null) ?? "your planned outfit").slice(0, 60)}`;
-        body = w && w.source === "forecast" ? `Feels ${w.feelsMin}–${w.feelsMax}°${(w.rainMax ?? 0) >= 40 ? `, ${w.rainMax}% chance of rain` : ""}. Tap to see it.` : "Planned and ready. Tap to see it.";
-      }
-      return pushToUser(userId, "morning", { title, body, url: "/today", tag: "morning" });
-    };
-    for (let i = 0; i < users.length; i += 10) {
-      if (Date.now() - started > 270_000) break;
-      const sent = await Promise.allSettled(users.slice(i, i + 10).map(morning));
-      for (const r of sent) if (r.status === "fulfilled") pushes += r.value;
     }
   }
 

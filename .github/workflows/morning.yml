@@ -1,0 +1,15 @@
+# Hourly call to the morning-outfit job; the job itself picks the people whose clock reads 7am.
+name: Morning notifications
+on:
+  schedule:
+    - cron: "17 * * * *" # a quarter past, when GitHub's queue is quieter than on the hour
+  workflow_dispatch:
+jobs:
+  morning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Call the morning job
+        env:
+          SECRET: ${{ secrets.MORNING_CRON_SECRET }}
+        run: curl -fsS --max-time 300 -H "Authorization: Bearer $SECRET" https://www.myvalette.com/api/cron/morning
