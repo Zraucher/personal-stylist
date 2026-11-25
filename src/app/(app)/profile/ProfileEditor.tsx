@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { addBrand, deleteBrand, saveAccount, saveColor, saveMeasurements, saveStyle } from "./actions";
+import { colorSeason, EYES, HAIRS, SKINS, UNDERTONES, type Features } from "@/lib/profile/season";
 import { Button, Card as UICard, Chip, EmptyState, Field, Input, Notice, SectionTitle, Select, Swatch, Textarea, type ChipTone } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
@@ -392,6 +393,25 @@ function ColorChips({ names, hexes }: { names: string[]; hexes: Record<string, s
 
 export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Record<string, string | null> }) {
   const e = useEditor<ColorData>("color", data, (v) => saveColor(v));
+  const [quiz, setQuiz] = useState<Features>({ skin: "light", undertone: "unsure", hair: "medium-brown", eyes: "hazel" });
+  const [found, setFound] = useState<string | null>(null);
+  const pick = <K extends keyof Features>(k: K, label: string, opts: Array<{ id: Features[K]; label: string }>) => (
+    <Field label={label}>
+      <Select value={quiz[k]} onChange={(ev) => setQuiz({ ...quiz, [k]: ev.target.value as Features[K] })}>
+        {opts.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.label}
+          </option>
+        ))}
+      </Select>
+    </Field>
+  );
+  const findColors = () => {
+    const s = colorSeason(quiz);
+    const looks = `Skin ${quiz.skin}, ${quiz.hair.replace("-", " ")} hair, ${quiz.eyes.replace("-", " ")} eyes.`;
+    e.setV({ ...e.v, season_label: s.label, undertone: s.undertone, depth: s.depth, contrast: s.contrast, best_colors: s.best, avoid_colors: s.avoid, notes: e.v.notes || `From the color quiz: ${looks}` });
+    setFound(`You're a ${s.label}. We filled in your colors below; change anything, then save.`);
+  };
   const field = (k: "season_label" | "undertone" | "depth" | "contrast", label: string, ph: string) => (
     <Field label={label}>
       <Input value={e.v[k]} onChange={(ev) => e.setV({ ...e.v, [k]: ev.target.value })} placeholder={ph} />
@@ -421,6 +441,21 @@ export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Recor
         </Dl>
       }
     >
+      <fieldset className="space-y-3 rounded-card bg-inset p-3">
+        <legend className="sr-only">Find my colors</legend>
+        <p className="text-sm font-medium text-stone-700" aria-hidden="true">Find my colors</p>
+        <p className="text-sm text-stone-500">Check in daylight, without makeup. Not sure of your undertone? Look at the veins on your wrist.</p>
+        <div className="grid grid-cols-2 gap-3">
+          {pick("skin", "Skin", SKINS)}
+          {pick("undertone", "Skin undertone", UNDERTONES)}
+          {pick("hair", "Natural hair", HAIRS)}
+          {pick("eyes", "Eyes", EYES)}
+        </div>
+        <Button type="button" variant="secondary" size="sm" onClick={findColors}>
+          Find my colors
+        </Button>
+        {found && <Notice tone="success">{found}</Notice>}
+      </fieldset>
       <div className="grid grid-cols-2 gap-3">
         {field("season_label", "Season", "Soft Autumn")}
         {field("undertone", "Undertone", "warm, cool, neutral")}
