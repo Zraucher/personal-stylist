@@ -121,3 +121,12 @@ test("outfit names are short and readable", () => {
   assert.equal(outfitName([polo, trousers, sneakers]), "Polo, trousers and sneakers");
   assert.equal(outfitName([tee]), "Tee");
 });
+
+test("localHour reads the person's clock, Pacific by default", async () => {
+  const { localHour } = await import("../src/lib/time.ts");
+  const t = Date.UTC(2026, 0, 15, 15, 17); // 15:17 UTC in January
+  assert.equal(localHour("America/New_York", t), 10);
+  assert.equal(localHour(null, t), 7);
+  assert.equal(localHour("Asia/Kolkata", t), 20);
+  assert.equal(localHour("Not/AZone", t), 15);
+});
