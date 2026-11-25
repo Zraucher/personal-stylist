@@ -37,7 +37,7 @@ export default async function PalettePage() {
           title="No best colors yet"
           body={
             <>
-              Add your best colors under Color on the{" "}
+              Take the color quiz under Color on the{" "}
               <Link href="/profile" className="font-semibold underline underline-offset-2">
                 Profile
               </Link>{" "}
