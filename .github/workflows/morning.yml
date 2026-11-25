@@ -12,4 +12,5 @@ jobs:
       - name: Call the morning job
         env:
           SECRET: ${{ secrets.MORNING_CRON_SECRET }}
-        run: curl -fsS --max-time 300 -H "Authorization: Bearer $SECRET" https://www.myvalette.com/api/cron/morning
+        run: |
+          curl -fsS --max-time 300 -H "Authorization: Bearer $SECRET" https://www.myvalette.com/api/cron/morning
