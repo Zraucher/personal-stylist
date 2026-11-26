@@ -140,6 +140,13 @@ export default async function ProfilePage() {
       <AppCard emailAlerts={(profile?.email_alerts as boolean | undefined) ?? true} />
       </ProfileEditing>
 
+      <p className="text-center text-sm text-stone-500">
+        Stuck or found a bug?{" "}
+        <Link href="/help" className="font-medium text-stone-700 underline underline-offset-2 hover:text-stone-900">
+          Help and contact
+        </Link>
+      </p>
+
       <form action="/auth/signout" method="post" className="sm:hidden">
         <Button type="submit" variant="secondary" block>
           Sign out

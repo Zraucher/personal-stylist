@@ -8,7 +8,7 @@ import AskFriendsButton from "@/components/AskFriendsButton";
 import { Button, ButtonLink, Card, CheckTick, Chip, Field, Input, Notice, OutfitPicture, OutfitStrip, WeatherLine, buttonClass, cx, type ButtonVariant } from "@/components/ui";
 
 type Fb = "wore" | "skipped" | "disliked" | "benchmark" | "failure";
-const FB_LABEL: Record<Fb, string> = { wore: "wore it", skipped: "skip", disliked: "not me", benchmark: "this is so me", failure: "felt like a costume" };
+const FB_LABEL: Record<Fb, string> = { wore: "wore it", skipped: "skip", disliked: "not me", benchmark: "this is so me", failure: "felt off" };
 // Kept visible: the two things people do most mornings. Everything else lives under More.
 const MORE: Fb[] = ["disliked", "benchmark", "failure", "skipped"];
 

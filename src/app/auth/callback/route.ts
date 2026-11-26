@@ -32,6 +32,6 @@ export async function GET(request: NextRequest) {
 }
 
 function safeNext(next: string | null): string {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/closet";
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/today";
   return next;
 }
