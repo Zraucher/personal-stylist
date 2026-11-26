@@ -59,7 +59,8 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
 
   return (
     <div className="space-y-6">
-      <div className="space-y-3">
+      {/* Nothing to pick from yet: the empty state below is the only action. */}
+      <div className={"space-y-3" + (!rec && closetSize < 3 ? " hidden" : "")}>
         {rec && <RecWeather rec={rec} />}
         {rec && !editing ? (
           <div className="flex items-center justify-between gap-3 rounded-control bg-inset py-1.5 pl-4 pr-1.5">
