@@ -400,6 +400,11 @@ export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Recor
   const [selfie, setSelfie] = useState<{ busy: boolean; note: string | null; error: boolean }>({ busy: false, note: null, error: false });
   const selfieInput = useRef<HTMLInputElement>(null);
   const [camera, setCamera] = useState(false);
+  const selfieBtn = useRef<HTMLButtonElement>(null);
+  const closeCamera = () => {
+    setCamera(false);
+    setTimeout(() => selfieBtn.current?.focus(), 0);
+  };
   const readSelfie = async (file: File) => {
     setSelfie({ busy: true, note: null, error: false });
     setFound(null);
@@ -484,6 +489,7 @@ export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Recor
             type="button"
             variant="secondary"
             size="sm"
+            ref={selfieBtn}
             disabled={selfie.busy || camera}
             aria-busy={selfie.busy || undefined}
             onClick={() => (cameraSupported() ? setCamera(true) : selfieInput.current?.click())}
@@ -498,12 +504,12 @@ export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Recor
         {camera && (
           <SelfieCamera
             onCapture={(f) => {
-              setCamera(false);
+              closeCamera();
               void readSelfie(f);
             }}
             onClose={(reason) => {
-              setCamera(false);
-              if (reason === "denied") setSelfie({ busy: false, note: "We couldn't open the camera. Allow camera access, or tap Upload a photo.", error: true });
+              closeCamera();
+              if (reason) setSelfie({ busy: false, note: reason === "denied" ? "We couldn't open the camera. Allow camera access, or tap Upload a photo." : "The camera stopped working. Tap Upload a photo instead.", error: true });
             }}
           />
         )}
