@@ -21,7 +21,7 @@ export default function PrivacyPage() {
         <div className="max-w-[65ch] space-y-8">
           <div className="space-y-2">
             <h1 className="font-display text-[28px] font-extrabold leading-[1.05] tracking-[-0.03em]">privacy</h1>
-            <p className="text-stone-500">Last updated November 22, 2026</p>
+            <p className="text-stone-500">Last updated November 25, 2026</p>
           </div>
           <section className="space-y-2">
             <p className="text-stone-700">Valette is a private, invite-only styling app. This page explains what we keep about you, why, and how to get it changed or deleted. Questions or requests: <a className="font-semibold underline underline-offset-2" href="mailto:hello@myvalette.com">hello@myvalette.com</a>.</p>
@@ -75,7 +75,7 @@ export default function PrivacyPage() {
             <ul className="list-disc space-y-1 pl-5 text-stone-700">
               <li>Your account, profile, closet and photos: while your account is open. When you delete something in the app, it&apos;s gone right away.</li>
               <li>If you ask us to delete your account, we delete everything within 30 days.</li>
-              <li>Waitlist emails: until we send your invite or you ask to leave.</li>
+              <li>Waitlist emails: until we send your invite or you ask to leave. Once you&apos;re invited, your email stays on our invite list while your account is open.</li>
               <li>Votes and comments on a shared look: until the person who shared it deletes the look or their account.</li>
               <li>Our providers may keep routine backups for a short time before they&apos;re overwritten.</li>
             </ul>
