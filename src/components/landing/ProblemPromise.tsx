@@ -1,4 +1,6 @@
+import Image from "next/image";
 import { Card } from "@/components/ui";
+import problemPhoto from "../../../public/landing/problem.webp";
 import { DISPLAY_H2, EyebrowPill, RingTick, Section } from "./Section";
 
 const PROBLEMS = [
@@ -23,6 +25,13 @@ export function ProblemPromise() {
           <h2 id="problem-title" className={DISPLAY_H2}>
             a full closet and nothing to wear.
           </h2>
+          <Image
+            src={problemPhoto}
+            alt="An open wardrobe packed with clothes, with tops piled on a chair and the bed beside it."
+            sizes="(min-width: 768px) 45vw, 100vw"
+            placeholder="blur"
+            className="aspect-[3/2] w-full rounded-[20px] object-cover"
+          />
           <ul className="divide-y divide-line border-y border-line">
             {PROBLEMS.map((p) => (
               <li key={p} className="py-3.5 text-lg leading-relaxed text-stone-600">
