@@ -7,6 +7,7 @@ import { signedImageUrls } from "@/lib/closet/images";
 import { buildCandidates, OCCASIONS, outfitName, seasonFor, type Candidate, type ClosetPiece, type Occasion } from "./candidates";
 import { forecast, geocode, localDate, statedWeather, summarize, type HourWindow, type WeatherSummary } from "./weather";
 import { cleanHeadline } from "@/lib/verdict";
+import { nameFallbackOutfits } from "./names";
 
 const list = (xs: unknown): string[] => (Array.isArray(xs) ? xs.filter((x): x is string => typeof x === "string") : []);
 
@@ -51,6 +52,8 @@ export type RecommendationView = {
   chosenOutfitId: string | null;
   picks: PickView[];
 };
+
+const NamesSchema = z.object({ names: z.array(z.string().describe("Two to four words naming the look, e.g. 'Easy golf morning'. No piece names.")).describe("One name per outfit, in the same order.") });
 
 const PickSchema = z.object({
   picks: z
@@ -196,7 +199,24 @@ export async function recommend(supabase: SupabaseClient, userId: string, input:
         if (!(e instanceof AiError)) throw e;
       }
     }
-    if (!picks.length) picks = result.candidates.slice(0, 3).map((c) => ({ c, why: c.composition.headline }));
+    if (!picks.length) {
+      picks = result.candidates.slice(0, 3).map((c) => ({ c, why: c.composition.headline }));
+      // Rule-based fallback: one batched call for short names; plain names stay if it fails.
+      const plain = picks.map((p) => outfitName(p.c.items));
+      const named = aiAvailable()
+        ? await nameFallbackOutfits(plain, picks.map((p, i) => describeCandidate(p.c, i)), async (descriptions) => {
+            const a = await structured({
+              schema: NamesSchema,
+              model: MODELS.fast,
+              maxTokens: 300,
+              system: "You name outfits. Give each outfit a short, natural name for the look, two to four words, no piece names.",
+              text: `Occasion: ${input.prompt ?? occ.label}.\n${descriptions.join("\n")}`,
+            });
+            return a.names;
+          })
+        : plain;
+      picks = picks.map((p, i) => ({ ...p, name: named[i] === plain[i] ? undefined : named[i] }));
+    }
   }
 
   const outfitIds: string[] = [];
