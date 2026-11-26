@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAdmin } from "@/lib/admin";
-import { Button, EmptyState, ListCard, PageHeader } from "@/components/ui";
-import { inviteFromWaitlist } from "./actions";
+import { EmptyState, ListCard, PageHeader } from "@/components/ui";
+import { InviteRow } from "./InviteRow";
 
 export const metadata: Metadata = { title: "Invites · valette", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -32,17 +32,7 @@ export default async function InvitesAdminPage() {
         <ListCard>
           {waiting.map((w) => (
             <li key={w.email} className="py-3">
-              <form action={inviteFromWaitlist} className="flex w-full items-center justify-between gap-3">
-                <input type="hidden" name="email" value={w.email} />
-                <span className="min-w-0 truncate text-sm">
-                  {w.first_name ? `${w.first_name} · ` : ""}
-                  {w.email}
-                  <span className="text-stone-500"> · {new Date(w.created_at).toLocaleDateString("en-US")}</span>
-                </span>
-                <Button type="submit" size="sm" variant={have.has(w.email.toLowerCase()) ? "secondary" : "primary"}>
-                  {have.has(w.email.toLowerCase()) ? "Resend" : "Invite"}
-                </Button>
-              </form>
+              <InviteRow email={w.email} label={`${w.first_name ? `${w.first_name} · ` : ""}${w.email} · ${new Date(w.created_at).toLocaleDateString("en-US")}`} invited={have.has(w.email.toLowerCase())} />
             </li>
           ))}
         </ListCard>
