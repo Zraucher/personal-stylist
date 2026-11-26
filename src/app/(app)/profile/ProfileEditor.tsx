@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { addBrand, deleteBrand, saveAccount, saveColor, saveMeasurements, saveStyle } from "./actions";
 import { colorSeason, EYES, HAIRS, SKINS, UNDERTONES, type Features } from "@/lib/profile/season";
 import { compressImage } from "@/lib/closet/compress";
+import { cameraSupported, SelfieCamera } from "./SelfieCamera";
 import { Button, Card as UICard, Chip, EmptyState, Field, Input, Notice, SectionTitle, Select, Swatch, Textarea, type ChipTone } from "@/components/ui";
 
 // ---------------------------------------------------------------------------
@@ -398,6 +399,12 @@ export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Recor
   const [found, setFound] = useState<string | null>(null);
   const [selfie, setSelfie] = useState<{ busy: boolean; note: string | null; error: boolean }>({ busy: false, note: null, error: false });
   const selfieInput = useRef<HTMLInputElement>(null);
+  const [camera, setCamera] = useState(false);
+  const selfieBtn = useRef<HTMLButtonElement>(null);
+  const closeCamera = () => {
+    setCamera(false);
+    setTimeout(() => selfieBtn.current?.focus(), 0);
+  };
   const readSelfie = async (file: File) => {
     setSelfie({ busy: true, note: null, error: false });
     setFound(null);
@@ -469,7 +476,6 @@ export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Recor
             ref={selfieInput}
             type="file"
             accept="image/jpeg,image/png,image/webp"
-            capture="user"
             className="sr-only"
             tabIndex={-1}
             aria-hidden="true"
@@ -479,11 +485,34 @@ export function ColorCard({ data, hexes = {} }: { data: ColorData; hexes?: Recor
               if (f) void readSelfie(f);
             }}
           />
-          <Button type="button" variant="secondary" size="sm" disabled={selfie.busy} aria-busy={selfie.busy || undefined} onClick={() => selfieInput.current?.click()}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            ref={selfieBtn}
+            disabled={selfie.busy || camera}
+            aria-busy={selfie.busy || undefined}
+            onClick={() => (cameraSupported() ? setCamera(true) : selfieInput.current?.click())}
+          >
             {selfie.busy ? "Reading your photo…" : "Use a selfie"}
+          </Button>
+          <Button type="button" variant="quiet" size="sm" disabled={selfie.busy} onClick={() => selfieInput.current?.click()}>
+            Upload a photo
           </Button>
           <span className="text-xs text-stone-500">Daylight, no filter. We don&apos;t keep the photo.</span>
         </div>
+        {camera && (
+          <SelfieCamera
+            onCapture={(f) => {
+              closeCamera();
+              void readSelfie(f);
+            }}
+            onClose={(reason) => {
+              closeCamera();
+              if (reason) setSelfie({ busy: false, note: reason === "denied" ? "We couldn't open the camera. Allow camera access, or tap Upload a photo." : "The camera stopped working. Tap Upload a photo instead.", error: true });
+            }}
+          />
+        )}
         {selfie.note && <Notice tone={selfie.error ? "error" : "info"}>{selfie.note}</Notice>}
         <div className="grid grid-cols-2 gap-3">
           {pick("skin", "Skin", SKINS)}
