@@ -130,3 +130,12 @@ test("localHour reads the person's clock, Pacific by default", async () => {
   assert.equal(localHour("Asia/Kolkata", t), 20);
   assert.equal(localHour("Not/AZone", t), 15);
 });
+
+test("fallback outfit names: AI names win, errors and timeouts keep the plain names", async () => {
+  const { nameFallbackOutfits } = await import("../src/lib/today/names.ts");
+  const plain = ["Polo and trousers", "Tee and jeans"];
+  const desc = ["a", "b"];
+  assert.deepEqual(await nameFallbackOutfits(plain, desc, async () => ["Easy golf morning", " "]), ["Easy golf morning", "Tee and jeans"]);
+  assert.deepEqual(await nameFallbackOutfits(plain, desc, async () => { throw new Error("boom"); }), plain);
+  assert.deepEqual(await nameFallbackOutfits(plain, desc, () => new Promise(() => {}), 20), plain);
+});

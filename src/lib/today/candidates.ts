@@ -16,7 +16,7 @@ export type Occasion = "office" | "casual" | "dinner" | "event" | "active" | "tr
 export const OCCASIONS: Array<{ id: Occasion; label: string; band: [number, number] }> = [
   { id: "office", label: "Office", band: [3, 4] },
   { id: "casual", label: "Casual", band: [1, 3] },
-  { id: "dinner", label: "Dinner out", band: [3, 4] },
+  { id: "dinner", label: "Dinner or night out", band: [3, 4] },
   { id: "event", label: "Event", band: [4, 5] },
   { id: "active", label: "Golf or active", band: [1, 3] },
   { id: "travel", label: "Travel", band: [1, 3] },

@@ -6,6 +6,8 @@ import PlannedToday from "./PlannedToday";
 import { ButtonLink, ChipLink, PageHeader } from "@/components/ui";
 import { signedImageUrls } from "@/lib/closet/images";
 import { isoDaysAgo } from "@/lib/time";
+import { setupSteps } from "@/lib/profile/setup";
+import SetupCard from "./SetupCard";
 
 export default async function TodayPage() {
   const supabase = await createClient();
@@ -14,7 +16,7 @@ export default async function TodayPage() {
   } = await supabase.auth.getUser();
   const uid = user!.id;
 
-  const { data: prof } = await supabase.from("profiles").select("timezone").eq("id", uid).maybeSingle();
+  const { data: prof } = await supabase.from("profiles").select("timezone, location").eq("id", uid).maybeSingle();
   const today = localDate((prof?.timezone as string | null) ?? null);
   // Today's latest pick, if one was made today.
   const { data: latest } = await supabase
@@ -26,6 +28,8 @@ export default async function TodayPage() {
     .limit(1)
     .maybeSingle();
   const { count: closetSize } = await supabase.from("closet_items").select("id", { count: "exact", head: true }).eq("user_id", uid).neq("status", "gone");
+  const { data: color } = await supabase.from("color_profiles").select("season_label, best_colors").eq("user_id", uid).maybeSingle();
+  const steps = setupSteps({ location: (prof?.location as string | null) ?? null, closetSize: closetSize ?? 0, hasPalette: !!(color?.season_label || (Array.isArray(color?.best_colors) && color.best_colors.length)) });
   const initial = latest ? await loadRecommendation(supabase, uid, latest.id as string) : null;
   const fresh = initial && initial.weather?.date === today ? initial : null;
 
@@ -83,6 +87,7 @@ export default async function TodayPage() {
           )}
         </div>
       )}
+      {steps.some((s) => !s.done) && <SetupCard steps={steps} />}
       {planned && <PlannedToday date={today} name={planned.name} items={planned.items} worn={!!plan?.worn} />}
       <TodayClient initial={fresh} closetSize={closetSize ?? 0} />
     </div>
