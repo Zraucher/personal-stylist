@@ -16,14 +16,24 @@ export class MoonsiftError extends Error {
 
 type Doc = { name?: string; fields?: Record<string, Record<string, unknown>> };
 
-function key() {
-  const k = process.env.MOONSIFT_FIREBASE_API_KEY;
-  if (!k) throw new MoonsiftError("config", "Moonsift import isn't set up yet. Try again later.");
-  return k;
+let found: string | null = null;
+
+// Moonsift's public web key: the env var if set, else read once from their app bundle (the app shell, not the Framer homepage), so a key rotation fixes itself.
+async function key(): Promise<string> {
+  const k = process.env.MOONSIFT_FIREBASE_API_KEY || found;
+  if (k) return k;
+  try {
+    const page = await fetch("https://www.moonsift.com/collection/a/b", { signal: AbortSignal.timeout(10_000), cache: "no-store" }).then((r) => r.text());
+    const src = page.match(/src="(\/assets\/index-[\w-]+\.js)"/)?.[1];
+    const js = src ? await fetch(`https://www.moonsift.com${src}`, { signal: AbortSignal.timeout(15_000), cache: "no-store" }).then((r) => r.text()) : "";
+    found = js.match(/apiKey:"(AIza[\w-]{30,45})"/)?.[1] ?? null;
+  } catch {}
+  if (!found) throw new MoonsiftError("config", "Moonsift import isn't working right now. Try again later.");
+  return found;
 }
 
 async function call<T>(path: string, init?: RequestInit & { query?: string }): Promise<T | null> {
-  const res = await fetch(`${BASE}/${path}?key=${encodeURIComponent(key())}${init?.query ?? ""}`, {
+  const res = await fetch(`${BASE}/${path}?key=${encodeURIComponent(await key())}${init?.query ?? ""}`, {
     ...init,
     headers: { "Content-Type": "application/json" },
     signal: AbortSignal.timeout(10_000),
