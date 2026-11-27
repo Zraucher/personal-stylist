@@ -4,6 +4,7 @@
 
 import { checkOutfit, type Composition, type OutfitItem } from "../outfit/composition.ts";
 import type { ScoreColorProfile, ScoreStyle } from "../scorecard/rules.ts";
+import { tasteScore, type Taste } from "../taste/profile.ts";
 
 export type ClosetPiece = OutfitItem & {
   status?: string | null;
@@ -140,10 +141,11 @@ function rankOne(items: ClosetPiece[], comp: Composition, band: [number, number]
   return s;
 }
 
-/** Top `n` pieces by affinity then recency, so the combination count stays bounded. */
-function shortlist(xs: ClosetPiece[], n: number, today: string): ClosetPiece[] {
+/** Top `n` pieces by affinity (plus taste, when given) then recency, so the combination count stays bounded. */
+function shortlist(xs: ClosetPiece[], n: number, today: string, taste?: Taste): ClosetPiece[] {
+  const pull = (p: ClosetPiece) => (p.affinity ?? 0) + (taste?.items[p.id] ?? 0) * 2;
   return [...xs]
-    .sort((a, b) => (b.affinity ?? 0) - (a.affinity ?? 0) || daysSince(b.lastWorn, today) - daysSince(a.lastWorn, today))
+    .sort((a, b) => pull(b) - pull(a) || daysSince(b.lastWorn, today) - daysSince(a.lastWorn, today))
     .slice(0, n);
 }
 
@@ -153,7 +155,7 @@ export function buildCandidates(
   cons: Constraints,
   palette: ScoreColorProfile,
   style: ScoreStyle,
-  opts: { limit?: number; perRole?: number; countOnly?: boolean; loose?: boolean } = {}
+  opts: { limit?: number; perRole?: number; countOnly?: boolean; loose?: boolean; taste?: Taste } = {}
 ): CandidateResult {
   const strict = buildStrict(closet, day, cons, palette, style, opts);
   if (strict.candidates.length || opts.countOnly || opts.loose) return strict;
@@ -168,7 +170,7 @@ function buildStrict(
   cons: Constraints,
   palette: ScoreColorProfile,
   style: ScoreStyle,
-  opts: { limit?: number; perRole?: number; countOnly?: boolean; loose?: boolean }
+  opts: { limit?: number; perRole?: number; countOnly?: boolean; loose?: boolean; taste?: Taste }
 ): CandidateResult {
   const today = cons.today ?? new Date().toISOString().slice(0, 10);
   const band = cons.band ?? OCCASIONS.find((o) => o.id === cons.occasion)?.band ?? [1, 5];
@@ -184,7 +186,7 @@ function buildStrict(
   const pick = (pred: (p: ClosetPiece) => boolean, role: "core" | "layer") => {
     const all = allowed.filter((p) => pred(p) && wearable(p, day, band, role, { layered, loose: opts.loose }));
     const forced = all.filter((p) => must.has(p.id));
-    return [...forced, ...shortlist(all.filter((p) => !must.has(p.id)), per - forced.length, today)];
+    return [...forced, ...shortlist(all.filter((p) => !must.has(p.id)), per - forced.length, today, opts.taste)];
   };
   const tops = pick(isTop, "core");
   const bottoms = pick(isBottom, "core");
@@ -218,7 +220,7 @@ function buildStrict(
         if (considered > 4000) break;
         const comp = checkOutfit(items, palette, style);
         if ((comp.overall === "rework" && !opts.loose) || (comp.overall === "incomplete" && shoes.length)) continue;
-        out.push({ items, composition: comp, score: rankOne(items, comp, band, today), layered: !!ly });
+        out.push({ items, composition: comp, score: rankOne(items, comp, band, today) + (opts.taste ? tasteScore(items, opts.taste) : 0), layered: !!ly });
       }
     }
   }
