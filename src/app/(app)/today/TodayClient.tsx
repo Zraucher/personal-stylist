@@ -134,9 +134,7 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
             </>
           }
         />
-      ) : (
-        <p className="text-sm text-stone-500">Choose where you&rsquo;re going and get three outfits from your own closet, matched to the weather.</p>
-      )}
+      ) : null}
     </div>
   );
 }
