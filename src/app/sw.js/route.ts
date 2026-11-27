@@ -103,6 +103,7 @@ self.addEventListener("push", (event) => {
       icon: "/pwa-icon/192",
       badge: "/pwa-icon/192",
       tag: data.tag || undefined,
+      image: typeof data.image === "string" && data.image.startsWith("https://") ? data.image : undefined,
       data: { url: data.url || "/today" },
     })
   );

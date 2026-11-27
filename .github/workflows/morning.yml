@@ -1,8 +1,8 @@
-# Hourly call to the morning-outfit job; the job itself picks the people whose clock reads 7am.
+# Hourly call to the morning-outfit job at :30; the job itself picks the people whose clock reads 6:30.
 name: Morning notifications
 on:
   schedule:
-    - cron: "17 * * * *" # a quarter past, when GitHub's queue is quieter than on the hour
+    - cron: "30 * * * *" # half past: the job sends to everyone in their 6 o'clock hour, so this lands at 6:30
   workflow_dispatch:
 jobs:
   morning:

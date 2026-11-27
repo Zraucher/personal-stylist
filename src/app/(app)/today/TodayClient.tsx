@@ -21,7 +21,8 @@ function summarize(occasion: Occasion, hours: Hour[], indoorCold: boolean, tomor
   return parts.join(" · ");
 }
 
-export default function TodayClient({ initial, closetSize }: { initial: RecommendationView | null; closetSize: number }) {
+/** `planned`: today already has a planned outfit, so the picker starts folded behind one button. */
+export default function TodayClient({ initial, closetSize, planned = false }: { initial: RecommendationView | null; closetSize: number; planned?: boolean }) {
   const [occasion, setOccasion] = useState<Occasion>((initial?.occasion as Occasion) ?? "casual");
   const [hours, setHours] = useState<Hour[]>(HOURS);
   const [indoorCold, setIndoorCold] = useState(false);
@@ -30,7 +31,7 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // With picks in hand the controls fold into a summary, so the outfits come first.
-  const [editing, setEditing] = useState(!initial);
+  const [editing, setEditing] = useState(!initial && !planned);
   const controlsId = useId();
 
   const toggleHour = (h: Hour) => setHours((xs) => (xs.includes(h) ? xs.filter((x) => x !== h) : [...xs, h]));
@@ -62,7 +63,14 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
       {/* Nothing to pick from yet: the empty state below is the only action. */}
       <div className={"space-y-3" + (!rec && closetSize < 3 ? " hidden" : "")}>
         {rec && <RecWeather rec={rec} />}
-        {rec && !editing ? (
+        {!rec && !editing ? (
+          <div className="flex items-center justify-between gap-3 rounded-control bg-inset py-1.5 pl-4 pr-1.5">
+            <p className="min-w-0 text-sm text-stone-700">Not feeling it? Get three other outfits.</p>
+            <Button type="button" variant="quiet" size="sm" aria-expanded={false} onClick={() => setEditing(true)}>
+              Pick outfits
+            </Button>
+          </div>
+        ) : rec && !editing ? (
           <div className="flex items-center justify-between gap-3 rounded-control bg-inset py-1.5 pl-4 pr-1.5">
             <p className="min-w-0 text-sm text-stone-700">{summarize(occasion, hours, indoorCold, tomorrow)}</p>
             <Button type="button" variant="quiet" size="sm" aria-expanded={false} onClick={() => setEditing(true)}>
@@ -134,7 +142,7 @@ export default function TodayClient({ initial, closetSize }: { initial: Recommen
             </>
           }
         />
-      ) : (
+      ) : !editing ? null : (
         <p className="text-sm text-stone-500">Choose where you&rsquo;re going and get three outfits from your own closet, matched to the weather.</p>
       )}
     </div>

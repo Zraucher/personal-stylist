@@ -6,7 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // sending is a no-op and the app hides the notification switch.
 
 export type PushKind = "morning" | "prices" | "votes";
-export type PushMessage = { title: string; body: string; url: string; tag?: string };
+/** `image`: a large preview (Android/Chrome show it; Safari ignores it). Must load without signing in. */
+export type PushMessage = { title: string; body: string; url: string; tag?: string; image?: string };
 
 // Only the browsers' own push services: the endpoint comes from the client, so never let it point anywhere else.
 const PUSH_HOSTS = [/^fcm\.googleapis\.com$/, /^android\.googleapis\.com$/, /(^|\.)push\.services\.mozilla\.com$/, /(^|\.)notify\.windows\.com$/, /(^|\.)push\.apple\.com$/];
