@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 export const NAV = [
   { href: "/today", label: "Today", match: ["/today", "/opinions"] },
   { href: "/plan", label: "Plan", match: ["/plan"] },
-  { href: "/closet", label: "Closet", match: ["/closet", "/gaps", "/outfits"] },
+  { href: "/closet", label: "Closet", match: ["/closet", "/gaps", "/outfits", "/lab"] },
   { href: "/ask", label: "Ask", match: ["/ask"] },
   { href: "/hauls", label: "Shop", match: ["/hauls", "/wishlist"] },
   { href: "/profile", label: "Profile", match: ["/profile"] },
