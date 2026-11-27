@@ -19,9 +19,10 @@ export function aalOf(accessToken: string | undefined): string | null {
   }
 }
 
-/** A verified second factor exists but this session hasn't used it yet (aal1 -> aal2 pending). */
-export const mfaPending = (factors: ReadonlyArray<{ status: string }> | undefined, aal: string | null) =>
-  !!factors?.some((f) => f.status === "verified") && aal !== "aal2";
+/** A verified authenticator-app factor exists but this session hasn't used it yet (aal1 -> aal2 pending).
+ * Only TOTP counts: /login/verify can only answer a TOTP challenge, so another factor type would lock the user out. */
+export const mfaPending = (factors: ReadonlyArray<{ status: string; factor_type?: string }> | undefined, aal: string | null) =>
+  !!factors?.some((f) => f.status === "verified" && f.factor_type === "totp") && aal !== "aal2";
 
 /**
  * Where the proxy sends a request, or null to let it through.

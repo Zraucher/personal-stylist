@@ -12,10 +12,11 @@ test("aal claim is read from the token; junk gives null", () => {
 });
 
 test("mfa is pending only with a verified factor on an aal1 session", () => {
-  assert.equal(mfaPending([{ status: "verified" }], "aal1"), true);
-  assert.equal(mfaPending([{ status: "verified" }], null), true);
-  assert.equal(mfaPending([{ status: "verified" }], "aal2"), false);
-  assert.equal(mfaPending([{ status: "unverified" }], "aal1"), false);
+  assert.equal(mfaPending([{ status: "verified", factor_type: "totp" }], "aal1"), true);
+  assert.equal(mfaPending([{ status: "verified", factor_type: "totp" }], null), true);
+  assert.equal(mfaPending([{ status: "verified", factor_type: "totp" }], "aal2"), false);
+  assert.equal(mfaPending([{ status: "unverified", factor_type: "totp" }], "aal1"), false);
+  assert.equal(mfaPending([{ status: "verified", factor_type: "webauthn" }], "aal1"), false);
   assert.equal(mfaPending(undefined, "aal1"), false);
 });
 
