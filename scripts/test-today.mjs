@@ -139,3 +139,39 @@ test("fallback outfit names: AI names win, errors and timeouts keep the plain na
   assert.deepEqual(await nameFallbackOutfits(plain, desc, async () => { throw new Error("boom"); }), plain);
   assert.deepEqual(await nameFallbackOutfits(plain, desc, () => new Promise(() => {}), 20), plain);
 });
+
+import { attentionItems, isDrop } from "../src/lib/today/attention.ts";
+
+const none = { steps: [], newVotes: 0, watched: [], sourced: { count: 0, first: null }, toReview: { count: 0, first: null }, tomorrowOpen: false };
+
+test("a price drop needs $1 and 3% off the first price", () => {
+  assert.equal(isDrop(97, 100), true);
+  assert.equal(isDrop(98, 100), false);
+  assert.equal(isDrop(9.5, 10), false);
+  assert.equal(isDrop(null, 10), false);
+});
+
+test("nothing waiting means an empty list", () => {
+  assert.deepEqual(attentionItems(none), []);
+});
+
+test("setup steps come first, then people, then the biggest price drop", () => {
+  const items = attentionItems({
+    ...none,
+    steps: [{ id: "basics", label: "Tick", href: "/closet/basics", done: true }, { id: "city", label: "City", href: "/profile", done: false }],
+    newVotes: 2,
+    watched: [{ name: "Tee", price: 18, first_price: 20, image_url: null }, { name: "Coat", price: 150, first_price: 200, image_url: "x" }],
+    tomorrowOpen: true,
+  });
+  assert.deepEqual(items.map((i) => i.id), ["setup-city", "votes", "drops", "tomorrow"]);
+  assert.equal(items[0].meta, "Get set up · 2 of 2");
+  assert.equal(items[2].title, "Coat is $50 less");
+  assert.equal(items[2].meta, "Now $150 · 1 more price drop");
+});
+
+test("closet chores show their counts", () => {
+  const items = attentionItems({ ...none, sourced: { count: 3, first: { name: "Navy polo", src: "u" } }, toReview: { count: 1, first: null } });
+  assert.equal(items[0].title, "3 photos we found to check");
+  assert.equal(items[1].title, "1 piece to review");
+  assert.equal(items[1].mark, "1");
+});
