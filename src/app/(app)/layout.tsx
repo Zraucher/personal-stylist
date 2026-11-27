@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { aalOf, MFA_PATH, mfaPending } from "@/lib/auth-rules";
 import { BottomTabs, TopNav } from "./NavTabs";
 import Wordmark from "@/components/Wordmark";
 import { buttonClass } from "@/components/ui";
@@ -11,6 +12,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+  // Second lock behind the proxy: no app page renders on an aal1 session once an authenticator is on.
+  if (user.factors?.some((f) => f.status === "verified")) {
+    const { data } = await supabase.auth.getSession();
+    if (mfaPending(user.factors, aalOf(data.session?.access_token))) redirect(MFA_PATH);
+  }
 
   const { data: profile } = await supabase
     .from("profiles")

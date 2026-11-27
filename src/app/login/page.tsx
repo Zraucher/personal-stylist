@@ -6,6 +6,7 @@ import { requestMagicLink, signInWithPassword, verifyCode, type LoginState } fro
 import Wordmark from "@/components/Wordmark";
 import WaitlistForm from "@/components/landing/WaitlistForm";
 import { Button, Card, Chip, Field, Input, Notice } from "@/components/ui";
+import PasskeySignIn from "./PasskeySignIn";
 
 const initial: LoginState = { status: "idle" };
 
@@ -102,9 +103,10 @@ function LoginFlow({ onRestart }: { onRestart: () => void }) {
         )}
 
         {state.status === "idle" || state.status === "error" ? (
-          // For app store reviewers only; the action refuses every other email.
+          <>
+          <PasskeySignIn />
           <details className="mt-6 text-sm" open={pwState.status === "error"}>
-            <summary className="cursor-pointer text-stone-600">Sign in with password</summary>
+            <summary className="tap inline-flex cursor-pointer items-center text-stone-600">Sign in with password</summary>
             <form action={pwAction} className="mt-3 space-y-3">
               <Field label="Email" srOnly>
                 <Input type="email" name="email" required autoComplete="username" defaultValue={pwState.email ?? ""} placeholder="Email" />
@@ -116,8 +118,12 @@ function LoginFlow({ onRestart }: { onRestart: () => void }) {
                 {pwPending ? "Signing in…" : "Sign in with password"}
               </Button>
               {pwState.status === "error" && <Notice tone="error">{pwState.message}</Notice>}
+              <p className="text-stone-600">
+                Forgot it, or never set one? Sign in with an email code above, then set a new password in Profile.
+              </p>
             </form>
           </details>
+          </>
         ) : null}
       </div>
     </main>
