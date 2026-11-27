@@ -139,3 +139,20 @@ test("fallback outfit names: AI names win, errors and timeouts keep the plain na
   assert.deepEqual(await nameFallbackOutfits(plain, desc, async () => { throw new Error("boom"); }), plain);
   assert.deepEqual(await nameFallbackOutfits(plain, desc, () => new Promise(() => {}), 20), plain);
 });
+
+test("Needs you: zero counts drop out, price drops lead, plurals read right", async () => {
+  const { attentionItems, priceDrops, newVoteCount, unreviewedCount, weekDates } = await import("../src/lib/today/attention.ts");
+  assert.deepEqual(attentionItems({ drops: 0, newVotes: 0, sourced: 0, toReview: 0 }), []);
+  const rows = attentionItems({ drops: 1, newVotes: 2, sourced: 0, toReview: 3 });
+  assert.deepEqual(rows.map((r) => r.id), ["drops", "votes", "review"]);
+  assert.equal(rows[0].title, "See 1 price drop");
+  assert.equal(rows[2].title, "Review 3 pieces");
+  // $1 and 3% both required: 50 cents off or 1% off isn't a drop.
+  assert.equal(priceDrops([{ price: 90, first_price: 100 }, { price: 9.5, first_price: 10 }, { price: 99, first_price: 100 }, { price: null, first_price: 100 }]), 1);
+  const asks = [{ id: "a", seen_at: "2026-11-20T00:00:00Z", created_at: "2026-11-01T00:00:00Z" }];
+  assert.equal(newVoteCount(asks, [{ opinion_id: "a", created_at: "2026-11-19T00:00:00Z" }, { opinion_id: "a", created_at: "2026-11-21T00:00:00Z" }]), 1);
+  assert.equal(unreviewedCount(["a", "b", "c"], ["b", "x"]), 2);
+  const w = weekDates("2026-12-29");
+  assert.equal(w.length, 7);
+  assert.equal(w[6], "2027-01-04");
+});
