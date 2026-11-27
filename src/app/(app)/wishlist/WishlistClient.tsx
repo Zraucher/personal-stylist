@@ -7,6 +7,7 @@ import type { Advice } from "@/lib/retail/advice";
 import { priceDrop, saleOff } from "@/lib/retail/price";
 import { SIZING_LABEL } from "@/lib/retail/sizing";
 import { toCandidateView } from "./view";
+import MoonsiftImportToggle from "./MoonsiftImport";
 import AskFriendsButton from "@/components/AskFriendsButton";
 import { Button, Card, Chip, ChipButton, ConfirmButton, EmptyState, Field, Input, Notice, SectionTitle, Select, Skeleton, Thumb } from "@/components/ui";
 
@@ -354,6 +355,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
             Save from your phone or browser
           </a>
         </p>
+        <MoonsiftImportToggle />
         {errors.saved && <Notice tone="error">{errors.saved}</Notice>}
         {saved.length > 0 && <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">{saved.map(card)}</ul>}
       </section>

@@ -1,0 +1,22 @@
+{
+  "name": "projects/moonsift-web/databases/(default)/documents/databases/user_product_collection/uid1/col1/list/item1",
+  "fields": {
+    "created_at": { "timestampValue": "2026-08-23T19:24:04.978Z" },
+    "via_app": { "booleanValue": true },
+    "views": { "integerValue": "2" },
+    "original_image": { "stringValue": "https://shop.example/img/a.jpg" },
+    "product_image": { "stringValue": "moonimage_otLRZphoyyhZWccPImpE" },
+    "page_url": { "stringValue": "shop.example/product/linen-shirt/" },
+    "scrape_data": {
+      "mapValue": {
+        "fields": {
+          "best_link": { "stringValue": "https://shop.example/product/linen-shirt/?utm_source=moonsift#top" },
+          "best_price": { "stringValue": "Current price $24.99; 30% off; was $35.70" },
+          "best_description": { "stringValue": "  Linen   Shirt - SHOP " },
+          "site_uid": { "stringValue": "www.shop.example" },
+          "best_image": { "mapValue": { "fields": { "sources": { "arrayValue": { "values": [{ "stringValue": "https://shop.example/img/best.jpg" }] } } } } }
+        }
+      }
+    }
+  }
+}
