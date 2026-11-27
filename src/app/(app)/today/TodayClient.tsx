@@ -65,7 +65,7 @@ export default function TodayClient({ initial, closetSize, planned = false }: { 
         {rec && <RecWeather rec={rec} />}
         {!rec && !editing ? (
           <div className="flex items-center justify-between gap-3 rounded-control bg-inset py-1.5 pl-4 pr-1.5">
-            <p className="min-w-0 text-sm text-stone-700">Not feeling the plan? Get three other outfits.</p>
+            <p className="min-w-0 text-sm text-stone-700">Not feeling it? Get three other outfits.</p>
             <Button type="button" variant="quiet" size="sm" aria-expanded={false} onClick={() => setEditing(true)}>
               Pick outfits
             </Button>
