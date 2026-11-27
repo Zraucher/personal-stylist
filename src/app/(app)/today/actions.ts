@@ -5,6 +5,9 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { localDate } from "@/lib/today/weather";
 import { recordWear } from "@/lib/wear";
+import { loadWeekState, savePlanDay } from "@/lib/plan/server";
+import { checkOutfit } from "@/lib/outfit/composition";
+import type { Occasion } from "@/lib/today/candidates";
 
 const Input = z.object({
   recommendationId: z.string().uuid(),
@@ -62,6 +65,31 @@ export async function respondToOutfit(raw: z.input<typeof Input>): Promise<{ ok:
     });
   }
 
+  revalidatePath("/today");
+  return { ok: true };
+}
+
+/** "Wear this" on the outfit of the day: plans it for today through the same path as the Plan page. */
+export async function wearDailyOutfit(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "You're signed out. Sign in again to save this." };
+
+  try {
+    const s = await loadWeekState(supabase, user.id);
+    const { data: daily } = await supabase.from("daily_outfits").select("item_ids, occasion").eq("user_id", user.id).eq("date", s.today).maybeSingle();
+    if (!daily) return { ok: false, error: "Today's pick isn't ready. Reload the page and try again." };
+    if (s.plans.get(s.today)?.worn) return { ok: false, error: "You've already worn today's outfit." };
+    const ids = (daily.item_ids as string[]) ?? [];
+    const items = ids.map((id) => s.closet.find((p) => p.id === id)).filter((p): p is NonNullable<typeof p> => !!p);
+    if (items.length !== ids.length) return { ok: false, error: "A piece in this outfit has left your closet. Pick outfits below instead." };
+    await savePlanDay(supabase, user.id, s, s.today, daily.occasion as Occasion, { items, composition: checkOutfit(items, s.ctx.scoreColor, s.ctx.scoreStyle), score: 0, layered: false });
+  } catch (e) {
+    console.error("wearDailyOutfit failed", e);
+    return { ok: false, error: "Couldn't save that. Try again." };
+  }
   revalidatePath("/today");
   return { ok: true };
 }

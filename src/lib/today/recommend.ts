@@ -8,6 +8,7 @@ import { buildCandidates, OCCASIONS, outfitName, seasonFor, type Candidate, type
 import { forecast, geocode, localDate, statedWeather, summarize, type HourWindow, type WeatherSummary } from "./weather";
 import { cleanHeadline } from "@/lib/verdict";
 import { nameFallbackOutfits } from "./names";
+import { loadTaste } from "@/lib/taste/load";
 
 const list = (xs: unknown): string[] => (Array.isArray(xs) ? xs.filter((x): x is string => typeof x === "string") : []);
 
@@ -133,6 +134,7 @@ export async function recommend(supabase: SupabaseClient, userId: string, input:
   const ctx = await loadStyleContext(supabase, userId);
   const weather = await weatherFor(supabase, userId, ctx, input);
   const closet = await loadCloset(supabase, userId);
+  const taste = await loadTaste(supabase, userId, closet);
   const occ = OCCASIONS.find((o) => o.id === input.occasion) ?? OCCASIONS[1];
 
   // A stated or assumed temperature is not a forecast: don't let it overwrite the saved day.
@@ -163,7 +165,8 @@ export async function recommend(supabase: SupabaseClient, userId: string, input:
     },
     { occasion: input.occasion, band: input.band, exclude: input.exclude, mustInclude: input.mustInclude, today: weather.date },
     ctx.scoreColor,
-    ctx.scoreStyle
+    ctx.scoreStyle,
+    { taste }
   );
 
   let picks: Array<{ c: Candidate; why: string; name?: string }> = [];

@@ -5,7 +5,8 @@ import { Button, ButtonLink, Card, CheckTick, Chip, Eyebrow, OutfitPicture, Outf
 
 type Item = { id: string; name: string; url: string | null; hex: string | null; category?: string | null; subcategory?: string | null; colors?: Array<{ name: string; hex?: string }> };
 
-export default function PlannedToday({ date, name, items, worn }: { date: string; name: string; items: Item[]; worn: boolean }) {
+/** Today's planned outfit: the screen's one raised card, unless a pick below was already chosen. */
+export default function PlannedToday({ date, name, items, worn, active = true }: { date: string; name: string; items: Item[]; worn: boolean; active?: boolean }) {
   const strip = items.map((it) => ({ id: it.id, name: it.name, url: it.url, category: it.category, subcategory: it.subcategory, colors: it.colors ?? (it.hex ? [{ name: it.name, hex: it.hex }] : null) }));
   const [done, setDone] = useState(worn);
   // The tick draws only when the person taps Wore it here, not for a day already marked.
@@ -21,7 +22,7 @@ export default function PlannedToday({ date, name, items, worn }: { date: string
       } else setError("Couldn't save that. Try again.");
     });
   return (
-    <Card as="section" variant="surface" aria-label="Planned for today" className="space-y-3">
+    <Card as="section" variant={active ? "active" : "surface"} aria-label="Planned for today" className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <Eyebrow>Planned for today</Eyebrow>
         <ButtonLink href="/plan" variant="quiet" size="sm" className="-my-1.5 -mr-2">
@@ -29,7 +30,7 @@ export default function PlannedToday({ date, name, items, worn }: { date: string
         </ButtonLink>
       </div>
       <p className="font-display text-lg font-bold leading-snug">{name}</p>
-      <OutfitStrip size="sm" items={strip} />
+      <OutfitStrip size="lg" items={strip} />
       <OutfitPicture items={strip} />
       <div role="status" aria-live="polite" className="flex flex-wrap items-center gap-2">
         {done ? (

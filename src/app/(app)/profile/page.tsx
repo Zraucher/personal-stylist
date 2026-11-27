@@ -13,6 +13,7 @@ import {
   type BrandRow,
 } from "./ProfileEditor";
 import ProfilePhotos from "./ProfilePhotos";
+import SecurityCard from "./SecurityCard";
 import AppCard from "@/components/pwa/AppCard";
 
 const strs = (xs: unknown): string[] => (Array.isArray(xs) ? xs.filter((x): x is string => typeof x === "string") : []);
@@ -139,6 +140,8 @@ export default async function ProfilePage() {
 
       <AppCard emailAlerts={(profile?.email_alerts as boolean | undefined) ?? true} />
       </ProfileEditing>
+
+      <SecurityCard />
 
       <p className="text-center text-sm text-stone-500">
         Stuck or found a bug?{" "}

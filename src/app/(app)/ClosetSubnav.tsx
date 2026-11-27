@@ -7,10 +7,11 @@ const LINKS = [
   { href: "/closet", label: "Pieces", on: (p: string) => p === "/closet" || (p.startsWith("/closet/") && !p.startsWith("/closet/insights")) },
   { href: "/outfits", label: "Outfits", on: (p: string) => p.startsWith("/outfits") },
   { href: "/gaps", label: "Gaps", on: (p: string) => p.startsWith("/gaps") },
+  { href: "/lab", label: "Lab", on: (p: string) => p.startsWith("/lab") },
   { href: "/closet/insights", label: "Insights", on: (p: string) => p.startsWith("/closet/insights") },
 ];
 
-/** Pieces · Outfits · Gaps · Insights, shared by the closet pages. */
+/** Pieces · Outfits · Gaps · Lab · Insights, shared by the closet pages. */
 export default function ClosetSubnav() {
   const path = usePathname() ?? "";
   return (
