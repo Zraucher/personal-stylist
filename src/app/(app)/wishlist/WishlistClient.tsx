@@ -18,6 +18,7 @@ export type CandidateView = {
   url: string;
   name: string | null;
   brand: string | null;
+  source: string | null;
   imageUrl: string | null;
   price: number | null;
   paletteStatus: string | null;
@@ -130,20 +131,25 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const fail = (key: string, msg: string | null) => setErrors((e) => ({ ...e, [key]: msg }));
 
-  // Watched prices refresh quietly when the page opens (the server skips any checked in the last 12 hours).
+  // When the page opens, watched prices refresh (the server skips any checked in the last 12 hours) and imported
+  // products get their palette check. Each call does a small batch; keep calling while the server says more remain.
   useEffect(() => {
-    if (!candidates.some((c) => c.watch)) return;
     let live = true;
-    fetch("/api/wishlist/prices", { method: "POST" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((b: { updated?: Array<{ id: string; price: number | null }> } | null) => {
+    // shortcut: at most 40 calls per page open (240 prices, 160 photos); the rest continue on the next visit.
+    const drain = async <U extends { id: string }>(url: string, apply: (u: U) => Partial<CandidateView>) => {
+      for (let i = 0; i < 40 && live; i++) {
+        const b: { updated?: U[]; remaining?: number } | null = await fetch(url, { method: "POST" })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null);
         if (!live || !b?.updated?.length) return;
-        setCands((xs) => xs.map((x) => {
-          const u = b.updated!.find((y) => y.id === x.id);
-          return u ? { ...x, price: u.price ?? x.price } : x;
-        }));
-      })
-      .catch(() => {});
+        const byId = new Map(b.updated.map((u) => [u.id, u]));
+        setCands((xs) => xs.map((x) => (byId.has(x.id) ? { ...x, ...apply(byId.get(x.id)!) } : x)));
+        if (!b.remaining) return;
+      }
+    };
+    if (candidates.some((c) => c.watch)) void drain<{ id: string; price: number | null }>("/api/wishlist/prices", (u) => (u.price != null ? { price: u.price } : {}));
+    if (candidates.some((c) => c.paletteStatus == null && c.imageUrl))
+      void drain<{ id: string; colors: CandidateView["colors"]; palette_status: string; palette_reason: string }>("/api/wishlist/palette", (u) => ({ colors: u.colors, paletteStatus: u.palette_status, paletteReason: u.palette_reason }));
     return () => {
       live = false;
     };
@@ -259,6 +265,7 @@ export default function WishlistClient({ wishes, candidates, needs, prefill }: {
         <div className="flex flex-1 flex-col gap-1 p-3 text-xs">
           <p className="line-clamp-2 text-sm font-semibold leading-snug">{c.name ?? c.url}</p>
           <p className="tabular-nums text-stone-500">{[c.brand, c.price != null ? `$${c.price.toFixed(2)}` : null, off ? `was $${c.listPrice!.toFixed(2)}` : null].filter(Boolean).join(" · ")}</p>
+          {c.source && <p className="text-stone-500">From {c.source}</p>}
           {(drop || off || atTarget || inPal || outPal) && (
             <div className="flex flex-wrap gap-1 pt-0.5">
               {drop && (

@@ -10,6 +10,7 @@ export function toCandidateView(c: Record<string, unknown>): CandidateView {
     url: c.url as string,
     name: (c.name as string | null) ?? null,
     brand: (c.brand as string | null) ?? null,
+    source: (c.source as string | null) ?? null,
     imageUrl: (c.image_url as string | null) ?? null,
     price: c.price != null ? Number(c.price) : null,
     paletteStatus: (c.palette_status as string | null) ?? null,

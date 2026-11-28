@@ -4,8 +4,8 @@ import type { loadStyleContext } from "@/lib/profile/context";
 import { scorePalette } from "@/lib/scorecard/rules";
 import { fetchImage, type ScrapedProduct } from "./scrape";
 
-/** The wishlist_candidates columns for a scraped product: photo colors read, then checked against the palette. */
-export async function candidateFields(p: ScrapedProduct, ctx: Awaited<ReturnType<typeof loadStyleContext>>) {
+/** Photo colors read (falls back to the listed color), then checked against the palette. */
+export async function paletteFields(p: { name: string | null; imageUrl: string | null; colorway?: string | null }, ctx: Awaited<ReturnType<typeof loadStyleContext>>) {
   let colors: Array<{ name: string; hex?: string }> = p.colorway ? [{ name: p.colorway }] : [];
   const img = aiAvailable() && p.imageUrl ? await fetchImage(p.imageUrl) : null;
   if (img) {
@@ -20,5 +20,11 @@ export async function candidateFields(p: ScrapedProduct, ctx: Awaited<ReturnType
     }
   }
   const palette = scorePalette({ name: p.name, subcategory: null, colors, pattern: null, material: null, construction: [] }, ctx.scoreColor);
-  return { url: p.url, name: p.name, brand: p.brand, image_url: p.imageUrl, price: p.price, currency: p.currency, colors, palette_status: palette.status, palette_reason: palette.reason, list_price: p.listPrice ?? null, rating: p.rating ?? null, review_count: p.reviewCount ?? null };
+  return { colors, palette_status: palette.status, palette_reason: palette.reason };
+}
+
+/** The wishlist_candidates columns for a scraped product: photo colors read, then checked against the palette. */
+export async function candidateFields(p: ScrapedProduct, ctx: Awaited<ReturnType<typeof loadStyleContext>>) {
+  const pal = await paletteFields(p, ctx);
+  return { url: p.url, name: p.name, brand: p.brand, image_url: p.imageUrl, price: p.price, currency: p.currency, ...pal, list_price: p.listPrice ?? null, rating: p.rating ?? null, review_count: p.reviewCount ?? null };
 }

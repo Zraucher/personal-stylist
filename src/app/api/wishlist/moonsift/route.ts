@@ -13,7 +13,8 @@ const BAD_LINK = "That isn't a Moonsift collection or profile link. Paste one li
 
 /**
  * Preview a Moonsift link (a collection, or a profile's public collections), or import the chosen collections
- * into saved products. Items land like hand-saved links; prices are re-read from the store lazily by /api/wishlist/prices.
+ * into saved products. Items land like hand-saved links, tagged with their collection; prices and palette checks run
+ * lazily from the wishlist page (/api/wishlist/prices, /api/wishlist/palette).
  */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -50,7 +51,8 @@ export async function POST(request: NextRequest) {
     for (const id of ids) {
       if (items.length >= MAX_ITEMS) break;
       const c = await getCollection(uid, id);
-      items.push(...(await listItems(uid, c.id, MAX_ITEMS - items.length)));
+      const source = `Moonsift · ${c.name}`.slice(0, 200);
+      items.push(...(await listItems(uid, c.id, MAX_ITEMS - items.length)).map((it) => ({ ...it, source })));
     }
 
     // shortcut: reads up to 1000 existing rows (PostgREST default), page it if wishlists grow past that.
@@ -80,6 +82,8 @@ export async function POST(request: NextRequest) {
         price: it.price,
         currency: it.currency,
         state: "saved",
+        source: it.source,
+        // Palette status stays null so /api/wishlist/palette checks the photo when the wishlist opens.
         // Moonsift's price may be stale: watch it and leave it due, so the wishlist re-reads the store on open.
         watch: it.price != null,
         first_price: it.price,

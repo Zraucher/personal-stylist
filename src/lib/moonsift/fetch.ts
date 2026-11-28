@@ -103,15 +103,19 @@ export async function listPublicCollections(uid: string): Promise<MoonsiftCollec
 /** Every item in a collection (paged), capped at `cap`, newest first; items without a product link are dropped. */
 export async function listItems(uid: string, id: string, cap = MAX_ITEMS): Promise<MoonsiftItem[]> {
   const items: MoonsiftItem[] = [];
+  let docs = 0;
   let token = "";
   for (let page = 0; page < 10 && items.length < cap; page++) {
     const r = await call<{ documents?: Doc[]; nextPageToken?: string }>(`user_product_collection/${seg(uid)}/${seg(id)}/list`, { query: `&pageSize=300${token ? `&pageToken=${encodeURIComponent(token)}` : ""}` });
     for (const d of r?.documents ?? []) {
+      docs++;
       const it = mapItem(decodeFields(d.fields));
       if (it) items.push(it);
     }
     if (!r?.nextPageToken) break;
     token = r.nextPageToken;
   }
+  // Items came back but none had a link we recognise: Moonsift changed its format, so say so instead of importing nothing.
+  if (docs > 0 && !items.length) throw new MoonsiftError("config", "Moonsift changed how it shares collections, so import isn't working right now. Try again later.");
   return items.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? "")).slice(0, cap);
 }

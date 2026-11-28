@@ -5,7 +5,7 @@ import { appendPrice, priceCheckDue, type PricePoint } from "@/lib/retail/price"
 
 export const maxDuration = 60;
 
-/** Re-check prices of watched wishlist finds that are due (at most 6 per call). */
+/** Re-check prices of watched wishlist finds that are due (at most 6 per call; `remaining` says how many are still due). */
 export async function POST() {
   const supabase = await createClient();
   const {
@@ -19,7 +19,8 @@ export async function POST() {
     .eq("user_id", user.id)
     .eq("watch", true);
   const now = Date.now();
-  const due = (rows ?? []).filter((r) => priceCheckDue(r.price_checked_at as string | null, now)).slice(0, 6);
+  const allDue = (rows ?? []).filter((r) => priceCheckDue(r.price_checked_at as string | null, now));
+  const due = allDue.slice(0, 6);
 
   const results = await Promise.allSettled(due.map((r) => scrapeProduct(r.url as string)));
   const updated: Array<{ id: string; price: number | null; firstPrice: number | null; history: PricePoint[] }> = [];
@@ -38,5 +39,5 @@ export async function POST() {
     await supabase.from("wishlist_candidates").update(patch).eq("id", r.id).eq("user_id", user.id);
     updated.push({ id: r.id as string, price: price ?? (r.price as number | null), firstPrice: (r.first_price as number | null) ?? null, history: next });
   }
-  return NextResponse.json({ checked: due.length, updated });
+  return NextResponse.json({ checked: due.length, updated, remaining: allDue.length - due.length });
 }
